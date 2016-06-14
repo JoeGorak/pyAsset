@@ -116,3 +116,9 @@ class Transaction:
         else:
             self.cleared = 0
         return
+
+    def getpayee(self):
+        return self.payee
+
+    def getamount(self):
+        return self.amount

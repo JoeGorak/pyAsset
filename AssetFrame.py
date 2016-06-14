@@ -166,7 +166,7 @@ class AssetFrame(wx.Frame):
         self.cbgrid.SetColLabelValue(0, "Date")
         self.cbgrid.SetColSize(0, 60)
         self.cbgrid.SetColLabelValue(1, "Number")
-        self.cbgrid.SetColSize(1, 50)
+        self.cbgrid.SetColSize(1, 150)               # was 50 JJG
         self.cbgrid.SetColLabelValue(2, "Payee")
         self.cbgrid.SetColSize(2, 450)              # was 150  JJG
         self.cbgrid.SetColLabelValue(3, "X")
@@ -177,7 +177,7 @@ class AssetFrame(wx.Frame):
         self.cbgrid.SetColSize(5, 60)
         self.cbgrid.SetColLabelValue(6, "Balance")
         self.cbgrid.SetColSize(6, 60)
-        self.cbgrid.SetSize((610, 300))
+        self.cbgrid.SetSize((1830, 600))             # was (610, 300) JJG
 
     def do_layout(self):
         sizer_1 = wx.BoxSizer(wx.VERTICAL)

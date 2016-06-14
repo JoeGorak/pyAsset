@@ -70,22 +70,35 @@ class Asset:
             type, rest = line[0], line[1:].strip()
             if type == "D":
                 transaction.setdate(rest)
+                blank_transaction = False
             elif type == "T":
                 transaction.setamount(rest)
+                blank_transaction = False
             elif type == "P":
                 transaction.setpayee(rest)
+                blank_transaction = False
             elif type == "C":
                 transaction.setcleared(rest)
+                blank_transaction = False
             elif type == "N":
                 transaction.setnumber(rest)
+                blank_transaction = False
             elif type == "L":
                 transaction.setcomment(rest)
+                blank_transaction = False
             elif type == "M":
                 transaction.setmemo(rest)
+                blank_transaction = False
+            elif type == "A":
+                total_payee = transaction.getpayee() + " " + rest
+                transaction.setpayee(total_payee)
+                blank_transaction = False
             elif type == "^":
-                self.transactions.append(transaction)
-                self.total = self.total + transaction.amount
-                transaction = Transaction()
+                if not blank_transaction:
+                    self.transactions.append(transaction)
+                    self.total = self.total + transaction.getamount()
+                    transaction = Transaction()
+                blank_transaction = True
             else:
                 print "Unparsable line: ", line[:-1]
         self.sort()
