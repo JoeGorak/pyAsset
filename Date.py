@@ -68,7 +68,7 @@ class Date:
         today = Date()
         [self.month, self.day, self.year] = today.month, today.day, today.year
 
-        words = datestring.split('/')
+        words = datestring.replace('-','/').split('/')
         if len(words) == 3:
             month, day, year = int(words[0]), int(words[1]), int(words[2])
         elif len(words) == 2:
