@@ -38,6 +38,7 @@ import wx.grid
 import csv
 import os
 from Asset import Asset
+from AssetList import AssetList
 from Date import Date
 from Transaction import Transaction
 from HelpDialog import HelpDialog
@@ -45,7 +46,9 @@ from HelpDialog import HelpDialog
 
 class AssetFrame(wx.Frame):
     def __init__(self, parent, my_id, title="PyAsset", myfile=None, **kwds):
-        self.asset = Asset()
+        self.assets = AssetList()
+        self.assets.append()
+        self.cur_asset = self.assets[0]
         self.edited = 0
 
         # begin wxGlade: AssetFrame.__init__
@@ -55,9 +58,9 @@ class AssetFrame(wx.Frame):
         self.make_widgets()
 
         if myfile:
-            self.asset.read_qif(myfile)
+            self.cur_asset.read_qif(myfile)
             self.redraw_all(-1)
-        if self.asset.name: self.SetTitle("PyAsset: %s" % self.asset.name)
+        if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
         return
 
     def make_widgets(self):
@@ -191,11 +194,11 @@ class AssetFrame(wx.Frame):
     def redraw_all(self, index=None):
         nrows = self.cbgrid.GetNumberRows()
         if nrows: self.cbgrid.DeleteRows(0, nrows)
-        ntransactions = len(self.asset)
+        ntransactions = len(self.cur_asset)
         total = 0
         self.cbgrid.AppendRows(ntransactions)
         for i in range(ntransactions):
-            transaction = self.asset[i]
+            transaction = self.cur_asset[i]
             self.cbgrid.SetCellValue(i, 0, transaction.date.formatUS())
             if transaction.number: self.cbgrid.SetCellValue(i, 1, '%d' % transaction.number)
             self.cbgrid.SetCellValue(i, 2, transaction.payee)
@@ -219,11 +222,11 @@ class AssetFrame(wx.Frame):
         row = evt.GetRow()
         col = evt.GetCol()
         if row < 0: return
-        if row >= len(self.asset):
+        if row >= len(self.cur_asset):
             print "Warning: modifying incorrect cell!"
             return
         self.edited = 1
-        transaction = self.asset[row]
+        transaction = self.cur_asset[row]
         val = self.cbgrid.GetCellValue(row, col)
         if col == 0:
             transaction.setdate(val)
@@ -246,23 +249,23 @@ class AssetFrame(wx.Frame):
 
     def load_file(self, *args):
         self.close()
-        self.asset = Asset()
+        self.cur_asset = Asset()
         self.edited = 0
         d = wx.FileDialog(self, "Open", "", "", "*.qif", wx.OPEN)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
-            self.asset.read_qif(os.path.join(dir, fname))
+            self.cur_asset.read_qif(os.path.join(dir, fname))
             self.redraw_all(-1)
-        if self.asset.name: self.SetTitle("PyAsset: %s" % self.asset.name)
+        if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
         return
 
     def save_file(self, *args):
-        if not self.asset.filename:
+        if not self.cur_asset.filename:
             self.save_as_file()
         else:
             self.edited = 0
-            self.asset.write_qif()
+            self.cur_asset.write_qif()
         return
 
     def save_as_file(self, *args):
@@ -270,8 +273,8 @@ class AssetFrame(wx.Frame):
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
-            self.asset.write_qif(os.path.join(dir, fname))
-        if self.asset.name: self.SetTitle("PyAsset: %s" % self.asset.name)
+            self.cur_asset.write_qif(os.path.join(dir, fname))
+        if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
         return
 
     def close(self, *args):
@@ -282,7 +285,7 @@ class AssetFrame(wx.Frame):
         nrows = self.cbgrid.GetNumberRows()
         if nrows: self.cbgrid.DeleteRows(0, nrows)
         self.edited = 0
-        self.asset = Asset()
+        self.cur_asset = Asset()
         return
 
     def quit(self, *args):
@@ -402,7 +405,7 @@ class AssetFrame(wx.Frame):
             if error == "":
                 tofile = total_name_qif
                 self.read_csv(fromfile, tofile, deffile)
-                self.asset.read_qif(total_name_qif)
+                self.cur_asset.read_qif(total_name_qif)
                 fromfile.close()
                 deffile.close()
                 self.redraw_all(-1)
@@ -411,7 +414,7 @@ class AssetFrame(wx.Frame):
                 d.ShowModal()
                 d.Destroy()
                 return
-        if self.asset.name: self.SetTitle("PyAsset: %s" % self.asset.name)
+        if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
         return
 
     def export_text(self, *args):
@@ -419,7 +422,7 @@ class AssetFrame(wx.Frame):
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
-            self.asset.write_txt(os.path.join(dir, fname))
+            self.cur_asset.write_txt(os.path.join(dir, fname))
         return
 
     def archive(self, *args):
@@ -441,19 +444,19 @@ class AssetFrame(wx.Frame):
         newcb_starttransaction.date = date
 
         newcb = Asset()
-        newcb.filename = self.asset.filename
-        newcb.name = self.asset.name
+        newcb.filename = self.cur_asset.filename
+        newcb.name = self.cur_asset.name
         newcb.append(newcb_starttransaction)
         archtot = 0
 
-        for transaction in self.asset:
+        for transaction in self.cur_asset:
             if transaction.date < date and transaction.cleared:
                 archive.append(transaction)
                 archtot += transaction.amount
             else:
                 newcb.append(transaction)
         newcb_starttransaction.amount = archtot
-        self.asset = newcb
+        self.cur_asset = newcb
         while 1:
             d = wx.FileDialog(self, "Save Archive As", "", "", "*.qif", wx.SAVE)
             if d.ShowModal() == wx.ID_OK:
@@ -468,7 +471,7 @@ class AssetFrame(wx.Frame):
 
     def newentry(self, *args):
         self.edited = 1
-        self.asset.append(Transaction())
+        self.cur_asset.append(Transaction())
         self.cbgrid.AppendRows()
         ntransactions = self.cbgrid.GetNumberRows()
         self.cbgrid.SetGridCursor(ntransactions - 1, 0)
@@ -476,7 +479,7 @@ class AssetFrame(wx.Frame):
 
     def sort(self, *args):
         self.edited = 1
-        self.asset.sort()
+        self.cur_asset.sort()
         self.redraw_all(-1)
 
     def voidentry(self, *args):
@@ -487,7 +490,7 @@ class AssetFrame(wx.Frame):
                              "Really void?", wx.YES_NO)
         if d.ShowModal() == wx.ID_YES:
             self.edited = 1
-            transaction = self.asset[index]
+            transaction = self.cur_asset[index]
             today = Date()
             transaction.amount = 0
             transaction.payee = "VOID: " + transaction.payee
@@ -502,7 +505,7 @@ class AssetFrame(wx.Frame):
                              "Really delete this transaction?",
                              "Really delete?", wx.YES_NO)
         if d.ShowModal() == wx.ID_YES:
-            del self.asset[index]
+            del self.cur_asset[index]
         self.redraw_all(index - 1)  # only redraw cells [index-1:]
         return
 
@@ -541,13 +544,13 @@ class AssetFrame(wx.Frame):
         transaction.amount = diff
         transaction.cleared = 1
         transaction.memo = "Adjustment"
-        self.asset.append(transaction)
+        self.cur_asset.append(transaction)
         self.redraw_all(-1)  # only redraw [-1]?
         return
 
     def get_cleared_balance(self):
         total = 0.
-        for transaction in self.asset:
+        for transaction in self.cur_asset:
             if transaction.cleared:
                 total = total + transaction.amount
         return total
@@ -574,7 +577,7 @@ class AssetFrame(wx.Frame):
     def markcleared(self, *args):
         index = self.cbgrid.GetGridCursorRow()
         if index < 0: return
-        if not self.asset[index].cleared: self.edited = 1
-        self.asset[index].cleared = 1
+        if not self.cur_asset[index].cleared: self.edited = 1
+        self.cur_asset[index].cleared = 1
         self.cbgrid.SetCellValue(index, 3, 'x')
         return

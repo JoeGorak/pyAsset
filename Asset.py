@@ -117,7 +117,7 @@ class Asset:
         file.close()
         return
 
-    def write_txt(self, filename='pycb.txt'):
+    def write_txt(self, filename='pyasset.txt'):
         file = open(filename, 'w')
         file.write("%s" % self.text_repr())
         file.close()
