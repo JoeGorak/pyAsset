@@ -30,11 +30,11 @@ from Transaction import Transaction
 
 class Asset:
     def __init__(self, filename=None):
-        self.name = ''
-        self.filename = None
+        self.name = filename
+        self.filename = filename
         self.transactions = []
         self.total = 0.
-        if filename:
+        if (filename is not None) and (filename != 'Un-named'):
             self.read_qif(filename)
         return
 
@@ -65,35 +65,35 @@ class Asset:
         lines = mffile.readlines()
         mffile.close()
         transaction = Transaction()
-        type = lines.pop(0)
+        input_type = lines.pop(0)
         for line in lines:
-            type, rest = line[0], line[1:].strip()
-            if type == "D":
+            input_type, rest = line[0], line[1:].strip()
+            if input_type == "D":
                 transaction.setdate(rest)
                 blank_transaction = False
-            elif type == "T":
+            elif input_type == "T":
                 transaction.setamount(rest)
                 blank_transaction = False
-            elif type == "P":
+            elif input_type == "P":
                 transaction.setpayee(rest)
                 blank_transaction = False
-            elif type == "C":
+            elif input_type == "C":
                 transaction.setcleared(rest)
                 blank_transaction = False
-            elif type == "N":
+            elif input_type == "N":
                 transaction.setnumber(rest)
                 blank_transaction = False
-            elif type == "L":
+            elif input_type == "L":
                 transaction.setcomment(rest)
                 blank_transaction = False
-            elif type == "M":
+            elif input_type == "M":
                 transaction.setmemo(rest)
                 blank_transaction = False
-            elif type == "A":
+            elif input_type == "A":
                 total_payee = transaction.getpayee() + " " + rest
                 transaction.setpayee(total_payee)
                 blank_transaction = False
-            elif type == "^":
+            elif input_type == "^":
                 if not blank_transaction:
                     self.transactions.append(transaction)
                     self.total = self.total + transaction.getamount()

@@ -47,11 +47,10 @@ from HelpDialog import HelpDialog
 class AssetFrame(wx.Frame):
     def __init__(self, parent, my_id, title="PyAsset", myfile=None, **kwds):
         self.assets = AssetList()
-        self.assets.append()
+        self.assets.append("Un-named")
         self.cur_asset = self.assets[0]
         self.edited = 0
 
-        # begin wxGlade: AssetFrame.__init__
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, parent, my_id, title, **kwds)
 
@@ -60,7 +59,8 @@ class AssetFrame(wx.Frame):
         if myfile:
             self.cur_asset.read_qif(myfile)
             self.redraw_all(-1)
-        if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
+        if self.cur_asset.name:
+            self.SetTitle("PyAsset: %s" % self.cur_asset.name)
         return
 
     def make_widgets(self):
@@ -171,7 +171,7 @@ class AssetFrame(wx.Frame):
         self.cbgrid.SetColLabelValue(1, "Number")
         self.cbgrid.SetColSize(1, 150)               # was 50 JJG
         self.cbgrid.SetColLabelValue(2, "Payee")
-        self.cbgrid.SetColSize(2, 450)              # was 150  JJG
+        self.cbgrid.SetColSize(2, 500)              # was 150  JJG
         self.cbgrid.SetColLabelValue(3, "X")
         self.cbgrid.SetColSize(3, 20)
         self.cbgrid.SetColLabelValue(4, "Memo")
@@ -261,10 +261,11 @@ class AssetFrame(wx.Frame):
         return
 
     def save_file(self, *args):
-        if not self.cur_asset.filename:
-            self.save_as_file()
-        else:
-            self.edited = 0
+        for cur_asset in self.assets:
+            if not cur_asset.filename:
+                self.save_as_file()
+            else:
+                self.edited = 0
             self.cur_asset.write_qif()
         return
 
