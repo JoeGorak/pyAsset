@@ -82,7 +82,7 @@ if __name__ == '__main__':
     myfile = None
     if len(sys.argv) > 1:
         myfile = sys.argv[1]
-    app = wx.PySimpleApp()
+    app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
     app.frame = AssetFrame(None, -1, 'PyAsset', myfile)
     app.frame.Show()
     app.MainLoop()
