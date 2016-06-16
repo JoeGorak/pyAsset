@@ -48,7 +48,7 @@ class AssetFrame(wx.Frame):
     def __init__(self, parent, my_id, title="PyAsset", myfile=None, **kwds):
         self.assets = AssetList()
         self.assets.append("Un-named")
-        self.cur_asset = self.assets[0]
+        self.cur_asset = self.assets[0][1]
         self.edited = 0
 
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
@@ -235,7 +235,8 @@ class AssetFrame(wx.Frame):
         elif col == 2:
             transaction.setpayee(val)
         elif col == 3:
-            if val: transaction.setcleared('x')
+            if val:
+                transaction.setcleared('x')
         elif col == 4:
             transaction.setmemo(val)
         elif col == 5:
