@@ -27,14 +27,33 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 import os
 from Transaction import Transaction
 
+# Asset Types
+CHECKING = 0
+SAVINGS = 1
+MONEY_MARKET = 2
+OVERDRAFT = 3
+CREDIT_CARD = 4
+STORE_CARD = 5
+RETIREMENT = 6
+OTHER = 7
 
 class Asset:
-    def __init__(self, filename=None):
-        self.name = filename
+    def __init__(self, name=None, filename=None, type = "OTHER", last_pull_date = 0, total = 0.0, limit = 0.0, avail = 0.0, rate = 0.0,
+                 payment = 0.0, due_date = 0, sched = 0, min_pay = 0.0):
+        self.name = name
         self.filename = filename
+        self.type = self.set_type(type)
         self.transactions = []
-        self.total = 0.
-        if (filename is not None) and (filename != 'Un-named'):
+        self.last_pull_date = last_pull_date
+        self.limit = limit
+        self.avail = avail
+        self.rate = rate
+        self.payment = payment
+        self.due_date = due_date
+        self.sched = sched
+        self.min_pay = min_pay
+        self.total = total
+        if (filename is not None):
             self.read_qif(filename)
         return
 
@@ -133,3 +152,105 @@ class Asset:
         for transaction in self.transactions: lines.append(transaction.qif_repr())
         lines.append('')
         return '\n'.join(lines)
+
+    def get_name(self):
+        return self.name
+
+    def get_total(self):
+        return self.total
+
+    def set_total(self, total):
+        self.total = total
+
+    def get_last_pull_date(self):
+        return self.last_pull_date
+
+    def set_last_pull_date(self, last_pull_date):
+        if last_pull_date != 0:
+            self.last_pull_date = str(last_pull_date).split(".")[0]
+
+    def get_limit(self):
+        return self.limit
+
+    def set_limit(self, limit):
+        self.limit = limit
+
+    def get_avail(self):
+        return self.avail
+
+    def set_avail(self, avail):
+        self.avail = avail
+
+    def get_rate(self):
+        return self.rate
+
+    def set_rate(self, rate):
+        self.rate = rate
+
+    def get_payment(self):
+        return self.payment
+
+    def set_payment(self, payment):
+        self.payment = payment
+
+    def get_due_date(self):
+        return self.due_date
+
+    def set_due_date(self, due_date):
+        if due_date != 0:
+            self.due_date = str(due_date).split(" ")[0]
+
+    def get_sched(self):
+        return self.sched
+
+    def set_sched(self, sched):
+        if sched != 0:
+            self.sched = str(sched).split(" ")[0]
+
+    def get_min_pay(self):
+        return self.min_pay
+
+    def set_min_pay(self, min_pay):
+        self.min_pay = min_pay
+
+    def get_type(self):
+        st = self.type
+        if st == CHECKING:
+            return "checking"
+        elif st == SAVINGS:
+            return "savings"
+        elif st == MONEY_MARKET:
+            return "money market"
+        elif st == OVERDRAFT:
+            return "overdraft"
+        elif st == CREDIT_CARD:
+            return "credit card"
+        elif st == STORE_CARD:
+            return "store card"
+        elif st == RETIREMENT:
+            return "retirement"
+        elif st == OTHER:
+            return "other"
+        else:
+            return "unknown type"
+
+    def set_type(self, type):
+        tu = type.upper()
+        if tu == "CHECKING":
+            self.type = CHECKING
+        elif tu == "SAVINGS":
+            self.type = SAVINGS
+        elif tu == "MONEY MARKET":
+            self.type = MONEY_MARKET
+        elif tu == "OVERDRAFT":
+            self.type = OVERDRAFT
+        elif tu == "CREDIT CARD":
+            self.type = CREDIT_CARD
+        elif tu == "STORE CARD":
+            self.type = STORE_CARD
+        elif tu == "RETIREMENT":
+            self.type = RETIREMENT
+        elif tu == "OTHER":
+            self.type = OTHER
+        else:
+            self.type = OTHER

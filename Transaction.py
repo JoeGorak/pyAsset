@@ -27,7 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 from Date import Date
 
-
 def string_limit(mystr, limit):
     if mystr and mystr > limit:
         mystr = mystr[:limit]

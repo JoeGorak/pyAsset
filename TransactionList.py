@@ -22,30 +22,30 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
 #  Version information
-#  6/15/2016     Initial version v0.1
+#  6/25/2016     Initial version v0.1
 
 from collections import namedtuple
-from Asset import Asset
+from Transaction import Transaction
 
 
-class AssetList:
+class TansactionList:
     def __init__(self):
         # type: () -> object
-        self.assets = []
+        self.transactions = []
 
     def __len__(self):
-        return len(self.assets)
+        return len(self.transactions)
 
     def __getitem__(self, i):
-        return self.assets[i]
+        return self.transactions[i]
 
     def __setitem__(self, i, val):
-        self.assets[i] = val
+        self.transactions[i] = val
 
     def __str__(self):
         ret_str = ""
-        for i in range(len(self.assets)):
-            cur_asset = self.assets[i]
+        for i in range(len(self.transactions)):
+            cur_asset = self.transactions[i]
             cd = cur_asset.details
             ret_str += "%-10s $%8.2f %s %s" % (cur_asset.name, cd.get_total(), cd.get_last_pull_date(), cd.get_type())
             limit = cd.get_limit()
@@ -70,10 +70,10 @@ class AssetList:
         return ret_str
 
     def __delitem__(self, i):
-        del self.assets[i]
+        del self.transactions[i]
 
-    def append(self, myname):
-        nt = namedtuple('Asset','name,details')
-        account = nt(myname, Asset(myname))
-        self.assets.append(account)
-        return account
+    def append(self, myname, myfile=None):
+        nt = namedtuple('Transaction','name,details')
+        transaction = nt(myname, Transaction(myname, myfile))
+        self.transactions.append(transaction)
+        return transaction
