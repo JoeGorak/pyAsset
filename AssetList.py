@@ -72,8 +72,8 @@ class AssetList:
     def __delitem__(self, i):
         del self.assets[i]
 
-    def append(self, myname):
+    def append(self, name):
         nt = namedtuple('Asset','name,details')
-        account = nt(myname, Asset(myname))
+        account = nt(name, Asset(name))
         self.assets.append(account)
         return account

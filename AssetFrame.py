@@ -58,23 +58,23 @@ class AssetFrame(wx.Frame):
         self.col = 0
 
         # Define the layout of the grid in the frame
-        ACCT_NAME_COL = 0
-        ACCT_CURR_VAL_COL = 1
-        ACCT_PROJ_VAL_COL = 2
-        ACCT_LAST_PULL_COL = 3
-        ACCT_LIMIT_COL = 4
-        ACCT_AVAIL_ONLINE_COL = 5
-        ACCT_AVAIL_PROJ_COL = 6
-        ACCT_RATE_COL = 7
-        ACCT_PAYMENT_COL = 8
-        ACCT_DUE_DATE_COL = 9
-        ACCT_SCHED_DATE_COL = 10
-        ACCT_MIN_PMT_COL = 11
-        ACCT_STMT_BAL_COL = 12
-        ACCT_AMT_OVER_COL = 13
-        ACCT_CASH_LIMIT_COL = 14
-        ACCT_CASH_USED_COL = 15
-        ACCT_CASH_AVAIL_COL = 16
+        self.ACCT_NAME_COL = 0
+        self.ACCT_CURR_VAL_COL = 1
+        self.ACCT_PROJ_VAL_COL = 2
+        self.ACCT_LAST_PULL_COL = 3
+        self.ACCT_LIMIT_COL = 4
+        self.ACCT_AVAIL_ONLINE_COL = 5
+        self.ACCT_AVAIL_PROJ_COL = 6
+        self.ACCT_RATE_COL = 7
+        self.ACCT_PAYMENT_COL = 8
+        self.ACCT_DUE_DATE_COL = 9
+        self.ACCT_SCHED_DATE_COL = 10
+        self.ACCT_MIN_PMT_COL = 11
+        self.ACCT_STMT_BAL_COL = 12
+        self.ACCT_AMT_OVER_COL = 13
+        self.ACCT_CASH_LIMIT_COL = 14
+        self.ACCT_CASH_USED_COL = 15
+        self.ACCT_CASH_AVAIL_COL = 16
 
         # Define the widths of the columns in the grid
         ACCT_NAME_COL_WIDTH = 150
@@ -111,26 +111,25 @@ class AssetFrame(wx.Frame):
         self.WIDTH_COL = 1
         self.TYPE_COL = 2
         self.EDIT_COL = 3
-        self.METHOD_COL = 4
 
         # Grid layout array
-        self.col_info = [[ACCT_NAME_COL, ACCT_NAME_COL_WIDTH, STRING_TYPE, EDITABLE, self.display_asset.get_name()],
-                         [ACCT_CURR_VAL_COL, ACCT_CURR_VAL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, self.display_asset.get_total()],
-                         [ACCT_PROJ_VAL_COL, ACCT_PROJ_VAL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, self.display_asset.get_total()],
-                         [ACCT_LAST_PULL_COL, ACCT_LAST_PULL_COL_WIDTH, DATE_TIME_TYPE, NOT_EDITABLE, self.display_asset.get_last_pull_date()],
-                         [ACCT_LIMIT_COL, ACCT_LIMIT_COL_WIDTH, DOLLAR_TYPE, EDITABLE, self.display_asset.get_limit()],
-                         [ACCT_AVAIL_ONLINE_COL, ACCT_AVAIL_ONLINE_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, self.display_asset.get_avail()],
-                         [ACCT_AVAIL_PROJ_COL, ACCT_AVAIL_PROJ_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, self.display_asset.get_avail()],
-                         [ACCT_RATE_COL, ACCT_RATE_COL_WIDTH, RATE_TYPE, EDITABLE, self.display_asset.get_rate()],
-                         [ACCT_PAYMENT_COL, ACCT_PAYMENT_COL_WIDTH, DOLLAR_TYPE, EDITABLE, self.display_asset.get_payment()],
-                         [ACCT_DUE_DATE_COL, ACCT_DUE_DATE_COL_WIDTH, DATE_TYPE, EDITABLE, self.display_asset.get_due_date()],
-                         [ACCT_SCHED_DATE_COL, ACCT_SCHED_DATE_COL_WIDTH, DATE_TYPE, EDITABLE, self.display_asset.get_sched()],
-                         [ACCT_MIN_PMT_COL, ACCT_MIN_PMT_COL_WIDTH, DOLLAR_TYPE, EDITABLE, self.display_asset.get_min_pay()],
-                         [ACCT_STMT_BAL_COL, ACCT_STMT_BAL_COL_WIDTH, DOLLAR_TYPE, EDITABLE, None],
-                         [ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None],
-                         [ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, DOLLAR_TYPE, EDITABLE, None],
-                         [ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None],
-                         [ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None]
+        self.col_info = [[self.ACCT_NAME_COL, ACCT_NAME_COL_WIDTH, STRING_TYPE, EDITABLE],
+                         [self.ACCT_CURR_VAL_COL, ACCT_CURR_VAL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_PROJ_VAL_COL, ACCT_PROJ_VAL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_LAST_PULL_COL, ACCT_LAST_PULL_COL_WIDTH, DATE_TIME_TYPE, NOT_EDITABLE],
+                         [self.ACCT_LIMIT_COL, ACCT_LIMIT_COL_WIDTH, DOLLAR_TYPE, EDITABLE],
+                         [self.ACCT_AVAIL_ONLINE_COL, ACCT_AVAIL_ONLINE_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_AVAIL_PROJ_COL, ACCT_AVAIL_PROJ_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_RATE_COL, ACCT_RATE_COL_WIDTH, RATE_TYPE, EDITABLE],
+                         [self.ACCT_PAYMENT_COL, ACCT_PAYMENT_COL_WIDTH, DOLLAR_TYPE, EDITABLE],
+                         [self.ACCT_DUE_DATE_COL, ACCT_DUE_DATE_COL_WIDTH, DATE_TYPE, EDITABLE],
+                         [self.ACCT_SCHED_DATE_COL, ACCT_SCHED_DATE_COL_WIDTH, DATE_TYPE, EDITABLE],
+                         [self.ACCT_MIN_PMT_COL, ACCT_MIN_PMT_COL_WIDTH, DOLLAR_TYPE, EDITABLE],
+                         [self.ACCT_STMT_BAL_COL, ACCT_STMT_BAL_COL_WIDTH, DOLLAR_TYPE, EDITABLE],
+                         [self.ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, DOLLAR_TYPE, EDITABLE],
+                         [self.ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE]
                         ]
 
         if style == None:
@@ -157,7 +156,36 @@ class AssetFrame(wx.Frame):
         return self.col_info[i][self.EDIT_COL]
 
     def getColMethod(self,i):
-        return self.col_info[i][self.METHOD_COL]
+        if i == self.ACCT_NAME_COL:
+            return self.display_asset.details.name
+        elif i == self.ACCT_CURR_VAL_COL:
+            return self.display_asset.details.total
+        elif i == self.ACCT_PROJ_VAL_COL:
+            return self.display_asset.details.total
+        elif i == self.ACCT_LAST_PULL_COL:
+            return self.display_asset.details.last_pull_date
+        elif i == self.ACCT_LIMIT_COL:
+            return self.display_asset.details.limit
+        elif i == self.ACCT_AVAIL_ONLINE_COL:
+            return self.display_asset.details.avail
+        elif i == self.ACCT_AVAIL_PROJ_COL:
+            return self.display_asset.details.avail
+        elif i == self.ACCT_RATE_COL:
+            return self.display_asset.details.rate
+        elif i == self.ACCT_PAYMENT_COL:
+            return self.display_asset.details.payment
+        elif i == self.ACCT_DUE_DATE_COL:
+            return self.display_asset.details.due_date
+        elif i == self.ACCT_SCHED_DATE_COL:
+            return self.display_asset.details.sched
+        elif i == self.ACCT_MIN_PMT_COL:
+            return self.display_asset.details.min_pay
+#                         [ACCT_STMT_BAL_COL, ACCT_STMT_BAL_COL_WIDTH, DOLLAR_TYPE, EDITABLE, None],
+#                         [ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None],
+#                         [ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, DOLLAR_TYPE, EDITABLE, None],
+#                         [ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None],
+#                         [ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None]
+        return "??"
 
     def getNumLayoutCols(self):
         return len(self.col_info)
@@ -289,7 +317,7 @@ class AssetFrame(wx.Frame):
                 if cellValue != None:
                     cellType = self.getColType(col)
                     # add code to set tableValue based on cellType and cellValue
-                    tableValue = "This is col %d" % (col)
+                    tableValue = "%s" % (cellValue)
                     self.cbgrid.SetCellValue(i, col, tableValue)
         if index == -1:
             self.cbgrid.SetGridCursor(nassets - 1, 0)
@@ -527,7 +555,8 @@ class AssetFrame(wx.Frame):
                 for i in range(len(latest_assets)):
                     xlsm_asset = latest_assets.__getitem__(i)
                     self.cur_asset = copy.deepcopy(xlsm_asset)
-                    self.assets.__setitem__(i+len(self.assets), xlsm_asset)
+                    self.assets.append(self.cur_asset[0])
+                    self.assets[i] = xlsm_asset
                 self.redraw_all(-1)
             else:
                 d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
