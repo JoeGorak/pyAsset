@@ -47,15 +47,14 @@ from ExcelToAsset import ExcelToAsset
 
 
 class AssetFrame(wx.Frame):
-    num_rows = 0
 
     def __init__(self, style, parent, my_id, title="PyAsset:Asset", myfile=None, **kwds):
         self.assets = AssetList()
         self.cur_asset = None
         self.display_asset = Asset()            # used to update grid on the screen
         self.edited = 0
-        self.row = 0
-        self.col = 0
+        self.rowSize = 27
+        self.colSize = 20
 
         # Define the layout of the grid in the frame
         self.ACCT_NAME_COL = 0
@@ -80,7 +79,7 @@ class AssetFrame(wx.Frame):
         ACCT_NAME_COL_WIDTH = 150
         ACCT_CURR_VAL_COL_WIDTH = 75
         ACCT_PROJ_VAL_COL_WIDTH = 75
-        ACCT_LAST_PULL_COL_WIDTH = 100
+        ACCT_LAST_PULL_COL_WIDTH = 120
         ACCT_LIMIT_COL_WIDTH = 80
         ACCT_AVAIL_ONLINE_COL_WIDTH = 80
         ACCT_AVAIL_PROJ_COL_WIDTH = 80
@@ -143,7 +142,7 @@ class AssetFrame(wx.Frame):
             self.cur_asset.read_qif(myfile)
             self.redraw_all(-1)
             if self.cur_asset.get_name() != None:
-                self.SetTitle("PyAsset: %s" % self.cur_asset.get_name())
+                self.SetTitle("PyAsset: Asset %s" % self.cur_asset.get_name())
         return
 
     def getColWidth(self, i):
@@ -286,47 +285,57 @@ class AssetFrame(wx.Frame):
         for i in range(len(statusbar_fields)):
             self.statusbar.SetStatusText(statusbar_fields[i], i)
         self.cbgrid.CreateGrid(0, len(columnNames))
-        self.cbgrid.SetRowLabelSize(40)
-        self.cbgrid.SetColLabelSize(20)
-        total_width = 0
+        self.cbgrid.SetRowLabelSize(self.rowSize)
+        self.cbgrid.SetColLabelSize(self.colSize)
+        self.total_width = 60                   # non-zero start value to account for record number of cbgrid frame!
         for i in range(len(columnNames)):
             self.cbgrid.SetColLabelValue(i, columnNames[i])
             cur_width = self.getColWidth(i)
-            total_width += cur_width
+            self.total_width += cur_width
             self.cbgrid.SetColSize(i, cur_width)
-        self.cbgrid.SetSize((total_width, 600))
+        nassets = len(self.assets)
+        self.SetSize(size=(self.total_width, nassets*self.rowSize))
+        self.Show()
 
     def do_layout(self):
-        sizer_1 = wx.BoxSizer(wx.VERTICAL)
-        sizer_1.Add(self.cbgrid, 1, wx.EXPAND, 0)
-        self.SetAutoLayout(1)
-        self.SetSizer(sizer_1)
-        sizer_1.Fit(self)
-#        sizer_1.SetSizeHs(self)  # Not sure what to do with this??  JJG 6/25/2016
+        self.sizer_1 = wx.BoxSizer(wx.VERTICAL)
+        self.sizer_1.Add(self.cbgrid, 1, wx.EXPAND, 0)
+        self.SetSizer(self.sizer_1)
+        self.SetAutoLayout(True)
+        self.sizer_1.Fit(self)
+        self.sizer_1.SetSizeHints(self)
         self.Layout()
+        self.Show()
 
     def redraw_all(self, index=None):
         nrows = self.cbgrid.GetNumberRows()
-        if nrows: self.cbgrid.DeleteRows(0, nrows)
+        if nrows > 0:
+            self.cbgrid.DeleteRows(0, nrows)
         nassets = len(self.assets)
-        self.cbgrid.AppendRows(nassets)
+        if nrows < nassets:
+            rows_needed = nassets - nrows
+            self.cbgrid.AppendRows(rows_needed)
         for i in range(nassets):
             self.display_asset = copy.deepcopy(self.assets[i])
             for col in range(self.getNumLayoutCols()):
                 cellValue = self.getColMethod(col)
                 if cellValue != None:
                     cellType = self.getColType(col)
-                    # add code to set tableValue based on cellType and cellValue
+                    # add code to set tableValue based on cellType and cellValue  use
                     tableValue = "%s" % (cellValue)
                     self.cbgrid.SetCellValue(i, col, tableValue)
         if index == -1:
-            self.cbgrid.SetGridCursor(nassets - 1, 0)
-            self.cbgrid.MakeCellVisible(nassets - 1, 1)
+            self.cbgrid.SetGridCursor(nassets-1, 0)
+            self.cbgrid.MakeCellVisible(nassets-1, True)
         elif index > 0:
             self.cbgrid.SetGridCursor(index, 0)
-            self.cbgrid.MakeCellVisible(index, 1)
+            self.cbgrid.MakeCellVisible(index, True)
+        nassets = len(self.assets)
+        self.SetSize(size=(self.total_width, nassets*self.rowSize))
+        self.Show()
         return
 
+# TODO: Rewrite cellchange to work will cell_info and Asset vice hard_coded transaction values!   JJG 06/27/2016
     def cellchange(self, evt):
         doredraw = 0
         row = evt.GetRow()
@@ -391,13 +400,18 @@ class AssetFrame(wx.Frame):
 
     def close(self, *args):
         if self.edited:
-            d = wx.MessageDialog(self, 'Save file before closing', 'Question',
+            d = wx.MessageDialog(self, 'Save file before closing?', 'Question',
                                  wx.YES_NO)
-            if d.ShowModal() == wx.ID_YES: self.save_file()
-        nrows = self.cbgrid.GetNumberRows()
-        if nrows: self.cbgrid.DeleteRows(0, nrows)
-        self.edited = 0
+            if d.ShowModal() == wx.ID_YES:
+                self.save_file()
+        self.assets = AssetList()
         self.cur_asset = Asset()
+        nrows = self.cbgrid.GetNumberRows()
+        if nrows > 0:
+            self.cbgrid.DeleteRows(0, nrows)
+            self.redraw_all(-1)
+        self.edited = 0
+        self.SetTitle("PyAsset: Asset")
         return
 
     def quit(self, *args):
@@ -547,24 +561,26 @@ class AssetFrame(wx.Frame):
             fromfile.close()
 
             if error == "":
+                self.cur_assets = None
                 xlsm = ExcelToAsset()
                 xlsm.OpenXLSMFile(total_name_in)
                 latest_assets = xlsm.ProcessAssetsSheet()
 #                print latest_assets
-#TODO Need to add check if an account from latest_asstes is already in self.assets!
+#TODO Need to add check if an account from latest_assets is already in self.assets! (keep track of num_updated and skip redraw if none updated
                 for i in range(len(latest_assets)):
                     xlsm_asset = latest_assets.__getitem__(i)
                     self.cur_asset = copy.deepcopy(xlsm_asset)
                     self.assets.append(self.cur_asset[0])
-                    self.assets[i] = xlsm_asset
+                    self.assets[i] = copy.deepcopy(xlsm_asset)
+                if self.cur_asset.name:
+                    self.SetTitle("PyAsset: Asset %s" % total_name_in)
                 self.redraw_all(-1)
+                return
             else:
                 d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
                 d.ShowModal()
                 d.Destroy()
                 return
-        if self.cur_asset.name: self.SetTitle("PyAsset: Asset %s" % self.cur_asset.name)
-        return
 
     def export_text(self, *args):
         d = wx.FileDialog(self, "Save", "", "", "*.txt", wx.SAVE)
