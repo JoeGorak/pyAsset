@@ -95,11 +95,11 @@ class AssetFrame(wx.Frame):
         ACCT_CASH_AVAIL_COL_WIDTH = 8
 
         # Define what the valid input data types are
-        DOLLAR_TYPE = 0
-        RATE_TYPE = 1
-        DATE_TYPE = 2
-        DATE_TIME_TYPE = 3
-        STRING_TYPE = 4
+        self.DOLLAR_TYPE = 0
+        self.RATE_TYPE = 1
+        self.DATE_TYPE = 2
+        self.DATE_TIME_TYPE = 3
+        self.STRING_TYPE = 4
 
         # Define if field is editable or not
         NOT_EDITABLE = -1
@@ -112,23 +112,23 @@ class AssetFrame(wx.Frame):
         self.EDIT_COL = 3
 
         # Grid layout array
-        self.col_info = [[self.ACCT_NAME_COL, ACCT_NAME_COL_WIDTH, STRING_TYPE, EDITABLE],
-                         [self.ACCT_CURR_VAL_COL, ACCT_CURR_VAL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
-                         [self.ACCT_PROJ_VAL_COL, ACCT_PROJ_VAL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
-                         [self.ACCT_LAST_PULL_COL, ACCT_LAST_PULL_COL_WIDTH, DATE_TIME_TYPE, NOT_EDITABLE],
-                         [self.ACCT_LIMIT_COL, ACCT_LIMIT_COL_WIDTH, DOLLAR_TYPE, EDITABLE],
-                         [self.ACCT_AVAIL_ONLINE_COL, ACCT_AVAIL_ONLINE_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
-                         [self.ACCT_AVAIL_PROJ_COL, ACCT_AVAIL_PROJ_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
-                         [self.ACCT_RATE_COL, ACCT_RATE_COL_WIDTH, RATE_TYPE, EDITABLE],
-                         [self.ACCT_PAYMENT_COL, ACCT_PAYMENT_COL_WIDTH, DOLLAR_TYPE, EDITABLE],
-                         [self.ACCT_DUE_DATE_COL, ACCT_DUE_DATE_COL_WIDTH, DATE_TYPE, EDITABLE],
-                         [self.ACCT_SCHED_DATE_COL, ACCT_SCHED_DATE_COL_WIDTH, DATE_TYPE, EDITABLE],
-                         [self.ACCT_MIN_PMT_COL, ACCT_MIN_PMT_COL_WIDTH, DOLLAR_TYPE, EDITABLE],
-                         [self.ACCT_STMT_BAL_COL, ACCT_STMT_BAL_COL_WIDTH, DOLLAR_TYPE, EDITABLE],
-                         [self.ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
-                         [self.ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, DOLLAR_TYPE, EDITABLE],
-                         [self.ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE],
-                         [self.ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE]
+        self.col_info = [[self.ACCT_NAME_COL, ACCT_NAME_COL_WIDTH, self.STRING_TYPE, EDITABLE],
+                         [self.ACCT_CURR_VAL_COL, ACCT_CURR_VAL_COL_WIDTH, self.DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_PROJ_VAL_COL, ACCT_PROJ_VAL_COL_WIDTH, self.DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_LAST_PULL_COL, ACCT_LAST_PULL_COL_WIDTH, self.DATE_TIME_TYPE, NOT_EDITABLE],
+                         [self.ACCT_LIMIT_COL, ACCT_LIMIT_COL_WIDTH, self.DOLLAR_TYPE, EDITABLE],
+                         [self.ACCT_AVAIL_ONLINE_COL, ACCT_AVAIL_ONLINE_COL_WIDTH, self.DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_AVAIL_PROJ_COL, ACCT_AVAIL_PROJ_COL_WIDTH, self.DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_RATE_COL, ACCT_RATE_COL_WIDTH, self.RATE_TYPE, EDITABLE],
+                         [self.ACCT_PAYMENT_COL, ACCT_PAYMENT_COL_WIDTH, self.DOLLAR_TYPE, EDITABLE],
+                         [self.ACCT_DUE_DATE_COL, ACCT_DUE_DATE_COL_WIDTH, self.DATE_TYPE, EDITABLE],
+                         [self.ACCT_SCHED_DATE_COL, ACCT_SCHED_DATE_COL_WIDTH, self.DATE_TYPE, EDITABLE],
+                         [self.ACCT_MIN_PMT_COL, ACCT_MIN_PMT_COL_WIDTH, self.DOLLAR_TYPE, EDITABLE],
+                         [self.ACCT_STMT_BAL_COL, ACCT_STMT_BAL_COL_WIDTH, self.DOLLAR_TYPE, EDITABLE],
+                         [self.ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, self.DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, self.DOLLAR_TYPE, EDITABLE],
+                         [self.ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, self.DOLLAR_TYPE, NOT_EDITABLE],
+                         [self.ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, self.DOLLAR_TYPE, NOT_EDITABLE]
                         ]
 
         if style == None:
@@ -318,11 +318,72 @@ class AssetFrame(wx.Frame):
         for i in range(nassets):
             self.display_asset = copy.deepcopy(self.assets[i])
             for col in range(self.getNumLayoutCols()):
-                cellValue = self.getColMethod(col)
-                if cellValue != None:
+                cellValue = str(self.getColMethod(col))
+                if (cellValue == "0" or cellValue == "0.0" or cellValue == "??") and col != self.ACCT_CURR_VAL_COL and col != self.ACCT_PROJ_VAL_COL:
+                    continue
+                else:
                     cellType = self.getColType(col)
-                    # add code to set tableValue based on cellType and cellValue  use
-                    tableValue = "%s" % (cellValue)
+                    if cellType == self.DOLLAR_TYPE:
+                        amount = float(cellValue)
+                        if amount < 0:
+                            negative = True
+                            amount = -amount
+                        else:
+                            negative = False
+                        dotPos = cellValue.find(".")
+                        if dotPos == -1:
+                            cent_val = 0
+                        else:
+                            cent_val = int(cellValue[dotPos + 1:])
+                            if dotPos == len(cellValue)-2:
+                                cent_val *= 10
+                        cents = "%02d" % (cent_val)
+                        cents = str(cents)
+                        groups = [cents]
+                        groups.append(".")
+                        amount -= float(cent_val)/100
+                        if amount < 1:
+                            groups.append("0")
+                            groups.append(",")
+                        while amount > 1:
+                            next_digits = "%s" % str((int(amount) % 1000))
+                            while len(next_digits) < 3:
+                                if amount > 100:
+                                    digit = "0"
+                                else:
+                                    digit = " "
+                                next_digits = digit + next_digits
+                            groups.append(next_digits)
+                            groups.append(",")
+                            amount /= 1000
+                        str_out = ""
+                        for j in range(len(groups)-2, -1, -1):
+                            str_out += str(groups[j])
+                        if negative:
+                            tableValue = "-$%13s" % (str_out)
+                        else:
+                            tableValue = " $%13s" % (str_out)
+                    elif cellType == self.RATE_TYPE:
+                        rate = float(cellValue)
+                        tableValue = "%13.3f%%" % (rate*100.0)
+                    elif cellType == self.DATE_TYPE:
+                        dateParts = cellValue.split("-")
+                        month = dateParts[1]
+                        day = dateParts[2]
+                        year = dateParts[0]
+                        tableValue = "%02s/%02s/%04s" % (month, day, year)
+                    elif cellType == self.DATE_TIME_TYPE:
+                        datetimeParts = cellValue.split(" ")
+                        dateParts = datetimeParts[0].split("-")
+                        time = datetimeParts[1]
+                        month = dateParts[1]
+                        day = dateParts[2]
+                        year = dateParts[0]
+                        tableValue = "%02s/%02s/%04s %s" % (month, day, year, time)
+                    elif cellType == self.STRING_TYPE:
+                        tableValue = cellValue
+                    else:
+                        tableValue = "Bad: %s" % (cellValue)
                     self.cbgrid.SetCellValue(i, col, tableValue)
         if index == -1:
             self.cbgrid.SetGridCursor(nassets-1, 0)
@@ -335,7 +396,7 @@ class AssetFrame(wx.Frame):
         self.Show()
         return
 
-# TODO: Rewrite cellchange to work will cell_info and Asset vice hard_coded transaction values!   JJG 06/27/2016
+# TODO: Rewrite cellchange to work with cell_info and Asset vice hard_coded transaction values!   JJG 06/27/2016
     def cellchange(self, evt):
         doredraw = 0
         row = evt.GetRow()
@@ -345,7 +406,7 @@ class AssetFrame(wx.Frame):
             print "Warning: modifying incorrect cell!"
             return
         self.edited = 1
-        transaction = self.cur_asset[row]
+        transaction = self.assets[row]
         val = self.cbgrid.GetCellValue(row, col)
         if col == 0:
             transaction.setdate(val)
