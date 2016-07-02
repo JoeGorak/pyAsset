@@ -102,8 +102,8 @@ class AssetFrame(wx.Frame):
         self.STRING_TYPE = 4
 
         # Define if field is editable or not
-        NOT_EDITABLE = -1
-        EDITABLE = 0
+        NOT_EDITABLE = True
+        EDITABLE = False
 
         # Define indices of columns in grid layout array
         self.NAME_COL = 0
@@ -133,7 +133,7 @@ class AssetFrame(wx.Frame):
 
         if style == None:
             style = wx.DEFAULT_FRAME_STYLE
-        kwds["style"] = wx.DEFAULT_FRAME_STYLE
+        kwds["style"] = style
         wx.Frame.__init__(self, parent, my_id, title, **kwds)
 
         self.make_widgets()
@@ -317,7 +317,11 @@ class AssetFrame(wx.Frame):
             self.cbgrid.AppendRows(rows_needed)
         for i in range(nassets):
             self.display_asset = copy.deepcopy(self.assets[i])
+            col_inf = copy.deepcopy(self.col_info[i])
             for col in range(self.getNumLayoutCols()):
+                self.cbgrid.SetCellTextColour(i, col, 'black')
+                self.cbgrid.SetReadOnly(i, col, col_inf[self.EDIT_COL])
+                self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
                 cellValue = str(self.getColMethod(col))
                 if (cellValue == "0" or cellValue == "0.0" or cellValue == "??") and col != self.ACCT_CURR_VAL_COL and col != self.ACCT_PROJ_VAL_COL:
                     continue
@@ -360,6 +364,7 @@ class AssetFrame(wx.Frame):
                         for j in range(len(groups)-2, -1, -1):
                             str_out += str(groups[j])
                         if negative:
+                            self.cbgrid.SetCellTextColour(i, col, 'red')
                             tableValue = "-$%13s" % (str_out)
                         else:
                             tableValue = " $%13s" % (str_out)
@@ -371,6 +376,7 @@ class AssetFrame(wx.Frame):
                         month = dateParts[1]
                         day = dateParts[2]
                         year = dateParts[0]
+                        self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
                         tableValue = "%02s/%02s/%04s" % (month, day, year)
                     elif cellType == self.DATE_TIME_TYPE:
                         datetimeParts = cellValue.split(" ")
@@ -379,10 +385,13 @@ class AssetFrame(wx.Frame):
                         month = dateParts[1]
                         day = dateParts[2]
                         year = dateParts[0]
+                        self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
                         tableValue = "%02s/%02s/%04s %s" % (month, day, year, time)
                     elif cellType == self.STRING_TYPE:
+                        self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_LEFT, wx.ALIGN_CENTER)
                         tableValue = cellValue
                     else:
+                        self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_LEFT, wx.ALIGN_CENTER)
                         tableValue = "Bad: %s" % (cellValue)
                     self.cbgrid.SetCellValue(i, col, tableValue)
         if index == -1:
