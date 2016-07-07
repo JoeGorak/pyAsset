@@ -317,8 +317,8 @@ class AssetFrame(wx.Frame):
             self.cbgrid.AppendRows(rows_needed)
         for i in range(nassets):
             self.display_asset = copy.deepcopy(self.assets[i])
-            col_inf = copy.deepcopy(self.col_info[i])
             for col in range(self.getNumLayoutCols()):
+                col_inf = copy.deepcopy(self.col_info[col])
                 self.cbgrid.SetCellTextColour(i, col, 'black')
                 self.cbgrid.SetReadOnly(i, col, col_inf[self.EDIT_COL])
                 self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
