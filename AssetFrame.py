@@ -145,6 +145,9 @@ class AssetFrame(wx.Frame):
                 self.SetTitle("PyAsset: Asset %s" % self.cur_asset.get_name())
         return
 
+    def getColName(self,i):
+        return self.col_info[i][self.NAME_COL]
+
     def getColWidth(self, i):
         return self.col_info[i][self.WIDTH_COL]
 
@@ -318,9 +321,8 @@ class AssetFrame(wx.Frame):
         for i in range(nassets):
             self.display_asset = copy.deepcopy(self.assets[i])
             for col in range(self.getNumLayoutCols()):
-                col_inf = copy.deepcopy(self.col_info[col])
                 self.cbgrid.SetCellTextColour(i, col, 'black')
-                self.cbgrid.SetReadOnly(i, col, col_inf[self.EDIT_COL])
+                self.cbgrid.SetReadOnly(i, col, self.getColEdit(col))
                 self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
                 cellValue = str(self.getColMethod(col))
                 if (cellValue == "0" or cellValue == "0.0" or cellValue == "??") and col != self.ACCT_CURR_VAL_COL and col != self.ACCT_PROJ_VAL_COL:
@@ -418,6 +420,7 @@ class AssetFrame(wx.Frame):
         if col_inf[self.EDIT_COL] == self.NOT_EDITABLE:
             print "Warning: attempt to edit non-editable column!"
             return
+        self.display_asset = copy.deepcopy(self.assets[row])
         self.edited = 1
         transaction = self.assets[row]
         val = self.cbgrid.GetCellValue(row, col)
