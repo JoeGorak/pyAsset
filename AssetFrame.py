@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  Version information
 #  6/11/2016     Initial version v0.1
 
-# To Do list:
+# To Do list (possible new features?):
 # Speed redraw_all: break o redraw_all, redraw_range, redraw_totals
 # Save a backup version of files
 # Read and save CBB files?
@@ -34,12 +34,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # goto date
 
 import wx
-import wx.grid
 import csv
 import os
 import copy
 from Asset import Asset
 from AssetList import AssetList
+from AssetGrid import AssetGrid
 from Date import Date
 from Transaction import Transaction
 from HelpDialog import HelpDialog
@@ -47,89 +47,12 @@ from ExcelToAsset import ExcelToAsset
 
 
 class AssetFrame(wx.Frame):
-
     def __init__(self, style, parent, my_id, title="PyAsset:Asset", myfile=None, **kwds):
         self.assets = AssetList()
         self.cur_asset = None
-        self.display_asset = Asset()            # used to update grid on the screen
         self.edited = 0
         self.rowSize = 27
         self.colSize = 20
-
-        # Define the layout of the grid in the frame
-        self.ACCT_NAME_COL = 0
-        self.ACCT_CURR_VAL_COL = 1
-        self.ACCT_PROJ_VAL_COL = 2
-        self.ACCT_LAST_PULL_COL = 3
-        self.ACCT_LIMIT_COL = 4
-        self.ACCT_AVAIL_ONLINE_COL = 5
-        self.ACCT_AVAIL_PROJ_COL = 6
-        self.ACCT_RATE_COL = 7
-        self.ACCT_PAYMENT_COL = 8
-        self.ACCT_DUE_DATE_COL = 9
-        self.ACCT_SCHED_DATE_COL = 10
-        self.ACCT_MIN_PMT_COL = 11
-        self.ACCT_STMT_BAL_COL = 12
-        self.ACCT_AMT_OVER_COL = 13
-        self.ACCT_CASH_LIMIT_COL = 14
-        self.ACCT_CASH_USED_COL = 15
-        self.ACCT_CASH_AVAIL_COL = 16
-
-        # Define the widths of the columns in the grid
-        ACCT_NAME_COL_WIDTH = 150
-        ACCT_CURR_VAL_COL_WIDTH = 75
-        ACCT_PROJ_VAL_COL_WIDTH = 75
-        ACCT_LAST_PULL_COL_WIDTH = 120
-        ACCT_LIMIT_COL_WIDTH = 80
-        ACCT_AVAIL_ONLINE_COL_WIDTH = 80
-        ACCT_AVAIL_PROJ_COL_WIDTH = 80
-        ACCT_RATE_COL_WIDTH = 5
-        ACCT_PAYMENT_COL_WIDTH = 9
-        ACCT_DUE_DATE_COL_WIDTH = 75
-        ACCT_SCHED_DATE_COL_WIDTH = 75
-        ACCT_MIN_PMT_COL_WIDTH = 8
-        ACCT_STMT_BAL_COL_WIDTH = 8
-        ACCT_AMT_OVER_COL_WIDTH = 8
-        ACCT_CASH_LIMIT_COL_WIDTH = 8
-        ACCT_CASH_USED_COL_WIDTH = 8
-        ACCT_CASH_AVAIL_COL_WIDTH = 8
-
-        # Define what the valid input data types are
-        self.DOLLAR_TYPE = 0
-        self.RATE_TYPE = 1
-        self.DATE_TYPE = 2
-        self.DATE_TIME_TYPE = 3
-        self.STRING_TYPE = 4
-
-        # Define if field is editable or not
-        self.NOT_EDITABLE = True
-        self.EDITABLE = False
-
-        # Define indices of columns in grid layout array
-        self.NAME_COL = 0
-        self.WIDTH_COL = 1
-        self.TYPE_COL = 2
-        self.EDIT_COL = 3
-
-        # Grid layout array
-        self.col_info = [[self.ACCT_NAME_COL, ACCT_NAME_COL_WIDTH, self.STRING_TYPE, self.EDITABLE],
-                         [self.ACCT_CURR_VAL_COL, ACCT_CURR_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE],
-                         [self.ACCT_PROJ_VAL_COL, ACCT_PROJ_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE],
-                         [self.ACCT_LAST_PULL_COL, ACCT_LAST_PULL_COL_WIDTH, self.DATE_TIME_TYPE, self.NOT_EDITABLE],
-                         [self.ACCT_LIMIT_COL, ACCT_LIMIT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE],
-                         [self.ACCT_AVAIL_ONLINE_COL, ACCT_AVAIL_ONLINE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE],
-                         [self.ACCT_AVAIL_PROJ_COL, ACCT_AVAIL_PROJ_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE],
-                         [self.ACCT_RATE_COL, ACCT_RATE_COL_WIDTH, self.RATE_TYPE, self.EDITABLE],
-                         [self.ACCT_PAYMENT_COL, ACCT_PAYMENT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE],
-                         [self.ACCT_DUE_DATE_COL, ACCT_DUE_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE],
-                         [self.ACCT_SCHED_DATE_COL, ACCT_SCHED_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE],
-                         [self.ACCT_MIN_PMT_COL, ACCT_MIN_PMT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE],
-                         [self.ACCT_STMT_BAL_COL, ACCT_STMT_BAL_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE],
-                         [self.ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE],
-                         [self.ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE],
-                         [self.ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE],
-                         [self.ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE]
-                        ]
 
         if style == None:
             style = wx.DEFAULT_FRAME_STYLE
@@ -144,53 +67,6 @@ class AssetFrame(wx.Frame):
             if self.cur_asset.get_name() != None:
                 self.SetTitle("PyAsset: Asset %s" % self.cur_asset.get_name())
         return
-
-    def getColName(self,i):
-        return self.col_info[i][self.NAME_COL]
-
-    def getColWidth(self, i):
-        return self.col_info[i][self.WIDTH_COL]
-
-    def getColType(self, i):
-        return self.col_info[i][self.TYPE_COL]
-
-    def getColEdit(self,i):
-        return self.col_info[i][self.EDIT_COL]
-
-    def getColMethod(self,i):
-        if i == self.ACCT_NAME_COL:
-            return self.display_asset.details.name
-        elif i == self.ACCT_CURR_VAL_COL:
-            return self.display_asset.details.total
-        elif i == self.ACCT_PROJ_VAL_COL:
-            return self.display_asset.details.total
-        elif i == self.ACCT_LAST_PULL_COL:
-            return self.display_asset.details.last_pull_date
-        elif i == self.ACCT_LIMIT_COL:
-            return self.display_asset.details.limit
-        elif i == self.ACCT_AVAIL_ONLINE_COL:
-            return self.display_asset.details.avail
-        elif i == self.ACCT_AVAIL_PROJ_COL:
-            return self.display_asset.details.avail
-        elif i == self.ACCT_RATE_COL:
-            return self.display_asset.details.rate
-        elif i == self.ACCT_PAYMENT_COL:
-            return self.display_asset.details.payment
-        elif i == self.ACCT_DUE_DATE_COL:
-            return self.display_asset.details.due_date
-        elif i == self.ACCT_SCHED_DATE_COL:
-            return self.display_asset.details.sched
-        elif i == self.ACCT_MIN_PMT_COL:
-            return self.display_asset.details.min_pay
-#                         [ACCT_STMT_BAL_COL, ACCT_STMT_BAL_COL_WIDTH, DOLLAR_TYPE, EDITABLE, None],
-#                         [ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None],
-#                         [ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, DOLLAR_TYPE, EDITABLE, None],
-#                         [ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None],
-#                         [ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None]
-        return "??"
-
-    def getNumLayoutCols(self):
-        return len(self.col_info)
 
     def make_widgets(self):
         self.menubar = wx.MenuBar()
@@ -274,35 +150,14 @@ class AssetFrame(wx.Frame):
         return
 
     def make_grid(self):
-        self.cbgrid = wx.grid.Grid(self, -1)
-        wx.grid.EVT_GRID_CELL_CHANGE(self, self.cellchange)
-        return
+        self.assetGrid = AssetGrid(self)
 
     def set_properties(self):
-        self.SetTitle("PyAsset: Asset")
-        self.statusbar.SetStatusWidths([-1])
-        statusbar_fields = [""]
-        columnNames = ["Account", "Value (Curr)", "Value (Proj)", "last pulled", "Limit", "Avail (Online)", "Avail (Proj)", "Rate",
-                       "Payment", "Due Date", "Sched", "Min Pmt", "Stmt Bal", "Amt Over", "Cash Limit", "Cash used", "Cash avail"];
-
-        for i in range(len(statusbar_fields)):
-            self.statusbar.SetStatusText(statusbar_fields[i], i)
-        self.cbgrid.CreateGrid(0, len(columnNames))
-        self.cbgrid.SetRowLabelSize(self.rowSize)
-        self.cbgrid.SetColLabelSize(self.colSize)
-        self.total_width = 60                   # non-zero start value to account for record number of cbgrid frame!
-        for i in range(len(columnNames)):
-            self.cbgrid.SetColLabelValue(i, columnNames[i])
-            cur_width = self.getColWidth(i)
-            self.total_width += cur_width
-            self.cbgrid.SetColSize(i, cur_width)
-        nassets = len(self.assets)
-        self.SetSize(size=(self.total_width, nassets*self.rowSize))
-        self.Show()
+        self.total_width = self.assetGrid.set_properties(self)
 
     def do_layout(self):
         self.sizer_1 = wx.BoxSizer(wx.VERTICAL)
-        self.sizer_1.Add(self.cbgrid, 1, wx.EXPAND, 0)
+        self.sizer_1.Add(self.assetGrid, 1, wx.EXPAND, 0)
         self.SetSizer(self.sizer_1)
         self.SetAutoLayout(True)
         self.sizer_1.Fit(self)
@@ -311,137 +166,83 @@ class AssetFrame(wx.Frame):
         self.Show()
 
     def redraw_all(self, index=None):
-        nrows = self.cbgrid.GetNumberRows()
-        if nrows > 0:
-            self.cbgrid.DeleteRows(0, nrows)
         nassets = len(self.assets)
-        if nrows < nassets:
-            rows_needed = nassets - nrows
-            self.cbgrid.AppendRows(rows_needed)
-        for i in range(nassets):
-            self.display_asset = copy.deepcopy(self.assets[i])
-            for col in range(self.getNumLayoutCols()):
-                self.cbgrid.SetCellTextColour(i, col, 'black')
-                self.cbgrid.SetReadOnly(i, col, self.getColEdit(col))
-                self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
-                cellValue = str(self.getColMethod(col))
-                if (cellValue == "0" or cellValue == "0.0" or cellValue == "??") and col != self.ACCT_CURR_VAL_COL and col != self.ACCT_PROJ_VAL_COL:
-                    continue
-                else:
-                    cellType = self.getColType(col)
-                    if cellType == self.DOLLAR_TYPE:
-                        amount = float(cellValue)
-                        if amount < 0:
-                            negative = True
-                            amount = -amount
-                        else:
-                            negative = False
-                        dotPos = cellValue.find(".")
-                        if dotPos == -1:
-                            cent_val = 0
-                        else:
-                            cent_val = int(cellValue[dotPos + 1:])
-                            if dotPos == len(cellValue)-2:
-                                cent_val *= 10
-                        cents = "%02d" % (cent_val)
-                        cents = str(cents)
-                        groups = [cents]
-                        groups.append(".")
-                        amount -= float(cent_val)/100
-                        if amount < 1:
-                            groups.append("0")
-                            groups.append(",")
-                        while amount > 1:
-                            next_digits = "%s" % str((int(amount) % 1000))
-                            while len(next_digits) < 3:
-                                if amount > 100:
-                                    digit = "0"
-                                else:
-                                    digit = " "
-                                next_digits = digit + next_digits
-                            groups.append(next_digits)
-                            groups.append(",")
-                            amount /= 1000
-                        str_out = ""
-                        for j in range(len(groups)-2, -1, -1):
-                            str_out += str(groups[j])
-                        if negative:
-                            self.cbgrid.SetCellTextColour(i, col, 'red')
-                            tableValue = "-$%13s" % (str_out)
-                        else:
-                            tableValue = " $%13s" % (str_out)
-                    elif cellType == self.RATE_TYPE:
-                        rate = float(cellValue)
-                        tableValue = "%13.3f%%" % (rate*100.0)
-                    elif cellType == self.DATE_TYPE:
-                        dateParts = cellValue.split("-")
-                        month = dateParts[1]
-                        day = dateParts[2]
-                        year = dateParts[0]
-                        self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
-                        tableValue = "%02s/%02s/%04s" % (month, day, year)
-                    elif cellType == self.DATE_TIME_TYPE:
-                        datetimeParts = cellValue.split(" ")
-                        dateParts = datetimeParts[0].split("-")
-                        time = datetimeParts[1]
-                        month = dateParts[1]
-                        day = dateParts[2]
-                        year = dateParts[0]
-                        self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
-                        tableValue = "%02s/%02s/%04s %s" % (month, day, year, time)
-                    elif cellType == self.STRING_TYPE:
-                        self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_LEFT, wx.ALIGN_CENTER)
-                        tableValue = cellValue
-                    else:
-                        self.cbgrid.SetCellAlignment(i, col, wx.ALIGN_LEFT, wx.ALIGN_CENTER)
-                        tableValue = "Bad: %s" % (cellValue)
-                    self.cbgrid.SetCellValue(i, col, tableValue)
         if index == -1:
-            self.cbgrid.SetGridCursor(nassets-1, 0)
-            self.cbgrid.MakeCellVisible(nassets-1, True)
+            nrows = self.assetGrid.GetNumberRows()
+            if nrows > 0:
+                self.assetGrid.DeleteRows(0, nrows)
+            start_range = 0
+            end_range = nassets
+            if nrows < nassets:
+                rows_needed = nassets - nrows
+                self.assetGrid.AppendRows(rows_needed)
+        else:
+            nrows = 1
+            start_range = index
+            end_range =  start_range + 1
+        for row in range(start_range, end_range):
+            for col in range(self.assetGrid.getNumLayoutCols()):
+                cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
+                cellType = self.assetGrid.getColType(col)
+                if cellType == self.assetGrid.DOLLAR_TYPE:
+                    self.assetGrid.GridCellDollarRenderer(row, col)
+                elif cellType == self.assetGrid.RATE_TYPE:
+                    self.assetGrid.GridCellPercentRenderer(row, col)
+                elif cellType == self.assetGrid.DATE_TYPE:
+                    self.assetGrid.GridCellDateRenderer(row, col)
+                elif cellType == self.assetGrid.DATE_TIME_TYPE:
+                    self.assetGrid.GridCellDateTimeRenderer(row, col)
+                elif cellType == self.assetGrid.STRING_TYPE:
+                    self.assetGrid.GridCellStringRenderer(row, col)
+                else:
+                    self.assetGrid.GridCellErrorRenderer(row, col)
+        if index == -1:
+            self.assetGrid.SetGridCursor(nassets-1, 0)
+            self.assetGrid.MakeCellVisible(nassets-1, True)
         elif index > 0:
-            self.cbgrid.SetGridCursor(index, 0)
-            self.cbgrid.MakeCellVisible(index, True)
+            self.assetGrid.SetGridCursor(index, 0)
+            self.assetGrid.MakeCellVisible(index, True)
         nassets = len(self.assets)
         self.SetSize(size=(self.total_width, nassets*self.rowSize))
         self.Show()
-        return
 
-# TODO: Rewrite cellchange to work with cell_info and Asset vice hard_coded transaction values!   JJG 06/27/2016
-    def cellchange(self, evt):
-        doredraw = 0
+    def assetchange(self, evt):
         row = evt.GetRow()
         col = evt.GetCol()
-        if row < 0: return
-        if row >= len(self.cur_asset):
-            print "Warning: modifying incorrect cell!"
-            return
-        col_inf = copy.deepcopy(self.col_info[col])
-        if col_inf[self.EDIT_COL] == self.NOT_EDITABLE:
-            print "Warning: attempt to edit non-editable column!"
-            return
-        self.display_asset = copy.deepcopy(self.assets[row])
-        self.edited = 1
-        transaction = self.assets[row]
-        val = self.cbgrid.GetCellValue(row, col)
-        if col == 0:
-            transaction.setdate(val)
-        elif col == 1:
-            transaction.setnumber(val)
-        elif col == 2:
-            transaction.setpayee(val)
-        elif col == 3:
-            if val:
-                transaction.setcleared('x')
-        elif col == 4:
-            transaction.setmemo(val)
-        elif col == 5:
-            doredraw = 1
-            transaction.setamount(val)
+        val = evt.String
+        colName = self.assetGrid.getColName(col)
+        if colName == "Acct name":
+            self.assets[row].set_name(val)
+        elif colName == "Curr val":
+            self.assets[row].set_total(val)
+        elif colName == "Last pulled":
+            self.assets[row].set_last_pull_date(val)
+        elif colName == "Limit":
+            self.assets[row].set_limit(val)
+        elif colName == "Avail online":
+            self.assets[row].set_avail(val)
+        elif colName == "Rate":
+            self.assets[row].set_rate(val)
+        elif colName == "Payment amt":
+            self.assets[row].set_payment(val)
+        elif colName == "Due date":
+            self.assets[row].set_due_date(val)
+        elif colName == "Sched date":
+            self.assets[row].set_sched(val)
+        elif colName == "Min Pmt":
+            self.assets[row].set_min_pay(val)
+        elif colName == "Stmt Bal":
+            self.assets[row].set_stme_bal(val)
+        elif colName == "Amt Over":
+            self.assets[row].set_amt_over(val)
+        elif colName == "Cash Limit":
+            self.assets[row].set_cash_limit(val)
+        elif colName == "Cash Used":
+            self.assets[row].set_cash_used(val)
+        elif colName == "Cash Avail":
+            self.assets[row].set_cash_avail(val)
         else:
             print "Warning: modifying incorrect cell!"
-            return
-        if doredraw: self.redraw_all(row)  # only redraw [row:]
         return
 
     def load_file(self, *args):
@@ -483,9 +284,9 @@ class AssetFrame(wx.Frame):
                 self.save_file()
         self.assets = AssetList()
         self.cur_asset = Asset()
-        nrows = self.cbgrid.GetNumberRows()
+        nrows = self.assetGrid.GetNumberRows()
         if nrows > 0:
-            self.cbgrid.DeleteRows(0, nrows)
+            self.assetGrid.DeleteRows(0, nrows)
             self.redraw_all(-1)
         self.edited = 0
         self.SetTitle("PyAsset: Asset")
@@ -647,7 +448,7 @@ class AssetFrame(wx.Frame):
                 for i in range(len(latest_assets)):
                     xlsm_asset = latest_assets.__getitem__(i)
                     self.cur_asset = copy.deepcopy(xlsm_asset)
-                    self.assets.append(self.cur_asset[0])
+                    self.assets.append(self.cur_asset.get_name())
                     self.assets[i] = copy.deepcopy(xlsm_asset)
                 if self.cur_asset.name:
                     self.SetTitle("PyAsset: Asset %s" % total_name_in)
@@ -714,10 +515,10 @@ class AssetFrame(wx.Frame):
     def newentry(self, *args):
         self.edited = 1
         self.cur_asset.append(Asset())
-        self.cbgrid.AppendRows()
-        nassets = self.cbgrid.GetNumberRows()
-        self.cbgrid.SetGridCursor(nassets - 1, 0)
-        self.cbgrid.MakeCellVisible(nassets - 1, 1)
+        self.assetGrid.AppendRows()
+        nassets = self.assetGrid.GetNumberRows()
+        self.assetGrid.SetGridCursor(nassets - 1, 0)
+        self.assetGrid.MakeCellVisible(nassets - 1, 1)
 
     def sort(self, *args):
         self.edited = 1
@@ -725,7 +526,7 @@ class AssetFrame(wx.Frame):
         self.redraw_all(-1)
 
     def deleteentry(self, *args):
-        index = self.cbgrid.GetGridCursorRow()
+        index = self.assetGrid.GetGridCursorRow()
         if index < 0: return
         d = wx.MessageDialog(self,
                              "Really delete this asset?",

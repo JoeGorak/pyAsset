@@ -26,10 +26,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  Version information
 #  6/25/2016     Initial version v0.1
 
-# TO-DO
+# TO-DOs
 #
-# Write ProcessTransactionSheet
-# Speed up ProcessAssetsSheet!
+#TODO: Write ProcessTransactionSheet
+
 
 from openpyxl.reader.excel import load_workbook
 
@@ -37,7 +37,7 @@ from AssetList import AssetList
 
 class ExcelToAsset:
     def OpenXLSMFile(self, FileName):
-        self.wb = load_workbook(FileName, data_only=True, guess_types=True)
+        self.wb = load_workbook(FileName, data_only=True, guess_types=False)
 
     def ProcessAssetsSheet(self):
         AccountWithTransactions = self.wb.get_sheet_names()
@@ -64,76 +64,76 @@ class ExcelToAsset:
                         if new_asset != None:
                             asset_name = new_asset.name
                             if "Checking" in asset_name:
-                                new_asset.details.set_type("Checking")
+                                new_asset.set_type("Checking")
                             elif "Savings" in asset_name:
-                                new_asset.details.set_type("Savings")
+                                new_asset.set_type("Savings")
                             elif "Money Market" in asset_name:
-                                new_asset.details.set_type("Money Market")
+                                new_asset.set_type("Money Market")
                             elif "Overdraft" in asset_name:
-                                new_asset.details.set_type("Overdraft")
+                                new_asset.set_type("Overdraft")
                             elif "TSP" in asset_name or "Annuity" in asset_name:
-                                new_asset.details.set_type("Retirement")
+                                new_asset.set_type("Retirement")
                             elif "Visa" in asset_name or "MC" in asset_name:
-                                new_asset.details.set_type("Credit Card")
+                                new_asset.set_type("Credit Card")
                             elif "Store Card" in asset_name:
-                                new_asset.details.set_type("Store Card")
+                                new_asset.set_type("Store Card")
                             else:
-                                new_asset.details.set_type("Other")
+                                new_asset.set_type("Other")
                     else:
                         if AssetPlaces.get(row_num, "None") != "None":
                             if heading == "Value  (Curr)" or heading == "Estimated Value":
                                 for i in range(len(AssetsFound)):
                                     asset = AssetsFound[i]
                                     if asset.name == AssetPlaces[row_num]:
-                                        asset.details.set_total(cv)
+                                        asset.set_total(cv)
                                         break
                             elif heading == "last pulled":
                                 for i in range(len(AssetsFound)):
                                     asset = AssetsFound[i]
                                     if asset.name == AssetPlaces[row_num]:
-                                        asset.details.set_last_pull_date(cv)
+                                        asset.set_last_pull_date(cv)
                                         break
                             elif heading == "Limit" and cv != 0:
                                 for i in range(len(AssetsFound)):
                                     asset = AssetsFound[i]
                                     if asset.name == AssetPlaces[row_num]:
-                                        asset.details.set_limit(cv)
+                                        asset.set_limit(cv)
                                         break
                             elif heading == "Avail (Online)" and cv != 0:
                                 for i in range(len(AssetsFound)):
                                     asset = AssetsFound[i]
                                     if asset.name == AssetPlaces[row_num]:
-                                        asset.details.set_avail(cv)
+                                        asset.set_avail(cv)
                                         break
                             elif heading == "Rate":
                                 for i in range(len(AssetsFound)):
                                     asset = AssetsFound[i]
                                     if asset.name == AssetPlaces[row_num]:
-                                        asset.details.set_rate(cv)
+                                        asset.set_rate(cv)
                                         break
                             elif heading == "Payment":
                                 for i in range(len(AssetsFound)):
                                     asset = AssetsFound[i]
                                     if asset.name == AssetPlaces[row_num]:
-                                        asset.details.set_payment(cv)
+                                        asset.set_payment(cv)
                                         break
                             elif heading == "Due Date":
                                 for i in range(len(AssetsFound)):
                                     asset = AssetsFound[i]
                                     if asset.name == AssetPlaces[row_num]:
-                                        asset.details.set_due_date(cv)
+                                        asset.set_due_date(cv)
                                         break
                             elif heading == "Sched":
                                 for i in range(len(AssetsFound)):
                                     asset = AssetsFound[i]
                                     if asset.name == AssetPlaces[row_num]:
-                                        asset.details.set_sched(cv)
+                                        asset.set_sched(cv)
                                         break
                             elif heading == "Min Pmt":
                                 for i in range(len(AssetsFound)):
                                     asset = AssetsFound[i]
                                     if asset.name == AssetPlaces[row_num]:
-                                        asset.details.set_rate(cv)
+                                        asset.set_rate(cv)
                                         break
                             else:
                                 pass

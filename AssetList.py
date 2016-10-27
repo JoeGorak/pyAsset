@@ -24,7 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  Version information
 #  6/15/2016     Initial version v0.1
 
-from collections import namedtuple
+#from collections import namedtuple
 from Asset import Asset
 
 
@@ -73,7 +73,6 @@ class AssetList:
         del self.assets[i]
 
     def append(self, name):
-        nt = namedtuple('Asset','name,details')
-        account = nt(name, Asset(name))
+        account = Asset(name)
         self.assets.append(account)
         return account

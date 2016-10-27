@@ -53,6 +53,12 @@ class Asset:
         self.sched = sched
         self.min_pay = min_pay
         self.total = total
+        self.amt_over = 0.0
+        self.stmt_bal = 0.0
+        self.cash_limit = 0.0
+        self.cash_used = 0.0
+        self.cash_avail = 0.0
+
         if (filename is not None):
             self.read_qif(filename)
         return
@@ -156,6 +162,9 @@ class Asset:
     def get_name(self):
         return self.name
 
+    def set_name(self,name):
+        self.name = name
+
     def get_total(self):
         return self.total
 
@@ -254,3 +263,33 @@ class Asset:
             self.type = OTHER
         else:
             self.type = OTHER
+
+    def get_stmt_bal(self):
+        return self.stmt_bal
+
+    def set_stmt_bal(self, stmt_bal):
+        self.stmt_bal = stmt_bal
+
+    def get_amt_over(self):
+        return self.amt_over
+
+    def set_amt_over(self, amt_over):
+        self.amt_over = amt_over
+
+    def get_cash_limit(self):
+        return self.cash_limit
+
+    def set_cash_limit(self, cash_limit):
+        self.cash_limit = cash_limit
+
+    def get_cash_used(self):
+        return self.cash_used
+
+    def set_cash_used(self, cash_used):
+        self.cash_used = cash_used
+
+    def get_cash_avail(self):
+        return self.cash_avail
+
+    def set_cash_avail(self, cash_avail):
+        self.cash_avail = cash_avail
