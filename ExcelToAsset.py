@@ -81,7 +81,7 @@ class ExcelToAsset:
                                 new_asset.set_type("Other")
                     else:
                         if AssetPlaces.get(row_num, "None") != "None":
-                            if heading == "Value  (Curr)" or heading == "Estimated Value":
+                            if "Value (Curr)" in heading or "Estimated Value" in heading:
                                 for i in range(len(AssetsFound)):
                                     asset = AssetsFound[i]
                                     if asset.name == AssetPlaces[row_num]:

@@ -44,6 +44,7 @@ from Date import Date
 from Transaction import Transaction
 from HelpDialog import HelpDialog
 from ExcelToAsset import ExcelToAsset
+from iMacrosToAsset import iMacrosToAsset
 
 
 class AssetFrame(wx.Frame):
@@ -68,6 +69,12 @@ class AssetFrame(wx.Frame):
                 self.SetTitle("PyAsset: Asset %s" % self.cur_asset.get_name())
         return
 
+    def DisplayMsg(self, str):
+        d = wx.MessageDialog(self, str, "Error", wx.OK | wx.ICON_INFORMATION)
+        d.ShowModal()
+        d.Destroy()
+        return wx.CANCEL
+
     def make_widgets(self):
         self.menubar = wx.MenuBar()
         self.SetMenuBar(self.menubar)
@@ -81,41 +88,54 @@ class AssetFrame(wx.Frame):
 
     def make_filemenu(self):
         self.filemenu = wx.Menu()
-        ID_IMPORT_CSV = wx.NewId()
+#        ID_EXPORT_TEXT = wx.NewId()
+#        ID_ARCHIVE = wx.NewId()
+#        ID_IMPORT_CSV = wx.NewId()
         ID_IMPORT_XLSM = wx.NewId()
-        ID_EXPORT_TEXT = wx.NewId()
-        ID_ARCHIVE = wx.NewId()
+        ID_UPDATE_FROM_NET = wx.NewId()
+        ID_PROPERTIES = wx.NewId()
         self.filemenu.Append(wx.ID_OPEN, "Open\tCtrl-o",
                              "Open a new transction file", wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_SAVE, "Save\tCtrl-s",
                              "Save the current transactions in the same file", wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_SAVEAS, "Save As",
                              "Save the current transactions under a different name", wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_IMPORT_CSV, "Import CSV\tCtrl-c",
-                             "Import transactions from a CSV file",
-                             wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_IMPORT_XLSM, "Import XLSM\tCtrl-X",
-                             "Import transactions from an EXCEL file with Macros",
-                             wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_EXPORT_TEXT, "Export Text",
-                             "Export the current transaction register as a text file",
-                             wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_ARCHIVE, "Archive",
-                             "Archive transactions older than a specified date",
-                             wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_CLOSE, "Close\tCtrl-w",
                              "Close the current file", wx.ITEM_NORMAL)
-        self.filemenu.Append(wx.ID_EXIT, "Exit\tCtrl-q",
+#        self.filemenu.Append(ID_EXPORT_TEXT, "Export Text",
+#                             "Export the current transaction register as a text file",
+#                             wx.ITEM_NORMAL)
+#        self.filemenu.Append(ID_ARCHIVE, "Archive",
+#                             "Archive transactions older than a specified date",
+#                             wx.ITEM_NORMAL)
+        self.filemenu.AppendSeparator()
+#        self.filemenu.Append(ID_IMPORT_CSV, "Import CSV\tCtrl-c",
+#                             "Import transactions from a CSV file",
+#                             wx.ITEM_NORMAL)
+        self.filemenu.Append(ID_IMPORT_XLSM, "Import XLSM file\tCtrl-i",
+                             "Import transactions from an EXCEL file with Macros",
+                             wx.ITEM_NORMAL)
+        self.filemenu.Append(ID_UPDATE_FROM_NET, "Update Accounts from Net\tCtrl-u",
+                             "Update accounts using pre-defined iMacros",
+                            wx.ITEM_NORMAL)
+        self.filemenu.AppendSeparator()
+        self.filemenu.Append(ID_PROPERTIES, "Properties\tCtrl-p",
+                             "Display and/or edit Number and Data/Time display properties, pay frequencies",
+                            wx.ITEM_NORMAL)
+        self.filemenu.AppendSeparator()
+        self.filemenu.Append(wx.ID_EXIT, "Quit\tCtrl-q",
                              "Exit PyAsset", wx.ITEM_NORMAL)
         self.menubar.Append(self.filemenu, "&File")
         wx.EVT_MENU(self, wx.ID_OPEN, self.load_file)
         wx.EVT_MENU(self, wx.ID_SAVE, self.save_file)
         wx.EVT_MENU(self, wx.ID_SAVEAS, self.save_as_file)
-        wx.EVT_MENU(self, ID_IMPORT_CSV, self.import_CSV_file)
-        wx.EVT_MENU(self, ID_IMPORT_XLSM, self.import_XLSM_file)
-        wx.EVT_MENU(self, ID_EXPORT_TEXT, self.export_text)
-        wx.EVT_MENU(self, ID_ARCHIVE, self.archive)
         wx.EVT_MENU(self, wx.ID_CLOSE, self.close)
+#        wx.EVT_MENU(self, ID_EXPORT_TEXT, self.export_text)
+#        wx.EVT_MENU(self, ID_ARCHIVE, self.archive)
+#        wx.EVT_MENU(self, ID_IMPORT_CSV, self.import_CSV_file)
+        wx.EVT_MENU(self, ID_IMPORT_XLSM, self.import_XLSM_file)
+        wx.EVT_MENU(self, ID_UPDATE_FROM_NET, self.update_from_net)
+        wx.EVT_MENU(self, ID_PROPERTIES, self.properties)
         wx.EVT_MENU(self, wx.ID_EXIT, self.quit)
         return
 
@@ -169,8 +189,9 @@ class AssetFrame(wx.Frame):
         nassets = len(self.assets)
         if index == -1:
             nrows = self.assetGrid.GetNumberRows()
-            if nrows > 0:
+            if nrows > 0 and (index == None or index == -1):
                 self.assetGrid.DeleteRows(0, nrows)
+                nrows = 0
             start_range = 0
             end_range = nassets
             if nrows < nassets:
@@ -182,7 +203,13 @@ class AssetFrame(wx.Frame):
             end_range =  start_range + 1
         for row in range(start_range, end_range):
             for col in range(self.assetGrid.getNumLayoutCols()):
-                cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
+                ret_val = wx.OK
+                if row < 0 or row >= len(self.assets):
+                    str = "Warning: skipping redraw on bad cell %d %d!" % (row, col)
+                    ret_val = self.DisplayMsg(str)
+                if ret_val != wx.OK:
+                    continue
+#                cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
                 cellType = self.assetGrid.getColType(col)
                 if cellType == self.assetGrid.DOLLAR_TYPE:
                     self.assetGrid.GridCellDollarRenderer(row, col)
@@ -242,7 +269,7 @@ class AssetFrame(wx.Frame):
         elif colName == "Cash Avail":
             self.assets[row].set_cash_avail(val)
         else:
-            print "Warning: modifying incorrect cell!"
+            print "assetchange: Warning: modifying incorrect cell! row, ", row, " col ", col
         return
 
     def load_file(self, *args):
@@ -444,21 +471,79 @@ class AssetFrame(wx.Frame):
                 xlsm.OpenXLSMFile(total_name_in)
                 latest_assets = xlsm.ProcessAssetsSheet()
 #                print latest_assets
-#TODO Need to add check if an account from latest_assets is already in self.assets! (keep track of num_updated and skip redraw if none updated
                 for i in range(len(latest_assets)):
                     xlsm_asset = latest_assets.__getitem__(i)
                     self.cur_asset = copy.deepcopy(xlsm_asset)
-                    self.assets.append(self.cur_asset.get_name())
-                    self.assets[i] = copy.deepcopy(xlsm_asset)
+                    cur_name = self.cur_asset.get_name()
+                    found = False
+                    for j in range(len(self.assets)):
+                        if self.assets[j].get_name() == cur_name:
+                            self.assets[j] = copy.deepcopy(xlsm_asset)
+                            found = True
+                            break
+                    if not found:
+                        self.assets.append(self.cur_asset.get_name())
+                        self.assets[-1] = copy.deepcopy(xlsm_asset)
                 if self.cur_asset.name:
                     self.SetTitle("PyAsset: Asset %s" % total_name_in)
                 self.redraw_all(-1)
-                return
             else:
                 d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
                 d.ShowModal()
                 d.Destroy()
-                return
+
+    def update_from_net(self, *args):
+        w = iMacrosToAsset()
+        w.Init()
+        net_asset_codes = [("HFCU",1,[False,False,False,True]),
+                           ("BOA",-1,[False,True]),
+                           ("CITI",-1,[True]),
+                           ("MACYS",-1,[True]),
+                           ("TSP",-1,[False,False,False,True]),
+                           ("MET",1,[False])]
+        for net_asset_code in net_asset_codes:
+            latest_assets = w.GetNetInfo(net_asset_code)
+    #        print latest_assets
+            for i in range(len(latest_assets)):
+                net_asset = latest_assets.__getitem__(i)
+                if net_asset != None:
+                    asset_name = net_asset.name
+                    if "Checking" in asset_name:
+                        net_asset.set_type("Checking")
+                    elif "Savings" in asset_name:
+                        net_asset.set_type("Savings")
+                    elif "Money Market" in asset_name:
+                        net_asset.set_type("Money Market")
+                    elif "Overdraft" in asset_name:
+                        net_asset.set_type("Overdraft")
+                    elif "TSP" in asset_name or "Annuity" in asset_name:
+                        net_asset.set_type("Retirement")
+                    elif "Visa" in asset_name or "MC" in asset_name:
+                        net_asset.set_type("Credit Card")
+                    elif "Store Card" in asset_name:
+                        net_asset.set_type("Store Card")
+                    else:
+                        net_asset.set_type("Other")
+                    latest_name = net_asset.get_name()
+                    found = False
+                    for j in range(len(self.assets)):
+                        display_name = cur_name = self.assets[j].get_name()
+                        if "(" in cur_name:
+                            cur_name = cur_name.split("(")[1].split(")")[0]
+                        if cur_name in latest_name:
+                            self.assets[j] = copy.deepcopy(net_asset)
+                            self.assets[j].set_name(display_name)
+                            found = True
+                            break
+                    if not found:
+                        self.assets.append(self.cur_asset.get_name())
+                        self.assets[-1] = copy.deepcopy(net_asset)
+        w.Finish()
+        self.redraw_all(-1)
+
+    def properties(self, *args):
+# TODO  properties
+        self.DisplayMsg("properties called")
 
     def export_text(self, *args):
         d = wx.FileDialog(self, "Save", "", "", "*.txt", wx.SAVE)
