@@ -164,6 +164,10 @@ class ExcelToAsset:
                 cv = cell.value
                 if cv != None:
                     if col_num == 1:
+                        if "TOTALS" in cv: break
+                        if "Assets" in cv or "Payee" in cv or "Checking Account" in cv or "Credit Card" in cv or "Other Source" in cv \
+                                or "Loan" in cv or "Expenses" in cv:
+                            continue
                         new_bill = BillsFound.append(cv)
                         BillPlaces[row_num] = cv
                         if new_bill != None:

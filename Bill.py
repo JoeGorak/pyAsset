@@ -42,7 +42,7 @@ MANUAL = -1
 
 class Bill:
     def __init__(self, name = None, amount = 0.0, min_due = 0.0, due_date = 0, sched_date = 0,
-                 pmt_acct = "Other", pmt_method = "Other", check_number = 0, pmt_frequency = "Manual" ):
+                 pmt_acct = "Other", pmt_method = "Other", check_number = 0, pmt_freq = "Manual" ):
         self.name = name
         self.amount = amount
         self.min_due = min_due
@@ -50,7 +50,7 @@ class Bill:
         self.sched_date = sched_date
         self.pmt_acct = self.set_pmt_acct(pmt_acct)
         self.pmt_method = self.set_pmt_method(pmt_method)
-        self.pmt_frequency = self.set_pmt_frequency(pmt_frequency)
+        self.pmt_frequency = self.set_pmt_frequency(pmt_freq)
         self.check_number = check_number
         return
 
@@ -140,8 +140,7 @@ class Bill:
             print "Unknown payment method -" + pmt_method + "! Defaulting to SCHED_ONLINE"
             self.pmt_method = SCHED_ONLINE
 
-
-    def get_payment_frequency(self):
+    def get_pmt_frequency(self):
         spf = self.payment_frequency
         if spf == MONTHLY:
             return "monthly"
@@ -156,7 +155,7 @@ class Bill:
         else:
             return "unknown payment freq"
 
-    def set_payment_frequency(self, payment_freq):
+    def set_pmt_frequency(self, payment_freq):
         pfu = payment_freq.upper()
         if pfu == "MONTHLY":
             self.payment_frequency = MONTHLY
