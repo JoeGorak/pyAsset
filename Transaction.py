@@ -3,7 +3,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016, Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016,2017 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 

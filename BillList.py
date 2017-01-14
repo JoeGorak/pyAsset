@@ -22,30 +22,31 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
 #  Version information
-#  6/15/2016     Initial version v0.1
+#  1/13/2017    Initial version v0.1
 
-from Asset import Asset
+from Bill import Bill
 
-class AssetList:
+class BillList:
     def __init__(self):
         # type: () -> object
-        self.assets = []
+        self.bills = []
 
     def __len__(self):
-        return len(self.assets)
+        return len(self.bills)
 
     def __getitem__(self, i):
-        return self.assets[i]
+        return self.bills[i]
 
     def __setitem__(self, i, val):
-        self.assets[i] = val
+        self.bills[i] = val
 
+#TODO:  Modify str to use fields from Bill vice field from Asset
     def __str__(self):
         ret_str = ""
-        for i in range(len(self.assets)):
-            cur_asset = self.assets[i]
-            cd = cur_asset.details
-            ret_str += "%-10s $%8.2f %s %s" % (cur_asset.name, cd.get_total(), cd.get_last_pull_date(), cd.get_type())
+        for i in range(len(self.bills)):
+            cur_bill = self.bills[i]
+            cd = cur_bill.details
+            ret_str += "%-10s $%8.2f %s %s" % (cur_bill.name, cd.get_total(), cd.get_last_pull_date(), cd.get_type())
             limit = cd.get_limit()
             if limit != 0:
                 ret_str += " $%8.2f $%8.2f" % (limit, cd.get_avail())
@@ -68,9 +69,9 @@ class AssetList:
         return ret_str
 
     def __delitem__(self, i):
-        del self.assets[i]
+        del self.bills[i]
 
     def append(self, name):
-        account = Asset(name)
-        self.assets.append(account)
-        return account
+        bill = Bill(name)
+        self.bills.append(bill)
+        return bill

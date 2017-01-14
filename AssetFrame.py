@@ -2,9 +2,9 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016, Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2017 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
-comments, patches, complas to joe.gorak@gmail.com
+comments, patches, complaints to joe.gorak@gmail.com
 
 This program is free software you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -39,6 +39,7 @@ import os
 import copy
 from Asset import Asset
 from AssetList import AssetList
+from BillList import BillList
 from AssetGrid import AssetGrid
 from Date import Date
 from Transaction import Transaction
@@ -50,6 +51,7 @@ from iMacrosToAsset import iMacrosToAsset
 class AssetFrame(wx.Frame):
     def __init__(self, style, parent, my_id, title="PyAsset:Asset", myfile=None, **kwds):
         self.assets = AssetList()
+        self.bills = BillList()
         self.cur_asset = None
         self.edited = 0
         self.rowSize = 27
@@ -484,6 +486,9 @@ class AssetFrame(wx.Frame):
                     if not found:
                         self.assets.append(self.cur_asset.get_name())
                         self.assets[-1] = copy.deepcopy(xlsm_asset)
+                latest_bills = xlsm.ProcessBillsSheet(self.bills)
+                print latest_bills
+                #TODO: Process latest_bills
                 if self.cur_asset.name:
                     self.SetTitle("PyAsset: Asset %s" % total_name_in)
                 self.redraw_all(-1)
@@ -499,6 +504,7 @@ class AssetFrame(wx.Frame):
                            ("BOA",-1,[False,True]),
                            ("CITI",-1,[True]),
                            ("MACYS",-1,[True]),
+                           ("SEARS",-1,[True]),
                            ("TSP",-1,[False,False,False,True]),
                            ("MET",1,[False])]
         for net_asset_code in net_asset_codes:
