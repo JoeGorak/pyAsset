@@ -211,6 +211,14 @@ class AssetFrame(wx.Frame):
                     ret_val = self.DisplayMsg(str)
                 if ret_val != wx.OK:
                     continue
+
+                # Logic to always display Amt Over, Cash Limit, Cash Used and Cash Avail for credit cards and store cards
+                asset_type = self.assets[row].get_type()
+                col_name = self.assetGrid.getColName(col)
+                self.assetGrid.setColZeroSuppress(row, col, True)
+                if (asset_type == "store card" or asset_type == "credit card") and ("Amt" in col_name or "Cash" in col_name):
+                    self.assetGrid.setColZeroSuppress(row, col, False)
+
 #                cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
                 cellType = self.assetGrid.getColType(col)
                 if cellType == self.assetGrid.DOLLAR_TYPE:
@@ -486,8 +494,8 @@ class AssetFrame(wx.Frame):
                     if not found:
                         self.assets.append(self.cur_asset.get_name())
                         self.assets[-1] = copy.deepcopy(xlsm_asset)
-                latest_bills = xlsm.ProcessBillsSheet(self.bills)
-                print latest_bills
+#                latest_bills = xlsm.ProcessBillsSheet(self.bills)
+#                print latest_bills
                 #TODO: Process latest_bills
                 if self.cur_asset.name:
                     self.SetTitle("PyAsset: Asset %s" % total_name_in)

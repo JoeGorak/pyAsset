@@ -114,8 +114,8 @@ class AssetGrid(grd.Grid):
                          [self.ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
                          [self.ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
                          [self.ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS]
-                        ]
+                         [self.ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
+        ]
 
         return
 
@@ -166,13 +166,19 @@ class AssetGrid(grd.Grid):
     def getColZeroSuppress(self, row, i):
         return self.col_info[i][self.ZERO_SUPPRESS_COL]
 
+    def setColZeroSuppress(self, row, i, zero_suppress):
+        if zero_suppress != self.ZERO_SUPPRESS and zero_suppress != self.NO_ZERO_SUPPRESS:
+            print "Bad value for zero_suppress:" + zero_suppress + " Ignored! Should be either " + self.ZERO_SUPPRESS + " or " + self.NO_ZERO_SUPPRESS
+        else:
+            self.col_info[i][self.ZERO_SUPPRESS_COL] = zero_suppress
+
     def getColMethod(self, row, i):
         if i == self.ACCT_NAME_COL:
             return self.frame.assets[row].name
         elif i == self.ACCT_CURR_VAL_COL:
             return self.frame.assets[row].total
         elif i == self.ACCT_PROJ_VAL_COL:
-            return self.frame.assets[row].total
+            return self.frame.assets[row].value_proj
         elif i == self.ACCT_LAST_PULL_COL:
             return self.frame.assets[row].last_pull_date
         elif i == self.ACCT_LIMIT_COL:
@@ -180,7 +186,7 @@ class AssetGrid(grd.Grid):
         elif i == self.ACCT_AVAIL_ONLINE_COL:
             return self.frame.assets[row].avail
         elif i == self.ACCT_AVAIL_PROJ_COL:
-            return self.frame.assets[row].avail
+            return self.frame.assets[row].avail_proj
         elif i == self.ACCT_RATE_COL:
             return self.frame.assets[row].rate
         elif i == self.ACCT_PAYMENT_COL:
@@ -191,12 +197,16 @@ class AssetGrid(grd.Grid):
             return self.frame.assets[row].sched
         elif i == self.ACCT_MIN_PMT_COL:
             return self.frame.assets[row].min_pay
-            #                         [ACCT_STMT_BAL_COL, ACCT_STMT_BAL_COL_WIDTH, DOLLAR_TYPE, EDITABLE, None],
-            #                         [ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None],
-            #                         [ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, DOLLAR_TYPE, EDITABLE, None],
-            #                         [ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None],
-            #                         [ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, DOLLAR_TYPE, NOT_EDITABLE, None]
-        return "??"
+        elif i == self.ACCT_STMT_BAL_COL:
+            return self.frame.assets[row].stmt_bal
+        elif i == self.ACCT_CASH_LIMIT_COL:
+            return self.frame.assets[row].cash_limit
+        elif i == self.ACCT_CASH_USED_COL:
+            return self.frame.assets[row].cash_used
+        elif i == self.ACCT_CASH_AVAIL_COL:
+            return self.frame.assets[row].cash_avail
+        else:
+            return "??"
 
     def getNumLayoutCols(self):
         return len(self.col_info)
@@ -272,7 +282,10 @@ class AssetGrid(grd.Grid):
 
     def GridCellPercentRenderer(self, row, col):
         cellValue = str(self.getColMethod(row, col))
-        rate = float(cellValue)
+        try:
+            rate = float(cellValue)
+        except:
+            rate = 0.0
         if self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and rate == 0.0:
             tableValue = ""
         else:
@@ -281,7 +294,9 @@ class AssetGrid(grd.Grid):
 
     def GridCellDateRenderer(self, row, col):
         cellValue = str(self.getColMethod(row, col))
-        if self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):
+        if cellValue == None or cellValue == "None":
+            tableValue = ""
+        elif self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):
             tableValue = ""
         else:
             dateParts = cellValue.split("-")

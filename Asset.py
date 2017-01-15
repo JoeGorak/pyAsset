@@ -35,11 +35,12 @@ OVERDRAFT = 3
 CREDIT_CARD = 4
 STORE_CARD = 5
 RETIREMENT = 6
-OTHER = 7
+MORTGAGE = 7
+OTHER = 8
 
 class Asset:
-    def __init__(self, name=None, filename=None, type = "OTHER", last_pull_date = 0, total = 0.0, limit = 0.0, avail = 0.0, rate = 0.0,
-                 payment = 0.0, due_date = 0, sched = 0, min_pay = 0.0):
+    def __init__(self, name, filename=None, type = "OTHER", last_pull_date = 0, total = 0.0, value_proj = 0.0, limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
+                 payment = 0.0, due_date = 0, sched = 0, min_pay = 0.0, stmt_bal = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
         self.name = name
         self.filename = filename
         self.type = self.set_type(type)
@@ -47,17 +48,19 @@ class Asset:
         self.last_pull_date = last_pull_date
         self.limit = limit
         self.avail = avail
+        self.avail_proj = avail_proj
         self.rate = rate
         self.payment = payment
         self.due_date = due_date
         self.sched = sched
         self.min_pay = min_pay
         self.total = total
+        self.value_proj = value_proj
         self.amt_over = 0.0
-        self.stmt_bal = 0.0
-        self.cash_limit = 0.0
-        self.cash_used = 0.0
-        self.cash_avail = 0.0
+        self.stmt_bal = stmt_bal
+        self.cash_limit = cash_limit
+        self.cash_used = cash_used
+        self.cash_avail = cash_avail
 
         if (filename is not None):
             self.read_qif(filename)
@@ -174,6 +177,12 @@ class Asset:
     def get_last_pull_date(self):
         return self.last_pull_date
 
+    def set_value_proj(self, value_proj):
+        self.value_proj = value_proj
+
+    def get_value_proj(self):
+        return self.value_proj
+
     def set_last_pull_date(self, last_pull_date):
         if last_pull_date != 0:
             self.last_pull_date = str(last_pull_date).split(".")[0]
@@ -186,6 +195,12 @@ class Asset:
 
     def get_avail(self):
         return self.avail
+
+    def set_avail_proj(self, avail_proj):
+        self.avail_proj = avail_proj
+
+    def get_avail_proj(self):
+        return self.avail_proj
 
     def set_avail(self, avail):
         self.avail = avail
