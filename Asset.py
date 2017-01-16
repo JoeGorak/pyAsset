@@ -21,9 +21,6 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
-#  Version information
-#  6/11/2016     Initial version v0.1
-
 import os
 from Transaction import Transaction
 
@@ -172,13 +169,19 @@ class Asset:
         return self.total
 
     def set_total(self, total):
-        self.total = total
+        try:
+            self.total = round(float(total) ,2)
+        except:
+            self.total = 0.0
 
     def get_last_pull_date(self):
         return self.last_pull_date
 
     def set_value_proj(self, value_proj):
-        self.value_proj = value_proj
+        try:
+            self.value_proj = round(float(value_proj), 2)
+        except:
+            self.value_proj = 0.0
 
     def get_value_proj(self):
         return self.value_proj
@@ -191,31 +194,46 @@ class Asset:
         return self.limit
 
     def set_limit(self, limit):
-        self.limit = limit
+        try:
+            self.limit = round(float(limit), 2)
+        except:
+            self.limit = 0.0
 
     def get_avail(self):
         return self.avail
 
-    def set_avail_proj(self, avail_proj):
-        self.avail_proj = avail_proj
+    def set_avail(self, avail):
+        try:
+            self.avail = round(float(avail), 2)
+        except:
+            self.avail = 0.0
 
     def get_avail_proj(self):
         return self.avail_proj
 
-    def set_avail(self, avail):
-        self.avail = avail
+    def set_avail_proj(self, avail_proj):
+        try:
+            self.avail_proj = round(float(avail_proj), 2)
+        except:
+            self.avai_proj = 0.0
 
     def get_rate(self):
         return self.rate
 
     def set_rate(self, rate):
-        self.rate = rate
+        try:
+            self.rate = round(float(rate), 3)
+        except:
+            self.rate = 0.0
 
     def get_payment(self):
         return self.payment
 
     def set_payment(self, payment):
-        self.payment = payment
+        try:
+            self.payment = round(float(payment), 2)
+        except:
+            self.payment = 0.0
 
     def get_due_date(self):
         return self.due_date
@@ -235,7 +253,10 @@ class Asset:
         return self.min_pay
 
     def set_min_pay(self, min_pay):
-        self.min_pay = min_pay
+        try:
+            self.min_pay = round(float(min_pay), 2)
+        except:
+            self.min_pay = 0.0
 
     def get_type(self):
         st = self.type
@@ -283,28 +304,43 @@ class Asset:
         return self.stmt_bal
 
     def set_stmt_bal(self, stmt_bal):
-        self.stmt_bal = stmt_bal
+        try:
+            self.stmt_bal = round(float(stmt_bal), 2)
+        except:
+            self.stmt_bal = 0.0
 
     def get_amt_over(self):
         return self.amt_over
 
     def set_amt_over(self, amt_over):
-        self.amt_over = amt_over
+        try:
+            self.amt_over = round(float(amt_over), 2)
+        except:
+            self.amt_ovet = 0.0
 
     def get_cash_limit(self):
         return self.cash_limit
 
     def set_cash_limit(self, cash_limit):
-        self.cash_limit = cash_limit
+        try:
+            self.cash_limit = round(float(cash_limit), 2)
+        except:
+            self.cash_limit = 0.0
 
     def get_cash_used(self):
         return self.cash_used
 
     def set_cash_used(self, cash_used):
-        self.cash_used = cash_used
+        try:
+            self.cash_used = round(float(cash_used), 2)
+        except:
+            self.cash_used = 0.0
 
     def get_cash_avail(self):
         return self.cash_avail
 
     def set_cash_avail(self, cash_avail):
-        self.cash_avail = cash_avail
+        try:
+            self.cash_avail = round(float(cash_avail), 2)
+        except:
+            self.cash_avail = 0.0

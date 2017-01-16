@@ -21,9 +21,6 @@ along with this program if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
-#  Version information
-#  6/11/2016     Initial version v0.1
-
 # To Do list (possible new features?):
 # Speed redraw_all: break o redraw_all, redraw_range, redraw_totals
 # Save a backup version of files

@@ -21,14 +21,10 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
-#  Version information
-#  10/27/2016     Initial version v0.1
-
 import wx
 import wx.grid as grd
 import re
 from datetime import date, datetime
-
 
 class AssetGrid(grd.Grid):
     def __init__(self, frame):
@@ -198,12 +194,12 @@ class AssetGrid(grd.Grid):
         return cellValue
 
     def GridCellDollarRenderer(self, row, col):
-        cellValue = str(self.getColMethod(row, col))
+        cellValue = str(self.getColMethod(row,col))
         try:
             NumberAmount = cellValue.replace("$", "").replace(",", "")
             amount = float(NumberAmount)
         except:
-            amount = 0.0
+            amount = float(0.0)
         if amount < 0:
             negative = True
             amount = -amount
