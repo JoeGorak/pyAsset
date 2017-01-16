@@ -212,11 +212,11 @@ class AssetFrame(wx.Frame):
                 if ret_val != wx.OK:
                     continue
 
-                # Logic to always display Amt Over, Cash Limit, Cash Used and Cash Avail for credit cards and store cards
+                # Logic to always display Value (Curr), Value (Proj), Avail(Proj), Amt Over, Cash Limit, Cash Used and Cash Avail for credit cards and store cards
                 asset_type = self.assets[row].get_type()
                 col_name = self.assetGrid.getColName(col)
                 self.assetGrid.setColZeroSuppress(row, col, True)
-                if (asset_type == "store card" or asset_type == "credit card") and ("Amt" in col_name or "Cash" in col_name):
+                if (asset_type == "store card" or asset_type == "credit card") and ("Curr" in col_name or "Proj" in col_name or "Amt" in col_name or "Cash" in col_name):
                     self.assetGrid.setColZeroSuppress(row, col, False)
 
 #                cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
@@ -320,7 +320,7 @@ class AssetFrame(wx.Frame):
             if d.ShowModal() == wx.ID_YES:
                 self.save_file()
         self.assets = AssetList()
-        self.cur_asset = Asset()
+        self.cur_asset = None
         nrows = self.assetGrid.GetNumberRows()
         if nrows > 0:
             self.assetGrid.DeleteRows(0, nrows)
@@ -534,7 +534,7 @@ class AssetFrame(wx.Frame):
                         net_asset.set_type("Retirement")
                     elif "Visa" in asset_name or "MC" in asset_name:
                         net_asset.set_type("Credit Card")
-                    elif "Store Card" in asset_name:
+                    elif "Store Card" in asset_name or "Sears" in asset_name:
                         net_asset.set_type("Store Card")
                     else:
                         net_asset.set_type("Other")
@@ -638,7 +638,7 @@ class AssetFrame(wx.Frame):
     def about(self, *args):
         d = wx.MessageDialog(self,
                              "Python Asset Manager\n"
-                             "Copyright (c) 2016, Joseph J. Gorak\n"
+                             "Copyright (c) 2016,2017 Joseph J. Gorak\n"
                              "Based on idea from Python Checkbook (pyCheckbook)\n"
                              "written by Richard P. Muller\n"
                              "Released under the Gnu GPL\n",

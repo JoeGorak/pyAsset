@@ -120,39 +120,7 @@ class AssetGrid(grd.Grid):
         return
 
     def getColName(self, col):
-#        lab = self.GetColLabelValue(col)
-        if col == self.ACCT_NAME_COL:
-            return "Acct name"
-        elif col == self.ACCT_CURR_VAL_COL:
-            return "Curr val"
-        elif col == self.ACCT_LAST_PULL_COL:
-            return "Last pulled"
-        elif col == self.ACCT_LIMIT_COL:
-            return "Limit"
-        elif col == self.ACCT_AVAIL_ONLINE_COL:
-            return "Avail online"
-        elif col == self.ACCT_RATE_COL:
-            return "Rate"
-        elif col == self.ACCT_PAYMENT_COL:
-            return "Payment amt"
-        elif col == self.ACCT_DUE_DATE_COL:
-            return "Due date"
-        elif col == self.ACCT_SCHED_DATE_COL:
-            return "Sched date"
-        elif col == self.ACCT_MIN_PMT_COL:
-            return "Min pmt"
-        elif col == self.ACCT_STMT_BAL_COL:
-            return "Stmt Bal"
-        elif col == self.ACCT_AMT_OVER_COL:
-            return "Amt Over"
-        elif col == self.ACCT_CASH_LIMIT_COL:
-            return "Cash Limit"
-        elif col == self.ACCT_CASH_USED_COL:
-            return "Cash Used"
-        elif col == self.ACCT_CASH_AVAIL_COL:
-            return "Cash Avail"
-        else:
-            return "Unknown"
+        return self.GetColLabelValue(col)
 
     def getColWidth(self, i):
         return self.col_info[i][self.WIDTH_COL]

@@ -140,6 +140,8 @@ class ExcelToAsset:
                                 asset.set_limit(cv)
                             elif heading == "Avail (Online)":
                                 asset.set_avail(cv)
+                            elif heading == "Avail (Proj)":
+                                asset.set_avail_proj(cv)
                             elif heading == "Rate":
                                 asset.set_rate(cv)
                             elif heading == "Payment":
