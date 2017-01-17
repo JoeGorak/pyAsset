@@ -463,8 +463,6 @@ class AssetFrame(wx.Frame):
             fname = d.GetFilename()
             dir = d.GetDirectory()
             total_name_in = os.path.join(dir, fname)
-#            total_name_extension_place = total_name_in.find(".xlsm")
-            # pr total_name_in
             error = ""
             try:
                 fromfile = open(total_name_in, 'r')
@@ -518,37 +516,52 @@ class AssetFrame(wx.Frame):
             for i in range(len(latest_assets)):
                 net_asset = latest_assets.__getitem__(i)
                 if net_asset != None:
-                    asset_name = net_asset.name
-                    if "Checking" in asset_name:
-                        net_asset.set_type("Checking")
-                    elif "Savings" in asset_name:
-                        net_asset.set_type("Savings")
-                    elif "Money Market" in asset_name:
-                        net_asset.set_type("Money Market")
-                    elif "Overdraft" in asset_name:
-                        net_asset.set_type("Overdraft")
-                    elif "TSP" in asset_name or "Annuity" in asset_name:
-                        net_asset.set_type("Retirement")
-                    elif "Visa" in asset_name or "MC" in asset_name:
-                        net_asset.set_type("Credit Card")
-                    elif "Store Card" in asset_name or "Sears" in asset_name:
-                        net_asset.set_type("Store Card")
-                    else:
-                        net_asset.set_type("Other")
                     latest_name = net_asset.get_name()
                     found = False
                     for j in range(len(self.assets)):
-                        display_name = cur_name = self.assets[j].get_name()
+                        cur_name = self.assets[j].get_name()
                         if "(" in cur_name:
                             cur_name = cur_name.split("(")[1].split(")")[0]
                         if cur_name in latest_name:
-                            self.assets[j] = copy.deepcopy(net_asset)
-                            self.assets[j].set_name(display_name)
+                            net_index = j
                             found = True
                             break
                     if not found:
-                        self.assets.append(self.cur_asset.get_name())
-                        self.assets[-1] = copy.deepcopy(net_asset)
+                        self.assets.append(latest_name)
+                        net_index = -1
+                    # Always update Value (Curr) column... others check if non-zero value before update is done!
+                    self.assets[net_index].set_total(net_asset.get_total())
+                    if net_asset.get_value_proj() != 0.0:
+                        self.assets[net_index].set_value_proj(net_asset.get_value_proj())
+                    if net_asset.get_last_pull_date() != 0.0:
+                        self.assets[net_index].set_last_pull_date(net_asset.get_last_pull_date())
+                    if net_asset.get_limit() != 0.0:
+                        self.assets[net_index].set_limit(net_asset.get_limit())
+                    if net_asset.get_avail() != 0.0:
+                        self.assets[net_index].set_avail(net_asset.get_avail())
+                    if net_asset.get_avail_proj() != 0.0:
+                        self.assets[net_index].set_avail_proj(net_asset.get_avail_proj())
+                    if net_asset.get_rate() != 0.0:
+                        self.assets[net_index].set_rate(net_asset.get_rate())
+                    if net_asset.get_payment() != 0.0:
+                        self.assets[net_index].set_payment(net_asset.get_payment())
+                    if net_asset.get_due_date() != 0.0:
+                        self.assets[net_index].set_due_date(net_asset.get_due_date())
+                    if net_asset.get_sched() != 0.0:
+                        self.assets[net_index].set_sched(net_asset.get_sched())
+                    if net_asset.get_min_pay() != 0.0:
+                        self.assets[net_index].set_min_pay(net_asset.get_min_pay())
+                    if net_asset.get_stmt_bal() != 0.0:
+                        self.assets[net_index].set_stmt_bal(net_asset.get_stmt_bal())
+                    if net_asset.get_amt_over() != 0.0:
+                        self.assets[net_index].set_amt_over(net_asset.get_amt_over())
+                    if net_asset.get_cash_limit() != 0.0:
+                        self.assets[net_index].set_cash_limit(net_asset.get_cash_limit())
+                    if net_asset.get_cash_used() != 0.0:
+                        self.assets[net_index].set_cash_used(net_asset.get_cash_used())
+                    if net_asset.get_cash_avail() != 0.0:
+                        self.assets[net_index].set_cash_avail(net_asset.get_cash_avail())
+
         w.Finish()
         self.redraw_all(-1)
 

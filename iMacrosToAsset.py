@@ -4,7 +4,7 @@ INSTALLATION/REQUIREMENTS
 PyAsset requires Python (>=2.1) and wxPython.
 
 COPYRIGHT/LICENSING
-Copyright (c) 2017, Joseph J. Gorak. All rights reserved.
+Copyright (c) 2017 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -22,9 +22,6 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
-
-#  Version information
-#  1/7/2017     Initial version v0.1
 
 # TO-DOs
 #
@@ -56,7 +53,7 @@ class iMacrosToAsset:
             return("Retirement")
         elif "Visa" in asset_name or "MC" in asset_name:
             return("Credit Card")
-        elif "Store Card" in asset_name:
+        elif "Store Card" in asset_name or "Macy's" in asset_name or "Sears" in asset_name:
             return("Store Card")
         else:
             return("Other")
@@ -102,18 +99,23 @@ class iMacrosToAsset:
                 extract_index = 1
             account_index = 0
             account_negative_flag = net_asset_code[2]
-#            print account_negative_flag
             while "NODATA" not in self.iim.iimGetExtract(extract_index):
                 assetName = self.iim.iimGetExtract(extract_index)
                 extract_index += 1
                 asset = AssetsFound.append(assetName)
                 asset.set_type(self.get_asset_type(assetName))
-#                print "Checking account index", account_index
-                account_total = self.iim.iimGetExtract(extract_index).replace("$", "").replace(",", "").replace("(","").replace(")","")
+                # if account_negative_flag is set for current index, store the negative of the returned balance. In other words, if balance is negative and flag is set, store positive.  If balance is positive and flag is set, store negative.
+                # if account_negatve flag is not set, store balance retrieved
+                account_total = round(float(self.iim.iimGetExtract(extract_index).replace("$", "").replace(",", "").replace("(","").replace(")","").replace("- ","-")),2)
                 if account_negative_flag[account_index] == True:
-                    asset.set_total("-" + account_total)
+                    if account_total < 0:
+                        asset.set_total(str(-account_total))
+                    elif account_total > 0:
+                        asset.set_total("-" + str(account_total))
+                    else:
+                        asset.set_total("0.0")
                 else:
-                    asset.set_total(account_total)
+                    asset.set_total(str(account_total))
                 account_index += 1
                 extract_index += 1
                 asset.set_last_pull_date(NewDate)

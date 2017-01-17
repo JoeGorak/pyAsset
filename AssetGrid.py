@@ -309,6 +309,9 @@ class AssetGrid(grd.Grid):
         if row < 0 or row >= len(self.frame.assets):
             str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
             ret_val =  self.DisplayMsg(str)
+        elif self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
+            str = "Warning: Changes not allowed for column %s!" % (self.getColName(col))
+            ret_val =  self.DisplayMsg(str)
         if ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.DOLLAR_TYPE:
 #TODO  move regular expression for dollar format to new object
             m = re.match("^-?\$?\d{1,3}(\,?\d{3})*(\.\d{2})*$", new_value)
@@ -393,15 +396,16 @@ class AssetGrid(grd.Grid):
                     str = "%s is not a valid datetime string" % (new_value)
                     ret_val = self.DisplayMsg(str)
         elif ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.STRING_TYPE:
-            evt.Veto()
+            pass
         else:
-            str = "Warning: cellchanging not allowed for cell %d %d!" % (row, col)
-            ret_val =  self.DisplayMsg(str)
+            if ret_val != wx.OK:
+                str = "Warning: cellchanging not allowed for cell %d %d!" % (row, col)
+                ret_val =  self.DisplayMsg(str)
         if ret_val == wx.OK:
             self.frame.assetchange(evt)
+            self.frame.redraw_all(row)  # only redraw current row
         else:
             evt.Veto()
-        self.frame.redraw_all(row)  # only redraw current row
 
     def set_properties(self, frame):
         frame.SetTitle("PyAsset: Asset")
