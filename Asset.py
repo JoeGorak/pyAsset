@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016,2017 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2017 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -22,7 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
 import os
-from Transaction import Transaction
 
 # Asset Types
 CHECKING = 0
@@ -32,16 +31,15 @@ OVERDRAFT = 3
 CREDIT_CARD = 4
 STORE_CARD = 5
 RETIREMENT = 6
-MORTGAGE = 7
-OTHER = 8
+LOAN = 7
+MORTGAGE = 8
+OTHER = 9
 
 class Asset:
-    def __init__(self, name, filename=None, type = "OTHER", last_pull_date = 0, total = 0.0, value_proj = 0.0, limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
+    def __init__(self, name, type = "OTHER", last_pull_date = 0, total = 0.0, value_proj = 0.0, limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
                  payment = 0.0, due_date = 0, sched = 0, min_pay = 0.0, stmt_bal = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
         self.name = name
-        self.filename = filename
         self.type = self.set_type(type)
-        self.transactions = []
         self.last_pull_date = last_pull_date
         self.limit = limit
         self.avail = avail
@@ -58,9 +56,6 @@ class Asset:
         self.cash_limit = cash_limit
         self.cash_used = cash_used
         self.cash_avail = cash_avail
-
-        if (filename is not None):
-            self.read_qif(filename)
         return
 
     def __len__(self):
@@ -74,12 +69,6 @@ class Asset:
 
     def __str__(self):
         return " %-10s $%8.2f\n" % (self.name, self.total)
-
-    def __delitem__(self, i):
-        del self.transactions[i]
-
-    def append(self, item):
-        self.transactions.append(item)
 
     def read_qif(self, filename, readmode='normal'):
         if readmode == 'normal':  # things not to do on 'import':
@@ -125,7 +114,7 @@ class Asset:
                     transaction = Transaction()
                 blank_transaction = True
             else:
-                print "Unparsable line: ", line[:-1]
+                print("Unparsable line: ", line[:-1])
         self.sort()
         return
 
@@ -274,6 +263,10 @@ class Asset:
             return "store card"
         elif st == RETIREMENT:
             return "retirement"
+        elif st == MORTGAGE:
+            return "mortgage"
+        elif st == LOAN:
+            return "loan"
         elif st == OTHER:
             return "other"
         else:
@@ -281,22 +274,24 @@ class Asset:
 
     def set_type(self, type):
         tu = type.upper()
-        if tu == "CHECKING":
+        if "CHECKING" in tu:
             self.type = CHECKING
-        elif tu == "SAVINGS":
+        elif "SAVINGS" in tu:
             self.type = SAVINGS
-        elif tu == "MONEY MARKET":
+        elif "MONEY MARKET" in tu:
             self.type = MONEY_MARKET
-        elif tu == "OVERDRAFT":
+        elif "OVERDRAFT" in tu:
             self.type = OVERDRAFT
-        elif tu == "CREDIT CARD":
-            self.type = CREDIT_CARD
-        elif tu == "STORE CARD":
+        elif "STORE CARD" in tu:
             self.type = STORE_CARD
-        elif tu == "RETIREMENT":
+        elif "CREDIT CARD" in tu:
+            self.type = CREDIT_CARD
+        elif "RETIREMENT" in tu:
             self.type = RETIREMENT
-        elif tu == "OTHER":
-            self.type = OTHER
+        elif "MORTGAGE" in tu:
+            self.type = MORTGAGE
+        elif "LOAN" in tu:
+            self.type = LOAN
         else:
             self.type = OTHER
 

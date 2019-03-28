@@ -173,7 +173,7 @@ class ExcelToAsset:
 
         col_num = 1
         for col in ws.columns:
-            print "Processing col", col
+            print("Processing col", col)
             row_num = 1
             heading = ""
             for cell in col:
@@ -268,5 +268,5 @@ class ExcelToAsset:
                                 heading = cv
                 row_num += 1
             col_num += 1
-        print BillsFound
+        print(BillsFound)
         return BillsFound

@@ -32,6 +32,28 @@ class AssetGrid(grd.Grid):
         self.frame = frame
         self.Bind(grd.EVT_GRID_CELL_CHANGING, self.cellchanging)
 
+        # test all the events
+        self.Bind(grd.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
+        self.Bind(grd.EVT_GRID_CELL_RIGHT_CLICK, self.OnCellRightClick)
+        self.Bind(grd.EVT_GRID_CELL_LEFT_DCLICK, self.OnCellLeftDClick)
+        self.Bind(grd.EVT_GRID_CELL_RIGHT_DCLICK, self.OnCellRightDClick)
+
+        self.Bind(grd.EVT_GRID_LABEL_LEFT_CLICK, self.OnLabelLeftClick)
+        self.Bind(grd.EVT_GRID_LABEL_RIGHT_CLICK, self.OnLabelRightClick)
+        self.Bind(grd.EVT_GRID_LABEL_LEFT_DCLICK, self.OnLabelLeftDClick)
+        self.Bind(grd.EVT_GRID_LABEL_RIGHT_DCLICK, self.OnLabelRightDClick)
+
+        self.Bind(grd.EVT_GRID_ROW_SIZE, self.OnRowSize)
+        self.Bind(grd.EVT_GRID_COL_SIZE, self.OnColSize)
+
+        self.Bind(grd.EVT_GRID_RANGE_SELECT, self.OnRangeSelect)
+#        self.Bind(grd.EVT_GRID_CELL_CHANGE, self.OnCellChange)
+#        self.Bind(grd.EVT_GRID_SELECT_CELL, self.OnSelectCell)
+
+        self.Bind(grd.EVT_GRID_EDITOR_SHOWN, self.OnEditorShown)
+        self.Bind(grd.EVT_GRID_EDITOR_HIDDEN, self.OnEditorHidden)
+        self.Bind(grd.EVT_GRID_EDITOR_CREATED, self.OnEditorCreated)
+
         # Define the layout of the grid in the frame
         self.ACCT_NAME_COL = 0
         self.ACCT_CURR_VAL_COL = 1
@@ -132,7 +154,7 @@ class AssetGrid(grd.Grid):
 
     def setColZeroSuppress(self, row, i, zero_suppress):
         if zero_suppress != self.ZERO_SUPPRESS and zero_suppress != self.NO_ZERO_SUPPRESS:
-            print "Bad value for zero_suppress:" + zero_suppress + " Ignored! Should be either " + self.ZERO_SUPPRESS + " or " + self.NO_ZERO_SUPPRESS
+            print("Bad value for zero_suppress:" + zero_suppress + " Ignored! Should be either " + self.ZERO_SUPPRESS + " or " + self.NO_ZERO_SUPPRESS_)
         else:
             self.col_info[i][self.ZERO_SUPPRESS_COL] = zero_suppress
 
@@ -428,3 +450,134 @@ class AssetGrid(grd.Grid):
             self.total_width += cur_width
             self.SetColSize(i, cur_width)
         return self.total_width
+
+    def OnCellLeftClick(self, evt):
+        print("OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
+                                                 evt.GetCol(),
+                                                 evt.GetPosition()))
+        evt.Skip()
+
+    def OnCellRightClick(self, evt):
+        print("OnCellRightClick: (%d,%d) %s\n" % (evt.GetRow(),
+                                                  evt.GetCol(),
+                                                  evt.GetPosition()))
+        evt.Skip()
+
+    def OnCellLeftDClick(self, evt):
+        print("OnCellLeftDClick: (%d,%d) %s\n" % (evt.GetRow(),
+                                                  evt.GetCol(),
+                                                  evt.GetPosition()))
+        evt.Skip()
+
+    def OnCellRightDClick(self, evt):
+        print("OnCellRightDClick: (%d,%d) %s\n" % (evt.GetRow(),
+                                                   evt.GetCol(),
+                                                   evt.GetPosition()))
+        evt.Skip()
+
+    def OnLabelLeftClick(self, evt):
+        print("OnLabelLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
+                                                  evt.GetCol(),
+                                                  evt.GetPosition()))
+        evt.Skip()
+
+    def OnLabelRightClick(self, evt):
+        print("OnLabelRightClick: (%d,%d) %s\n" % (evt.GetRow(),
+                                                   evt.GetCol(),
+                                                   evt.GetPosition()))
+        evt.Skip()
+
+    def OnLabelLeftDClick(self, evt):
+        print("OnLabelLeftDClick: (%d,%d) %s\n" % (evt.GetRow(),
+                                                   evt.GetCol(),
+                                                   evt.GetPosition()))
+        evt.Skip()
+
+    def OnLabelRightDClick(self, evt):
+        print("OnLabelRightDClick: (%d,%d) %s\n" % (evt.GetRow(),
+                                                    evt.GetCol(),
+                                                    evt.GetPosition()))
+        evt.Skip()
+
+    def OnRowSize(self, evt):
+        print("OnRowSize: row %d, %s\n" % (evt.GetRowOrCol(),
+                                           evt.GetPosition()))
+        evt.Skip()
+
+    def OnColSize(self, evt):
+        print("OnColSize: col %d, %s\n" % (evt.GetRowOrCol(),
+                                           evt.GetPosition()))
+        evt.Skip()
+
+    def OnRangeSelect(self, evt):
+        if evt.Selecting():
+            msg = 'Selected'
+        else:
+            msg = 'Deselected'
+        print("OnRangeSelect: %s  top-left %s, bottom-right %s\n" % (msg, evt.GetTopLeftCoords(),
+                                                                     evt.GetBottomRightCoords()))
+        evt.Skip()
+
+    def OnCellChange(self, evt):
+        print("OnCellChange: (%d,%d) %s\n" % (evt.GetRow(), evt.GetCol(), evt.GetPosition()))
+
+        # Show how to stay in a cell that has bad data.  We can't just
+        # call SetGridCursor here since we are nested inside one so it
+        # won't have any effect.  Instead, set coordinates to move to in
+        # idle time.
+        value = self.GetCellValue(evt.GetRow(), evt.GetCol())
+
+        if value == 'no good':
+            self.moveTo = evt.GetRow(), evt.GetCol()
+
+    def OnSelectCell(self, evt):
+        if evt.Selecting():
+            msg = 'Selected'
+        else:
+            msg = 'Deselected'
+        print("OnSelectCell: %s (%d,%d) %s\n" % (msg, evt.GetRow(),
+                                                 evt.GetCol(), evt.GetPosition()))
+
+        # Another way to stay in a cell that has a bad value...
+        row = self.GetGridCursorRow()
+        col = self.GetGridCursorCol()
+
+        if self.IsCellEditControlEnabled():
+            self.HideCellEditControl()
+            self.DisableCellEditControl()
+
+        value = self.GetCellValue(row, col)
+
+        if value == 'no good 2':
+            return  # cancels the cell selection
+
+        evt.Skip()
+
+    def OnEditorShown(self, evt):
+        if evt.GetRow() == 6 and evt.GetCol() == 3 and \
+                        wx.MessageBox("Are you sure you wish to edit this cell?",
+                                      "Checking", wx.YES_NO) == wx.NO:
+            evt.Veto()
+            return
+
+        print("OnEditorShown: (%d,%d) %s\n" % (evt.GetRow(), evt.GetCol(),
+                                               evt.GetPosition()))
+        evt.Skip()
+
+    def OnEditorHidden(self, evt):
+        if evt.GetRow() == 6 and evt.GetCol() == 3 and \
+                        wx.MessageBox("Are you sure you wish to  finish editing this cell?",
+                                      "Checking", wx.YES_NO) == wx.NO:
+            evt.Veto()
+            return
+
+        print("OnEditorHidden: (%d,%d) %s\n" % (evt.GetRow(),
+                                                evt.GetCol(),
+                                                evt.GetPosition()))
+        evt.Skip()
+
+    def OnEditorCreated(self, evt):
+        print("OnEditorCreated: (%d, %d) %s\n" % (evt.GetRow(),
+                                                  evt.GetCol(),
+                                                  evt.GetControl()))
+

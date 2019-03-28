@@ -276,7 +276,7 @@ class AssetFrame(wx.Frame):
         elif colName == "Cash Avail":
             self.assets[row].set_cash_avail(val)
         else:
-            print "assetchange: Warning: modifying incorrect cell! row, ", row, " col ", col
+            print("assetchange: Warning: modifying incorrect cell! row, ", row, " col ", col)
         return
 
     def load_file(self, *args):
@@ -457,7 +457,7 @@ class AssetFrame(wx.Frame):
 
     def import_XLSM_file(self, *args):
         # Appends or Merges as appropriate the records from a .xlsm file to the current Asset
-        d = wx.FileDialog(self, "Import", "", "", "*.xlsm", wx.OPEN)
+        d = wx.FileDialog(self, "Import", "", "", "*.xlsm", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
             self.edited = 1
             fname = d.GetFilename()
@@ -529,8 +529,9 @@ class AssetFrame(wx.Frame):
                     if not found:
                         self.assets.append(latest_name)
                         net_index = -1
-                    # Always update Value (Curr) column... others check if non-zero value before update is done!
+                    # Always update Value (Curr) column and type ... others check if non-zero value before update is done!
                     self.assets[net_index].set_total(net_asset.get_total())
+                    self.assets[net_index].set_type(net_asset.get_type())
                     if net_asset.get_value_proj() != 0.0:
                         self.assets[net_index].set_value_proj(net_asset.get_value_proj())
                     if net_asset.get_last_pull_date() != 0.0:
@@ -636,6 +637,7 @@ class AssetFrame(wx.Frame):
 
     def deleteentry(self, *args):
         index = self.assetGrid.GetGridCursorRow()
+        indices = self.assetGrid.SelectedCells
         if index < 0: return
         d = wx.MessageDialog(self,
                              "Really delete this asset?",

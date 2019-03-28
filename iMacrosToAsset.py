@@ -49,8 +49,12 @@ class iMacrosToAsset:
             return("Money Market")
         elif "Overdraft" in asset_name:
             return("Overdraft")
-        elif "TSP" in asset_name or "Annuity" in asset_name:
+        elif "Agency" in asset_name or "Employee" in asset_name or "Matching" in asset_name or "TSP" in asset_name or "Annuity" in asset_name:
             return("Retirement")
+        elif "General Purpose" in asset_name:
+            return("Loan")
+        elif "Mortgage" in asset_name:
+            return("Mortgage")
         elif "Visa" in asset_name or "MC" in asset_name:
             return("Credit Card")
         elif "Store Card" in asset_name or "Macy's" in asset_name or "Sears" in asset_name:
@@ -67,10 +71,10 @@ class iMacrosToAsset:
         from datetime import datetime
         AssetsFound = AssetList()
         net_asset_macro_name = "Retrieve_" + net_asset_code[0] + "_balances"
-        print "Running " + net_asset_macro_name
+        print("Running " + net_asset_macro_name)
         iret = self.iim.iimPlay(net_asset_macro_name)
         if (iret != 1):
-            print "Bad status", iret, "returned from", net_asset_macro_name, "Error text:", self.iim.iimGetErrorText()
+            print("Bad status", iret, "returned from", net_asset_macro_name, "Error text:", self.iim.iimGetErrorText())
         else:
             if net_asset_code[1] != -1:
                 InpDate = self.iim.iimGetExtract(1).split(" ")
@@ -123,5 +127,5 @@ class iMacrosToAsset:
 
     def Finish(self):
         iret = self.iim.iimClose()
-        print "Updates Finished, iret = ", iret
+        print("Updates Finished, iret = ", iret)
         return iret

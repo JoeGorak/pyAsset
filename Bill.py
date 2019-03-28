@@ -134,7 +134,7 @@ class Bill:
         elif pmu == "OTHER":
             self.pmt_method = OTHER
         else:
-            print "Unknown payment method -" + pmt_method + "! Defaulting to SCHED_ONLINE"
+            print("Unknown payment method - " + pmt_method + "! Defaulting to SCHED_ONLINE")
             self.pmt_method = SCHED_ONLINE
 
     def get_pmt_frequency(self):
@@ -165,5 +165,5 @@ class Bill:
         elif pfu == "MANUAL":
             self.payment_frequency = MANUAL
         else:
-            print "Unknown payment frequency -" + payment_freq + "! Defaulting to MANUAL"
+            print("Unknown payment frequency -" + payment_freq + "! Defaulting to MANUAL")
             self.payment_frequency = MANUAL

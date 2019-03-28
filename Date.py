@@ -76,13 +76,13 @@ class Date:
         # Don't support any other options
 
         if month > 12 or month < 1:
-            print "Error: Bad month: %d/%d/%d " % (month, day, year)
+            print("Error: Bad month: %d/%d/%d " % (month, day, year))
         if year < 10:
             year += 2000
         elif year < 100:
             year += 1900
         elif year < 1970:
-            print "Error: Bad year: %d/%d/%d " % (month, day, year)
+            print("Error: Bad year: %d/%d/%d " % (month, day, year))
 
         self.year = year
         self.month = month
