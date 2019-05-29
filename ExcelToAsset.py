@@ -34,36 +34,48 @@ from AssetList import AssetList
 from BillList import BillList
 
 class ExcelToAsset:
-    def OpenXLSMFile(self, FileName):
-        self.wb = load_workbook(FileName, data_only=True, guess_types=False)
+    def __init__(self):
+        self.wb = '';
 
-    def ProcessAssetsSheet(self):
-        AccountWithTransactions = self.wb.get_sheet_names()
-        AccountWithTransactions.remove("Bills")
+    def OpenXLSMFile(self, FileName):
+        self.wb = load_workbook(FileName, read_only=True, data_only=True, guess_types=False)
+
+    def ProcessAssetsSheet(self) -> object:
         AssetsFound = AssetList()
-        AssetPlaces = dict()
-        ColumnHeaders = dict()
 
         ws = self.wb.get_sheet_by_name("Assets")
 
-        # First, determine all assets being tracked by parsing first column
+        for row in ws.rows:
+            cv = row[0].value
+            if cv == None or "Bills" in cv or "Total" in cv or "Cash Flow" in cv:
+                continue
+            elif "Accounts" in cv or "Other" in cv:
+#                print(row)
+                ColumnHeaders = dict()
+                col_num = 1
+                for cell in row:
+                    cv = cell.value
+                    if cv != None:
+                        if col_num == 1:
+                            headerValue = "Name"
+                        else:
+                            headerValue = cv
+                        ColumnHeaders[col_num] = headerValue
+                        col_num += 1
+                    else:
+                        break
+                    if len(ColumnHeaders) == 1:
+                        continue
+#                print(ColumnHeaders)
+            else:
+                col_num = 1
+                for cell in row:
+                    cv = cell.value
+                    if col_num == 1:
 
-        for col in ws.columns:
-            row_num = 1
-            asset_num = 0
-            for cell in col:
-                cv = cell.value
-                if cv != None:
-                    new_asset = None
-                    if cv in AccountWithTransactions:
+                        # First column meand this is a new asset... save its name and a pointer to the new asset location for later
+                        # Also the type of asset using clues from the account name
                         new_asset = AssetsFound.append(cv)
-                        AssetPlaces[asset_num] = (cv, row_num)
-                        asset_num += 1
-                    elif not ("Bills" in cv or "Accounts" in cv or "Cash" in cv or "Assets" in cv or "Total" in cv):
-                        new_asset = AssetsFound.append(cv)
-                        AssetPlaces[asset_num] = (cv, row_num)
-                        asset_num += 1
-                    if new_asset != None:
                         asset_name = new_asset.name
                         if "Checking" in asset_name:
                             new_asset.set_type("Checking")
@@ -79,89 +91,59 @@ class ExcelToAsset:
                             new_asset.set_type("Credit Card")
                         elif "Sears" in asset_name or "Macy's" in asset_name:
                             new_asset.set_type("Store Card")
+                        elif "Loan" in asset_name:
+                            new_asset.set_type("Loan")
                         else:
                             new_asset.set_type("Other")
-                row_num += 1
-            break
 
-        # Next, get column header locations by locating longest row with labels
+                    else:  # 2nd and remaining columns are more data for the current asset...
+                            # determine what field and update the object appropriately
 
-        max_len = 0
-        max_row = 0
-        row_num = 1
-        row_len = 0
-        for row in ws.rows:
-            col_num = 1
-            for cell in row:
-                cv = cell.value
-                if cv != None:
-                    row_len += 1
-                col_num += 1
-            if row_len > max_len:
-                max_len = row_len
-                max_row = row_num
-            row_num += 1
-            row_len = 0
-        row_num = 1
-        for row in ws.rows:
-            if row_num == max_row:
-                col_num = 1
-                for cell in row:
-                    cv = cell.value
-                    if cv != None and col_num != 1:
-                        ColumnHeaders[col_num] = cv
-                    col_num += 1
-                break
-            row_num += 1
-
-        # Finally, get data on assets
-
-        for asset_num in range(0, len(AssetsFound)):
-            asset_row_num = AssetPlaces.get(asset_num, "None")[1]
-            row_num = 1
-            for row in ws.rows:
-                if row_num == asset_row_num:
-                    col_num = 1
-                    asset = AssetsFound[asset_num]
-                    for cell in row:
                         heading = ColumnHeaders.get(col_num, "None")
                         if heading != "None":
-                            cv = cell.value
                             if "Value (Curr)" in heading:
-                                asset.set_total(cv)
+                                new_asset.set_total(cv)
                             elif "Value (Proj)" in heading:
-                                asset.set_value_proj(cv)
+                                new_asset.set_value_proj(cv)
                             elif heading == "last pulled":
-                                asset.set_last_pull_date(cv)
+                                new_asset.set_last_pull_date(cv)
                             elif heading == "Limit":
-                                asset.set_limit(cv)
+                                new_asset.set_limit(cv)
                             elif heading == "Avail (Online)":
-                                asset.set_avail(cv)
+                                new_asset.set_avail(cv)
                             elif heading == "Avail (Proj)":
-                                asset.set_avail_proj(cv)
+                                new_asset.set_avail_proj(cv)
+                            elif heading == "Estimate Method":
+                                new_asset.set_est_method(cv)
                             elif heading == "Rate":
-                                asset.set_rate(cv)
+                                new_asset.set_rate(cv)
                             elif heading == "Payment":
-                                asset.set_payment(cv)
+                                new_asset.set_payment(cv)
                             elif heading == "Due Date":
-                                asset.set_due_date(cv)
+                                new_asset.set_due_date(cv)
                             elif heading == "Sched":
-                                asset.set_sched(cv)
+                                new_asset.set_sched(cv)
                             elif heading == "Min Pmt":
-                                asset.set_min_pay(cv)
+                                new_asset.set_min_pay(cv)
+                            elif "Stmt Bal" in heading:
+                                new_asset.set_stmt_bal(cv)
+                            elif "Amt Over" in heading:
+                                new_asset.set_amt_over(cv)
                             elif "Cash Limit" in heading:
-                                asset.set_cash_limit(cv)
+                                new_asset.set_cash_limit(cv)
                             elif "Cash used" in heading:
-                                asset.set_cash_used(cv)
+                                new_asset.set_cash_used(cv)
                             elif "Cash avail" in heading:
-                                asset.set_cash_avail(cv)
+                                new_asset.set_cash_avail(cv)
                             else:
+                                print("Unknown field " + heading + " ignored!")
                                 pass
-                        col_num += 1
-                    break
-                row_num += 1
 
-        #print AssetsFound
+                    col_num += 1
+                    if col_num > len(ColumnHeaders):
+                        break
+
+#        print(AssetsFound)
         return AssetsFound
 
 #TODO: Rewrite ProcessBillsSheet to use correct fields  -- NOT CURRENTLY CALLED FROM AssetFrame.py TO AVOID GENERATING ERRORS!  01/14/2017  JJG

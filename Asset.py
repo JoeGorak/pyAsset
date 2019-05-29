@@ -36,8 +36,8 @@ MORTGAGE = 8
 OTHER = 9
 
 class Asset:
-    def __init__(self, name, type = "OTHER", last_pull_date = 0, total = 0.0, value_proj = 0.0, limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
-                 payment = 0.0, due_date = 0, sched = 0, min_pay = 0.0, stmt_bal = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
+    def __init__(self, name, type = "OTHER", last_pull_date = 0, total = 0.0, value_proj = 0.0, est_method = "none", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
+                 payment = 0.0, due_date = 0, sched = 0, min_pay = 0.0, stmt_bal = 0.0, amt_over = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
         self.name = name
         self.type = self.set_type(type)
         self.last_pull_date = last_pull_date
@@ -51,7 +51,8 @@ class Asset:
         self.min_pay = min_pay
         self.total = total
         self.value_proj = value_proj
-        self.amt_over = 0.0
+        self.est_method = est_method
+        self.amt_over = amt_over
         self.stmt_bal = stmt_bal
         self.cash_limit = cash_limit
         self.cash_used = cash_used
@@ -159,7 +160,7 @@ class Asset:
 
     def set_total(self, total):
         try:
-            self.total = round(float(total) ,2)
+            self.total = round(float(total), 2)
         except:
             self.total = 0.0
 
@@ -174,6 +175,12 @@ class Asset:
 
     def get_value_proj(self):
         return self.value_proj
+
+    def set_est_method(self, est_method):
+        self.est_method = est_method
+
+    def get_est_method(self):
+        return self.est_method
 
     def set_last_pull_date(self, last_pull_date):
         if last_pull_date != 0:
@@ -211,7 +218,7 @@ class Asset:
 
     def set_rate(self, rate):
         try:
-            self.rate = round(float(rate), 3)
+            self.rate = float(rate)
         except:
             self.rate = 0.0
 

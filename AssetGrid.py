@@ -217,6 +217,7 @@ class AssetGrid(grd.Grid):
 
     def GridCellDollarRenderer(self, row, col):
         cellValue = str(self.getColMethod(row,col))
+        self.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
         try:
             NumberAmount = cellValue.replace("$", "").replace(",", "")
             amount = float(NumberAmount)
@@ -242,7 +243,7 @@ class AssetGrid(grd.Grid):
         if amount < 1:
             groups.append("0")
             groups.append(",")
-        while amount > 1:
+        while amount >= 1:
             next_digits = "%s" % str((int(amount) % 1000))
             while len(next_digits) < 3:
                 if amount > 100:
@@ -259,11 +260,20 @@ class AssetGrid(grd.Grid):
         if self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and str_out == "0.00":
             tableValue = ""
         else:
+            str_out = str_out.strip(' \t')
+            field_width = 13                                    # Assume largest number is 999,999.99 which needs 10 places so add a couple for safety!
+            num_chars = len(str_out)
+            num_blanks = field_width - num_chars - 1
+            blanks = "" * num_blanks
+            format_start = "%%%1ds" % (num_blanks)
+            num_format = "%%%1ds" %(num_chars)
             if negative:
                 self.frame.assetGrid.SetCellTextColour(row, col, 'red')
-                tableValue = "-$%13s" % (str_out)
+                format_str = format_start + "-$" + num_format
+                tableValue = format_str % (blanks, str_out)
             else:
-                tableValue = " $%13s" % (str_out)
+                format_str = format_start + " $" + num_format
+                tableValue = format_str % (blanks, str_out)
         self.frame.assetGrid.SetCellValue(row, col, tableValue)
 
     def GridCellPercentRenderer(self, row, col):
