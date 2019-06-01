@@ -143,7 +143,7 @@ class ExcelToAsset:
                     if col_num > len(ColumnHeaders):
                         break
 
-#        print(AssetsFound)
+        print(AssetsFound)
         return AssetsFound
 
 #TODO: Rewrite ProcessBillsSheet to use correct fields  -- NOT CURRENTLY CALLED FROM AssetFrame.py TO AVOID GENERATING ERRORS!  01/14/2017  JJG
