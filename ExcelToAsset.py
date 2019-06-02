@@ -34,11 +34,21 @@ from AssetList import AssetList
 from BillList import BillList
 
 class ExcelToAsset:
-    def __init__(self):
-        self.wb = '';
+    def __init__(self, ignore_sheets=[]):
+        self.wb = ''
+        self.ignore_sheets = ignore_sheets
 
     def OpenXLSMFile(self, FileName):
         self.wb = load_workbook(FileName, read_only=True, data_only=True, guess_types=False)
+
+    def GetTransactionSheetNames(self):
+        sheets = self.wb.get_sheet_names()
+        return_sheets = []
+        if self.ignore_sheets != None:
+            for sheet in sheets:
+                if sheet not in self.ignore_sheets:
+                    return_sheets.append(sheet)
+        return return_sheets
 
     def ProcessAssetsSheet(self) -> object:
         AssetsFound = AssetList()
@@ -73,10 +83,10 @@ class ExcelToAsset:
                     cv = cell.value
                     if col_num == 1:
 
-                        # First column meand this is a new asset... save its name and a pointer to the new asset location for later
-                        # Also the type of asset using clues from the account name
+                        # First column means this is a new asset... save name and pointer to the new asset location for later
+                        # Also set type of asset using clues from the account name
                         new_asset = AssetsFound.append(cv)
-                        asset_name = new_asset.name
+                        asset_name = new_asset.get_name()
                         if "Checking" in asset_name:
                             new_asset.set_type("Checking")
                         elif "Savings" in asset_name:
@@ -143,7 +153,6 @@ class ExcelToAsset:
                     if col_num > len(ColumnHeaders):
                         break
 
-        print(AssetsFound)
         return AssetsFound
 
 #TODO: Rewrite ProcessBillsSheet to use correct fields  -- NOT CURRENTLY CALLED FROM AssetFrame.py TO AVOID GENERATING ERRORS!  01/14/2017  JJG

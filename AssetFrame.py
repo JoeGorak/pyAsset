@@ -455,6 +455,22 @@ class AssetFrame(wx.Frame):
         if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
         return
 
+    def process_asset_list(self, assetList):
+        for i in range(len(assetList)):
+            xlsm_asset = assetList.__getitem__(i)
+            self.cur_asset = copy.deepcopy(xlsm_asset)
+            cur_name = self.cur_asset.get_name()
+            found = False
+            for j in range(len(self.assets)):
+                if self.assets[j].get_name() == cur_name:
+                    self.assets[j] = copy.deepcopy(xlsm_asset)
+                    found = True
+                    break
+            if not found:
+                self.assets.append(self.cur_asset.get_name())
+                self.assets[-1] = copy.deepcopy(xlsm_asset)
+        self.redraw_all(-1)
+
     def import_XLSM_file(self, *args):
         # Appends or Merges as appropriate the records from a .xlsm file to the current Asset
         d = wx.FileDialog(self, "Import", "", "", "*.xlsm", wx.FD_OPEN)
@@ -472,29 +488,16 @@ class AssetFrame(wx.Frame):
 
             if error == "":
                 self.cur_assets = None
-                xlsm = ExcelToAsset()
+                xlsm = ExcelToAsset(ignore_sheets=['Assets', 'Bills', 'Sears transactions', 'Slate transactions'])
                 xlsm.OpenXLSMFile(total_name_in)
                 latest_assets = xlsm.ProcessAssetsSheet()
-#                print latest_assets
-                for i in range(len(latest_assets)):
-                    xlsm_asset = latest_assets.__getitem__(i)
-                    self.cur_asset = copy.deepcopy(xlsm_asset)
-                    cur_name = self.cur_asset.get_name()
-                    found = False
-                    for j in range(len(self.assets)):
-                        if self.assets[j].get_name() == cur_name:
-                            self.assets[j] = copy.deepcopy(xlsm_asset)
-                            found = True
-                            break
-                    if not found:
-                        self.assets.append(self.cur_asset.get_name())
-                        self.assets[-1] = copy.deepcopy(xlsm_asset)
+#                print(latest_assets)
+                self.process_asset_list(latest_assets)
+                transaction_sheet_names = xlsm.GetTransactionSheetNames()
+                print('process transaction sheets ' + str(transaction_sheet_names) + ' here')
+#TODO: Process latest_bills
 #                latest_bills = xlsm.ProcessBillsSheet(self.bills)
-#                print latest_bills
-                #TODO: Process latest_bills
-                if self.cur_asset.name:
-                    self.SetTitle("PyAsset: Asset %s" % total_name_in)
-                self.redraw_all(-1)
+#                print(latest_bills)
             else:
                 d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
                 d.ShowModal()
