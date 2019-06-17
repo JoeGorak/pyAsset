@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2017 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2017,2019 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -35,6 +35,8 @@ LOAN = 7
 MORTGAGE = 8
 OTHER = 9
 
+from Transaction import Transaction
+
 class Asset:
     def __init__(self, name, type = "OTHER", last_pull_date = 0, total = 0.0, value_proj = 0.0, est_method = "none", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
                  payment = 0.0, due_date = 0, sched = 0, min_pay = 0.0, stmt_bal = 0.0, amt_over = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
@@ -57,6 +59,7 @@ class Asset:
         self.cash_limit = cash_limit
         self.cash_used = cash_used
         self.cash_avail = cash_avail
+        self.transactions = Transaction()
         return
 
     def __len__(self):

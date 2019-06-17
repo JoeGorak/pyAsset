@@ -24,11 +24,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  Version information
 #  6/25/2016     Initial version v0.1
 
-from collections import namedtuple
 from Transaction import Transaction
 
 
-class TansactionList:
+class TransactionList:
     def __init__(self):
         # type: () -> object
         self.transactions = []
@@ -45,35 +44,13 @@ class TansactionList:
     def __str__(self):
         ret_str = ""
         for i in range(len(self.transactions)):
-            cur_asset = self.transactions[i]
-            cd = cur_asset.details
-            ret_str += "%-10s $%8.2f %s %s" % (cur_asset.name, cd.get_total(), cd.get_last_pull_date(), cd.get_type())
-            limit = cd.get_limit()
-            if limit != 0:
-                ret_str += " $%8.2f $%8.2f" % (limit, cd.get_avail())
-            rate = cd.get_rate()
-            if rate != 0:
-                ret_str += " %8.3f%%" % (rate*100)
-            payment = cd.get_payment()
-            if payment != 0:
-                ret_str += " $%8.2f" % (payment)
-            due_date = cd.get_due_date()
-            if due_date != 0:
-                ret_str += " %s" % (due_date)
-            sched = cd.get_sched()
-            if sched != 0:
-                ret_str += " %s" % (sched)
-            min_pay = cd.get_min_pay()
-            if min_pay != 0:
-                ret_str += " $%8.2f" % (min_pay)
-            ret_str += "\n"
+            ret_str = "%s\n%s" % (ret_str, self.transactions[i])
         return ret_str
 
     def __delitem__(self, i):
         del self.transactions[i]
 
-    def append(self, myname, myfile=None):
-        nt = namedtuple('Transaction','name,details')
-        transaction = nt(myname, Transaction(myname, myfile))
+    def append(self):
+        transaction = Transaction()
         self.transactions.append(transaction)
         return transaction

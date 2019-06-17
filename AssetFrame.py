@@ -495,9 +495,15 @@ class AssetFrame(wx.Frame):
                 self.process_asset_list(latest_assets)
                 transaction_sheet_names = xlsm.GetTransactionSheetNames()
                 print('process transaction sheets ' + str(transaction_sheet_names) + ' here')
+                for sheet in transaction_sheet_names:
+                    latest_transactions = xlsm.ProcessTransactionSheet(sheet)
+#TODO: Process latest_transactions
+                    print("\tlatest transactions from " + sheet)
+                    print("\t" + str(latest_transactions))
 #TODO: Process latest_bills
 #                latest_bills = xlsm.ProcessBillsSheet(self.bills)
 #                print(latest_bills)
+                pass
             else:
                 d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
                 d.ShowModal()

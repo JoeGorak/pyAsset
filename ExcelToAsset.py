@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 from openpyxl.reader.excel import load_workbook
 
 from AssetList import AssetList
+from TransactionList import TransactionList
 from BillList import BillList
 
 class ExcelToAsset:
@@ -40,15 +41,6 @@ class ExcelToAsset:
 
     def OpenXLSMFile(self, FileName):
         self.wb = load_workbook(FileName, read_only=True, data_only=True, guess_types=False)
-
-    def GetTransactionSheetNames(self):
-        sheets = self.wb.get_sheet_names()
-        return_sheets = []
-        if self.ignore_sheets != None:
-            for sheet in sheets:
-                if sheet not in self.ignore_sheets:
-                    return_sheets.append(sheet)
-        return return_sheets
 
     def ProcessAssetsSheet(self) -> object:
         AssetsFound = AssetList()
@@ -60,7 +52,7 @@ class ExcelToAsset:
             if cv == None or "Bills" in cv or "Total" in cv or "Cash Flow" in cv:
                 continue
             elif "Accounts" in cv or "Other" in cv:
-#                print(row)
+                #                print(row)
                 ColumnHeaders = dict()
                 col_num = 1
                 for cell in row:
@@ -76,7 +68,7 @@ class ExcelToAsset:
                         break
                     if len(ColumnHeaders) == 1:
                         continue
-#                print(ColumnHeaders)
+            #                print(ColumnHeaders)
             else:
                 col_num = 1
                 for cell in row:
@@ -107,7 +99,7 @@ class ExcelToAsset:
                             new_asset.set_type("Other")
 
                     else:  # 2nd and remaining columns are more data for the current asset...
-                            # determine what field and update the object appropriately
+                        # determine what field and update the object appropriately
 
                         heading = ColumnHeaders.get(col_num, "None")
                         if heading != "None":
@@ -154,6 +146,74 @@ class ExcelToAsset:
                         break
 
         return AssetsFound
+
+    def GetTransactionSheetNames(self):
+        sheets = self.wb.get_sheet_names()
+        return_sheets = []
+        if self.ignore_sheets != None:
+            for sheet in sheets:
+                if sheet not in self.ignore_sheets:
+                    return_sheets.append(sheet)
+        return return_sheets
+
+    def ProcessTransactionSheet(self, SheetName) -> object:
+        TransactionsFound = TransactionList()
+
+        ws = self.wb.get_sheet_by_name(SheetName)
+        SheetName = str(SheetName).upper()
+        if "CHECKING" in SheetName:
+            ColumnHeaders = ["Pmt Method", "Chk #", "Payee", "Amount", "Action", "", "Sched date", "Due date"]
+        else:
+            ColumnHeaders = ["Pmt Method", "Payee", "Amount", "Action", "", "Sched date", "Due date"]
+        actionIndex = -1
+        for index in range(len(ColumnHeaders)):
+            if ColumnHeaders[index].upper() == "ACTION":
+                actionIndex = index
+                break
+        row_num = 0
+        for row in ws.rows:
+            row_num += 1
+            if row_num == 1:
+                continue
+            actionValue = row[actionIndex].value
+            if actionValue == None:
+                break
+            cv = row[0].value
+            if cv == None:
+                continue
+            else:
+                new_transaction = TransactionsFound.append()
+                col_num = 0
+                for cell in row:
+                    cv = cell.value
+                    heading = str(ColumnHeaders[col_num]).upper()
+                    if heading != "":
+                        if "PMT METHOD" in heading:
+                            new_transaction.set_pmt_method(cv)
+                        elif "CHK #" in heading:
+                            if (new_transaction.get_pmt_method().upper() == "CHECK"):
+                                new_transaction.set_check_num(cv)
+                        elif "PAYEE" in heading:
+                            new_transaction.set_payee(cv)
+                        elif "AMOUNT" in heading:
+                            new_transaction.set_amount(cv)
+                        elif "ACTION" in heading:
+                            action = cv
+                            if action != "":
+                                new_transaction.set_action(action)
+                        elif "SCHED DATE" in heading:
+                            new_transaction.set_sched_date(cv)
+                        elif "DUE DATE" in heading:
+                            new_transaction.set_due_date(cv)
+                        else:
+                            print("Unknown field " + str(ColumnHeaders[col_num]) + " ignored!")
+                            pass
+
+                    col_num += 1
+                    if col_num >= len(ColumnHeaders):
+                        break
+
+        return TransactionsFound
 
 #TODO: Rewrite ProcessBillsSheet to use correct fields  -- NOT CURRENTLY CALLED FROM AssetFrame.py TO AVOID GENERATING ERRORS!  01/14/2017  JJG
     def ProcessBillsSheet(self, bills):
