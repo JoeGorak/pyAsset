@@ -488,7 +488,7 @@ class AssetFrame(wx.Frame):
 
             if error == "":
                 self.cur_assets = None
-                xlsm = ExcelToAsset(ignore_sheets=['Assets', 'Bills', 'Sears transactions', 'Slate transactions'])
+                xlsm = ExcelToAsset(ignore_sheets=['Assets', 'Bills', 'Shop Your Way transactions', 'Slate transactions'])
                 xlsm.OpenXLSMFile(total_name_in)
                 latest_assets = xlsm.ProcessAssetsSheet()
 #                print(latest_assets)
