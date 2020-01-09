@@ -63,9 +63,11 @@ class Transaction:
             lines.append("Memo: %1s " % string_limit(self.memo, 10))
         return ''.join(lines)
 
-    def __cmp__(self, other):
-        #TODO: Make __cmp__ for transactions more robust  6/10/19 JJG
-        return cmp(self.due_date, other.due_date)
+    def __gt__(self, other):
+        return self.sched_date > other.sched_date
+
+    def __lt__(self, other):
+        return self.sched_date < other.sched_date
 
     def qif_repr(self):
         lines = []

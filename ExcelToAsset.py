@@ -25,13 +25,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 # TO-DOs
 #
-#TODO: Write ProcessTransactionSheet
 #TODO: Finish ProcessBillsSheet
 
 from openpyxl.reader.excel import load_workbook
 
 from AssetList import AssetList
 from TransactionList import TransactionList
+from Transaction import Transaction
 from BillList import BillList
 
 class ExcelToAsset:
@@ -182,7 +182,7 @@ class ExcelToAsset:
             if cv == None:
                 continue
             else:
-                new_transaction = TransactionsFound.append()
+                new_transaction = Transaction()
                 col_num = 0
                 for cell in row:
                     cv = cell.value
@@ -211,6 +211,7 @@ class ExcelToAsset:
 
                     col_num += 1
                     if col_num >= len(ColumnHeaders):
+                        TransactionsFound.insert(new_transaction)
                         break
 
         return TransactionsFound

@@ -54,3 +54,19 @@ class TransactionList:
         transaction = Transaction()
         self.transactions.append(transaction)
         return transaction
+
+    def insert(self, new_transaction):
+        before  = -1
+        after = 0
+        while after < len(self.transactions):
+            if self.transactions[after] > new_transaction:
+                break
+            else:
+                before = after
+                after = after + 1
+        if after == len(self.transactions):
+            self.transactions.append(new_transaction)
+        else:
+#            self.transactions.append(Transaction())
+            self.transactions[after+1:] = self.transactions[after:len(self.transactions)]
+            self.transactions[after] = new_transaction
