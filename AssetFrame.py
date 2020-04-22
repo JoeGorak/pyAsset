@@ -496,11 +496,17 @@ class AssetFrame(wx.Frame):
                 transaction_sheet_names = xlsm.GetTransactionSheetNames()
 #                print('process transaction sheets ' + str(transaction_sheet_names) + ' here')
                 for sheet in transaction_sheet_names:
-                    latest_transactions = xlsm.ProcessTransactionSheet(sheet)
-#TODO: Process latest_transactions
-                    if len(latest_transactions) > 0:
-                        print("latest transactions from " + sheet, end="");
-                        print(str(latest_transactions));
+                    sheet_index = latest_assets.index(sheet)
+                    if sheet_index != -1:
+                        latest_assets[sheet_index].transactions = xlsm.ProcessTransactionSheet(sheet)
+                        if len(latest_assets[sheet_index].transactions) > 0:
+                            # TODO: Process latest_transactions
+                            print("latest transactions from " + sheet + " (sheet_index = " + str(sheet_index) + ")", end="")
+                            print(str(latest_assets[sheet_index].transactions))
+                        else:
+                            print("no transactions for " + sheet)
+                    else:
+                        print(sheet + " not found in  asset list")
 #TODO: Process latest_bills
 #                latest_bills = xlsm.ProcessBillsSheet(self.bills)
 #                print(latest_bills)

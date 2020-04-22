@@ -81,6 +81,14 @@ class AssetList:
     def __delitem__(self, i):
         del self.assets[i]
 
+    def index(self, name):
+        ret_index = -1
+        for i in range(len(self.assets)):
+            if (self.assets[i].get_name() == name):
+                ret_index = i
+                break
+        return ret_index
+
     def append(self, name):
         account = Asset(name)
         self.assets.append(account)
