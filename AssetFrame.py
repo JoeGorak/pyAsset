@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2017 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016,2017,2019,2020 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -38,6 +38,7 @@ from Asset import Asset
 from AssetList import AssetList
 from BillList import BillList
 from AssetGrid import AssetGrid
+from TransactionGrid import TransactionGrid
 from Date import Date
 from Transaction import Transaction
 from HelpDialog import HelpDialog
@@ -81,7 +82,7 @@ class AssetFrame(wx.Frame):
         self.make_filemenu()
         self.make_editmenu()
         self.make_helpmenu()
-        self.make_grid()
+        self.make_asset_grid()
         self.set_properties()
         self.do_layout()
 
@@ -168,8 +169,12 @@ class AssetFrame(wx.Frame):
         wx.EVT_MENU(self, ID_HELP, self.gethelp)
         return
 
-    def make_grid(self):
+    def make_asset_grid(self):
         self.assetGrid = AssetGrid(self)
+
+    def make_transaction_grid(self, row, col):
+        name = self.assets[row].name
+        self.transactionGrid = TransactionGrid(self, name)
 
     def set_properties(self):
         self.total_width = self.assetGrid.set_properties(self)
@@ -283,7 +288,7 @@ class AssetFrame(wx.Frame):
         self.close()
         self.cur_asset = Asset()
         self.edited = 0
-        d = wx.FileDialog(self, "Open", "", "", "*.qif", wx.OPEN)
+        d = wx.FileDialog(self, "Open", "", "", "*.qif", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
@@ -302,7 +307,7 @@ class AssetFrame(wx.Frame):
         return
 
     def save_as_file(self, *args):
-        d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.SAVE)
+        d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.FD_SAVE)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
@@ -500,7 +505,6 @@ class AssetFrame(wx.Frame):
                     if sheet_index != -1:
                         latest_assets[sheet_index].transactions = xlsm.ProcessTransactionSheet(sheet)
                         if len(latest_assets[sheet_index].transactions) > 0:
-                            # TODO: Process latest_transactions
                             print("latest transactions from " + sheet + " (sheet_index = " + str(sheet_index) + ")", end="")
                             print(str(latest_assets[sheet_index].transactions))
                         else:
