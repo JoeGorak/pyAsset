@@ -55,42 +55,30 @@ class TransactionGrid(grd.Grid):
         self.Bind(grd.EVT_GRID_EDITOR_CREATED, self.OnEditorCreated)
 
         # Define the layout of the grid in the frame
-        self.ACCT_NAME_COL = 0
-        self.ACCT_CURR_VAL_COL = 1
-        self.ACCT_PROJ_VAL_COL = 2
-        self.ACCT_LAST_PULL_COL = 3
-        self.ACCT_LIMIT_COL = 4
-        self.ACCT_AVAIL_ONLINE_COL = 5
-        self.ACCT_AVAIL_PROJ_COL = 6
-        self.ACCT_RATE_COL = 7
-        self.ACCT_PAYMENT_COL = 8
-        self.ACCT_DUE_DATE_COL = 9
-        self.ACCT_SCHED_DATE_COL = 10
-        self.ACCT_MIN_PMT_COL = 11
-        self.ACCT_STMT_BAL_COL = 12
-        self.ACCT_AMT_OVER_COL = 13
-        self.ACCT_CASH_LIMIT_COL = 14
-        self.ACCT_CASH_USED_COL = 15
-        self.ACCT_CASH_AVAIL_COL = 16
+        self.TRANS_PMT_METHOD_COL = 0
+        self.TRANS_CHECK_NUM_COL = 1
+        self.TRANS_PAYEE_COL = 2
+        self.TRANS_AMOUNT_COL = 3
+        self.TRANS_ACTION_COL = 4
+        self.TRANS_BALANCE_COL = 5
+        self.TRANS_SCHED_DATE_COL = 6
+        self.TRANS_DUE_DATE_COL = 7
+        self.TRANS_CLEARED_COL = 8
+        self.TRANS_COMMENT_COL = 9
+        self.TRANS_MEMO_COL = 10
 
         # Define the widths of the columns in the grid
-        ACCT_NAME_COL_WIDTH = 150
-        ACCT_CURR_VAL_COL_WIDTH = 75
-        ACCT_PROJ_VAL_COL_WIDTH = 75
-        ACCT_LAST_PULL_COL_WIDTH = 120
-        ACCT_LIMIT_COL_WIDTH = 80
-        ACCT_AVAIL_ONLINE_COL_WIDTH = 80
-        ACCT_AVAIL_PROJ_COL_WIDTH = 80
-        ACCT_RATE_COL_WIDTH = 5
-        ACCT_PAYMENT_COL_WIDTH = 9
-        ACCT_DUE_DATE_COL_WIDTH = 75
-        ACCT_SCHED_DATE_COL_WIDTH = 75
-        ACCT_MIN_PMT_COL_WIDTH = 8
-        ACCT_STMT_BAL_COL_WIDTH = 8
-        ACCT_AMT_OVER_COL_WIDTH = 8
-        ACCT_CASH_LIMIT_COL_WIDTH = 8
-        ACCT_CASH_USED_COL_WIDTH = 8
-        ACCT_CASH_AVAIL_COL_WIDTH = 8
+        TRANS_PMT_METHOD_COL_WIDTH = 80
+        TRANS_CHECK_NUM_COL_WIDTH = 60
+        TRANS_PAYEE_COL_WIDTH = 400
+        TRANS_AMOUNT_COL_WIDTH = 60
+        TRANS_ACTION_COL_WIDTH = 50
+        TRANS_BALANCE_COL_WIDTH = 65
+        TRANS_SCHED_DATE_COL_WIDTH = 70
+        TRANS_DUE_DATE_COL_WIDTH = 70
+        TRANS_CLEARED_COL_WIDTH = 50
+        TRANS_COMMENT_COL_WIDTH = 400
+        TRANS_MEMO_COL_WIDTH = 400
 
         # Define what the valid input data types are
         self.DOLLAR_TYPE = 0
@@ -116,23 +104,17 @@ class TransactionGrid(grd.Grid):
 
         # Grid layout array
         self.col_info = [
-                         [self.ACCT_NAME_COL, ACCT_NAME_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_CURR_VAL_COL, ACCT_CURR_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
-                         [self.ACCT_PROJ_VAL_COL, ACCT_PROJ_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
-                         [self.ACCT_LAST_PULL_COL, ACCT_LAST_PULL_COL_WIDTH, self.DATE_TIME_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_LIMIT_COL, ACCT_LIMIT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_AVAIL_ONLINE_COL, ACCT_AVAIL_ONLINE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_AVAIL_PROJ_COL, ACCT_AVAIL_PROJ_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_RATE_COL, ACCT_RATE_COL_WIDTH, self.RATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_PAYMENT_COL, ACCT_PAYMENT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_DUE_DATE_COL, ACCT_DUE_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_SCHED_DATE_COL, ACCT_SCHED_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_MIN_PMT_COL, ACCT_MIN_PMT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_STMT_BAL_COL, ACCT_STMT_BAL_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
-                         [self.ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_PMT_METHOD_COL, TRANS_PMT_METHOD_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_CHECK_NUM_COL, TRANS_CHECK_NUM_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
+                         [self.TRANS_PAYEE_COL, TRANS_PAYEE_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
+                         [self.TRANS_AMOUNT_COL, TRANS_AMOUNT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_ACTION_COL, TRANS_ACTION_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_BALANCE_COL, TRANS_BALANCE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_SCHED_DATE_COL, TRANS_SCHED_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_DUE_DATE_COL, TRANS_DUE_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_CLEARED_COL, TRANS_CLEARED_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_COMMENT_COL, TRANS_COMMENT_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
+                         [self.TRANS_MEMO_COL, TRANS_MEMO_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
         ]
 
         return
@@ -159,38 +141,26 @@ class TransactionGrid(grd.Grid):
             self.col_info[i][self.ZERO_SUPPRESS_COL] = zero_suppress
 
     def getColMethod(self, row, i):
-        if i == self.ACCT_NAME_COL:
-            return self.frame.assets[row].name
-        elif i == self.ACCT_CURR_VAL_COL:
-            return self.frame.assets[row].total
-        elif i == self.ACCT_PROJ_VAL_COL:
-            return self.frame.assets[row].value_proj
-        elif i == self.ACCT_LAST_PULL_COL:
-            return self.frame.assets[row].last_pull_date
-        elif i == self.ACCT_LIMIT_COL:
-            return self.frame.assets[row].limit
-        elif i == self.ACCT_AVAIL_ONLINE_COL:
-            return self.frame.assets[row].avail
-        elif i == self.ACCT_AVAIL_PROJ_COL:
-            return self.frame.assets[row].avail_proj
-        elif i == self.ACCT_RATE_COL:
-            return self.frame.assets[row].rate
-        elif i == self.ACCT_PAYMENT_COL:
-            return self.frame.assets[row].payment
-        elif i == self.ACCT_DUE_DATE_COL:
-            return self.frame.assets[row].due_date
-        elif i == self.ACCT_SCHED_DATE_COL:
-            return self.frame.assets[row].sched
-        elif i == self.ACCT_MIN_PMT_COL:
-            return self.frame.assets[row].min_pay
-        elif i == self.ACCT_STMT_BAL_COL:
-            return self.frame.assets[row].stmt_bal
-        elif i == self.ACCT_CASH_LIMIT_COL:
-            return self.frame.assets[row].cash_limit
-        elif i == self.ACCT_CASH_USED_COL:
-            return self.frame.assets[row].cash_used
-        elif i == self.ACCT_CASH_AVAIL_COL:
-            return self.frame.assets[row].cash_avail
+        if i == self.TRANS_PMT_METHOD_COL:
+            return self.frame.transactions[row].pmt_method
+        elif i == self.TRANS_CHECK_NUM_COL:
+            return self.frame.transactions[row].check_num
+        elif i == self.TRANS_PAYEE_COL:
+            return self.frame.transactions[row].payee
+        elif i == self.TRANS_AMOUNT_COL:
+            return self.frame.transactions[row].amount
+        elif i == self.TRANS_ACTION_COL:
+            return self.frame.transactions[row].action
+        elif i == self.TRANS_DUE_DATE_COL:
+            return self.frame.transactions[row].due_date
+        elif i == self.TRANS_SCHED_DATE_COL:
+            return self.frame.transactions[row].sched_date
+        elif i == self.TRANS_CLEARED_COL:
+            return self.frame.transactions[row].cleared
+        elif i == self.TRANS_COMMENT_COL:
+            return self.frame.transactions[row].comment
+        elif i == self.TRANS_MEMO_COL:
+            return self.frame.transactions[row].memo
         else:
             return "??"
 
@@ -203,7 +173,7 @@ class TransactionGrid(grd.Grid):
         cellValue = str(self.getColMethod(row, col))
         self.SetCellAlignment(row, col, wx.ALIGN_LEFT, wx.ALIGN_CENTER)
         tableValue = "Bad: %s" % (cellValue)
-        self.frame.TransactionGrid.SetCellValue(row, col, tableValue)
+        self.frame.transaction_grid.SetCellValue(row, col, tableValue)
 
     def GridCellDefaultRenderer(self, row, col):
         self.SetCellTextColour(row, col, 'black')
@@ -268,13 +238,13 @@ class TransactionGrid(grd.Grid):
             format_start = "%%%1ds" % (num_blanks)
             num_format = "%%%1ds" %(num_chars)
             if negative:
-                self.frame.TransactionGrid.SetCellTextColour(row, col, 'red')
+                self.frame.transaction_grid.SetCellTextColour(row, col, 'red')
                 format_str = format_start + "-$" + num_format
                 tableValue = format_str % (blanks, str_out)
             else:
                 format_str = format_start + " $" + num_format
                 tableValue = format_str % (blanks, str_out)
-        self.frame.TransactionGrid.SetCellValue(row, col, tableValue)
+        self.frame.transaction_grid.SetCellValue(row, col, tableValue)
 
     def GridCellPercentRenderer(self, row, col):
         cellValue = str(self.getColMethod(row, col))
@@ -286,7 +256,7 @@ class TransactionGrid(grd.Grid):
             tableValue = ""
         else:
             tableValue = "%13.3f%%" % (rate * 100.0)
-        self.frame.TransactionGrid.SetCellValue(row, col, tableValue)
+        self.frame.transaction_grid.SetCellValue(row, col, tableValue)
 
     def GridCellDateRenderer(self, row, col):
         cellValue = str(self.getColMethod(row, col))
@@ -297,11 +267,11 @@ class TransactionGrid(grd.Grid):
         else:
             dateParts = cellValue.split("-")
             month = dateParts[1]
-            day = dateParts[2]
+            day = dateParts[2][:2]
             year = dateParts[0]
             self.SetCellAlignment(row, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
             tableValue = "%02s/%02s/%04s" % (month, day, year)
-        self.frame.TransactionGrid.SetCellValue(row, col, tableValue)
+        self.frame.transaction_grid.SetCellValue(row, col, tableValue)
 
     def GridCellDateTimeRenderer(self, row, col):
         cellValue = str(self.getColMethod(row, col))
@@ -325,7 +295,7 @@ class TransactionGrid(grd.Grid):
             tableValue = ""
         else:
             tableValue = cellValue
-        self.frame.TransactionGrid.SetCellValue(row, col, tableValue)
+        self.frame.transaction_grid.SetCellValue(row, col, tableValue)
 
     def DisplayMsg(self, str):
         d = wx.MessageDialog(self, str, "Error", wx.OK | wx.ICON_INFORMATION)
@@ -338,7 +308,7 @@ class TransactionGrid(grd.Grid):
         col = evt.GetCol()
         ret_val = wx.OK
         new_value = evt.String
-        if row < 0 or row >= len(self.frame.assets):
+        if row < 0 or row >= len(self.frame.transactions):
             str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
             ret_val =  self.DisplayMsg(str)
         elif self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
@@ -353,7 +323,7 @@ class TransactionGrid(grd.Grid):
                 if "." not in dollar_amount:
                     dollar_amount += ".00"
                     evt.Veto()
-                    self.frame.TransactionGrid.SetCellValue(row, col, dollar_amount)
+                    self.frame.transaction_grid.SetCellValue(row, col, dollar_amount)
                 evt.String = dollar_amount
             else:
                 str = "%s is not a valid dollar string" % (new_value)
@@ -440,19 +410,15 @@ class TransactionGrid(grd.Grid):
             evt.Veto()
 
     def set_properties(self, frame):
-        frame.SetTitle("PyAsset: Asset")
         frame.statusbar.SetStatusWidths([-1])
         statusbar_fields = [""]
-        columnNames = ["Account", "Value (Curr)", "Value (Proj)", "last pulled", "Limit", "Avail (Online)", "Avail (Proj)",
-                       "Rate",
-                       "Payment", "Due Date", "Sched", "Min Pmt", "Stmt Bal", "Amt Over", "Cash Limit", "Cash used",
-                       "Cash avail"];
+        columnNames = ["Pmt Method", "Chk #", "Payee", "Amount", "Action", "Balance", "Sched Date", "Due Date", "Cleared",
+                       "Comment",
+                       "Memo"];
 
         for i in range(len(statusbar_fields)):
             frame.statusbar.SetStatusText(statusbar_fields[i], i)
         self.CreateGrid(0, len(columnNames))
-        self.SetRowLabelSize(frame.rowSize)
-        self.SetColLabelSize(frame.colSize)
         self.total_width = 60  # non-zero start value to account for record number of TransactionGrid frame!
         for i in range(len(columnNames)):
             self.SetColLabelValue(i, columnNames[i])

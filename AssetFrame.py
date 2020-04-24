@@ -38,8 +38,8 @@ from Asset import Asset
 from AssetList import AssetList
 from BillList import BillList
 from AssetGrid import AssetGrid
-from TransactionGrid import TransactionGrid
 from Date import Date
+from TransactionFrame import TransactionFrame
 from Transaction import Transaction
 from HelpDialog import HelpDialog
 from ExcelToAsset import ExcelToAsset
@@ -172,9 +172,10 @@ class AssetFrame(wx.Frame):
     def make_asset_grid(self):
         self.assetGrid = AssetGrid(self)
 
-    def make_transaction_grid(self, row, col):
+    def add_transaction_frame(self, row, col):
         name = self.assets[row].name
-        self.transactionGrid = TransactionGrid(self, name)
+        transactions = self.assets[row].transactions
+        transaction_frame = TransactionFrame(None, self, -1, transactions, name)
 
     def set_properties(self):
         self.total_width = self.assetGrid.set_properties(self)
@@ -501,14 +502,14 @@ class AssetFrame(wx.Frame):
                 transaction_sheet_names = xlsm.GetTransactionSheetNames()
 #                print('process transaction sheets ' + str(transaction_sheet_names) + ' here')
                 for sheet in transaction_sheet_names:
-                    sheet_index = latest_assets.index(sheet)
+                    sheet_index = self.assets.index(sheet)
                     if sheet_index != -1:
-                        latest_assets[sheet_index].transactions = xlsm.ProcessTransactionSheet(sheet)
-                        if len(latest_assets[sheet_index].transactions) > 0:
-                            print("latest transactions from " + sheet + " (sheet_index = " + str(sheet_index) + ")", end="")
-                            print(str(latest_assets[sheet_index].transactions))
-                        else:
-                            print("no transactions for " + sheet)
+                        self.assets[sheet_index].transactions = xlsm.ProcessTransactionSheet(sheet)
+ #                       if len(self.assets[sheet_index].transactions) > 0:
+ #                           print("latest transactions from " + sheet + " (sheet_index = " + str(sheet_index) + ")", end="")
+ #                           print(str(self.assets[sheet_index].transactions))
+ #                       else:
+ #                           print("no transactions for " + sheet)
                     else:
                         print(sheet + " not found in  asset list")
 #TODO: Process latest_bills

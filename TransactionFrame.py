@@ -37,16 +37,22 @@ import wx
 import wx.grid
 import csv
 import os
-from TransactionList import TransactionList
 from Date import Date
 from Transaction import Transaction
-
+from TransactionGrid import TransactionGrid
 
 class TransactionFrame(wx.Frame):
-    def __init__(self, style, parent, my_id, title="PyAsset:Transaction", myfile=None, **kwds):
-        self.transactions = TransactionList()
-        self.cur_transaction = None
+    def __init__(self, style, parent, my_id, transactions, title="PyAsset:Transaction", myfile=None, **kwds):
+        self.transactions = transactions
+
+        if len(self.transactions) > 0:
+            self.cur_transaction = self.transactions[0]
+        else:
+            self.cur_transaction = None
+
         self.edited = 0
+        self.rowSize = 30
+        self.colSize = 20
 
         if style == None:
             style = wx.DEFAULT_FRAME_STYLE
@@ -57,10 +63,9 @@ class TransactionFrame(wx.Frame):
 
         if myfile:
             self.cur_transaction.read_qif(myfile)
-            self.redraw_all(-1)
-            if self.cur_transaction.get_name() != None:
-                self.SetTitle("PyAsset:Transaction %s" % self.cur_transaction.get_name())
-        return
+
+        self.SetTitle("PyAsset:Transactions for %s" % title)
+        self.redraw_all(-1)
 
     def make_widgets(self):
         self.menubar = wx.MenuBar()
@@ -69,7 +74,7 @@ class TransactionFrame(wx.Frame):
         self.make_filemenu()
         self.make_editmenu()
         self.make_helpmenu()
-        self.make_grid()
+        self.make_transaction_grid()
         self.set_properties()
         self.do_layout()
 
@@ -106,8 +111,7 @@ class TransactionFrame(wx.Frame):
         wx.EVT_MENU(self, wx.ID_SAVE, self.save_file)
         wx.EVT_MENU(self, wx.ID_SAVEAS, self.save_as_file)
         wx.EVT_MENU(self, ID_IMPORT_CSV, self.import_CSV_file)
-        wx.EVT_MENU(self, ID_IMPORT_XLSM, self.import_XLSM_file)
-        wx.EVT_MENU(self, ID_EXPORT_TEXT, self.export_text)
+#        wx.EVT_MENU(self, ID_EXPORT_TEXT, self.export_text)
         wx.EVT_MENU(self, ID_ARCHIVE, self.archive)
         wx.EVT_MENU(self, wx.ID_CLOSE, self.close)
         wx.EVT_MENU(self, wx.ID_EXIT, self.quit)
@@ -156,70 +160,75 @@ class TransactionFrame(wx.Frame):
         wx.EVT_MENU(self, ID_HELP, self.gethelp)
         return
 
-    def make_grid(self):
-        self.cbgrid = wx.grid.Grid(self, -1)
-        wx.grid.EVT_GRID_CELL_CHANGE(self, self.cellchange)
-        return
+    def make_transaction_grid(self):
+        self.transaction_grid = TransactionGrid(self)
 
     def set_properties(self):
-        self.SetTitle("PyAsset")
-        self.statusbar.SetStatusWidths([-1])
-        statusbar_fields = [""]
-        for i in range(len(statusbar_fields)):
-            self.statusbar.SetStatusText(statusbar_fields[i], i)
-        self.cbgrid.CreateGrid(0, 7)
-        self.cbgrid.SetRowLabelSize(40)
-        self.cbgrid.SetColLabelSize(20)
-        self.cbgrid.SetColLabelValue(0, "Date")
-        self.cbgrid.SetColSize(0, 60)
-        self.cbgrid.SetColLabelValue(1, "Number")
-        self.cbgrid.SetColSize(1, 150)               # was 50 JJG
-        self.cbgrid.SetColLabelValue(2, "Payee")
-        self.cbgrid.SetColSize(2, 500)              # was 150  JJG
-        self.cbgrid.SetColLabelValue(3, "X")
-        self.cbgrid.SetColSize(3, 20)
-        self.cbgrid.SetColLabelValue(4, "Memo")
-        self.cbgrid.SetColSize(4, 150)
-        self.cbgrid.SetColLabelValue(5, "Amount")
-        self.cbgrid.SetColSize(5, 60)
-        self.cbgrid.SetColLabelValue(6, "Balance")
-        self.cbgrid.SetColSize(6, 60)
-        self.cbgrid.SetSize((1830, 600))             # was (610, 300) JJG
+        self.total_width = self.transaction_grid.set_properties(self)
 
     def do_layout(self):
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
-        sizer_1.Add(self.cbgrid, 1, wx.EXPAND, 0)
+        sizer_1.Add(self.transaction_grid, 1, wx.EXPAND, 0)
         self.SetAutoLayout(1)
         self.SetSizer(sizer_1)
         sizer_1.Fit(self)
         sizer_1.SetSizeHints(self)
         self.Layout()
+        self.Show()
+
+    def DisplayMsg(self, str):
+        d = wx.MessageDialog(self, str, "Error", wx.OK | wx.ICON_INFORMATION)
+        d.ShowModal()
+        d.Destroy()
+        return wx.CANCEL
 
     def redraw_all(self, index=None):
-        nrows = self.cbgrid.GetNumberRows()
-        if nrows: self.cbgrid.DeleteRows(0, nrows)
-        ntransactions = len(self.cur_transaction)
-        total = 0
-        self.cbgrid.AppendRows(ntransactions)
-        for i in range(ntransactions):
-            transaction = self.cur_transaction[i]
-            self.cbgrid.SetCellValue(i, 0, transaction.date.formatUS())
-            if transaction.number: self.cbgrid.SetCellValue(i, 1, '%d' % transaction.number)
-            self.cbgrid.SetCellValue(i, 2, transaction.payee)
-            if transaction.cleared:
-                self.cbgrid.SetCellValue(i, 3, 'x')
-            if transaction.memo: self.cbgrid.SetCellValue(i, 4, transaction.memo)
-            self.cbgrid.SetCellValue(i, 5, '%.2f' % transaction.amount)
-            total += transaction.amount
-            self.cbgrid.SetCellValue(i, 6, '%.2f' % total)
-
+        ntransactions = len(self.transactions)
         if index == -1:
-            self.cbgrid.SetGridCursor(ntransactions - 1, 0)
-            self.cbgrid.MakeCellVisible(ntransactions - 1, 1)
+            nrows = self.transaction_grid.GetNumberRows()
+            if nrows > 0 and (index == None or index == -1):
+                self.transaction_grid.DeleteRows(0, nrows)
+                nrows = 0
+            start_range = 0
+            end_range = ntransactions
+            if nrows < ntransactions:
+                rows_needed = ntransactions - nrows
+                self.transaction_grid.AppendRows(rows_needed)
+        else:
+            start_range = index
+            end_range = start_range + 1
+        for row in range(start_range, end_range):
+            for col in range(self.transaction_grid.getNumLayoutCols()):
+                ret_val = wx.OK
+                if row < 0 or row >= ntransactions:
+                    str = "Warning: skipping redraw on bad cell %d %d!" % (row, col)
+                    ret_val = self.DisplayMsg(str)
+                if ret_val != wx.OK:
+                    continue
+
+                cellType = self.transaction_grid.getColType(col)
+                if cellType == self.transaction_grid.DOLLAR_TYPE:
+                    self.transaction_grid.GridCellDollarRenderer(row, col)
+                elif cellType == self.transaction_grid.RATE_TYPE:
+                    self.transaction_grid.GridCellPercentRenderer(row, col)
+                elif cellType == self.transaction_grid.DATE_TYPE:
+                    self.transaction_grid.GridCellDateRenderer(row, col)
+                elif cellType == self.transaction_grid.DATE_TIME_TYPE:
+                    self.transaction_grid.GridCellDateTimeRenderer(row, col)
+                elif cellType == self.transaction_grid.STRING_TYPE:
+                    self.transaction_grid.GridCellStringRenderer(row, col)
+                else:
+                    self.transaction_grid.GridCellErrorRenderer(row, col)
+        if index == -1:
+            self.transaction_grid.SetGridCursor(ntransactions - 1, 0)
+            self.transaction_grid.MakeCellVisible(ntransactions - 1, True)
         elif index > 0:
-            self.cbgrid.SetGridCursor(index, 0)
-            self.cbgrid.MakeCellVisible(index, 1)
-        return
+            self.transaction_grid.SetGridCursor(index, 0)
+            self.transaction_grid.MakeCellVisible(index, True)
+
+        win_height = len(self.transactions)*self.rowSize + 120
+        self.SetSize(size=(self.total_width, win_height))
+        self.Show()
 
     def cellchange(self, evt):
         doredraw = 0
@@ -227,7 +236,7 @@ class TransactionFrame(wx.Frame):
         col = evt.GetCol()
         if row < 0: return
         if row >= len(self.cur_transaction):
-            print "Warning: modifying incorrect cell!"
+            print("Warning: modifying incorrect cell!")
             return
         self.edited = 1
         transaction = self.cur_transaction[row]
@@ -247,7 +256,7 @@ class TransactionFrame(wx.Frame):
             doredraw = 1
             transaction.setamount(val)
         else:
-            print "Warning: modifying incorrect cell!"
+            print("Warning: modifying incorrect cell!")
             return
         if doredraw: self.redraw_all(row)  # only redraw [row:]
         return
@@ -564,7 +573,7 @@ class TransactionFrame(wx.Frame):
     def about(self, *args):
         d = wx.MessageDialog(self,
                              "Python Asset Manager\n"
-                             "Copyright (c) 2016, Joseph J. Gorak\n"
+                             "Copyright (c) 2016,2017,2109, 2020 Joseph J. Gorak\n"
                              "Based on idea from Python Checkbook (pyCheckbook)\n"
                              "written by Richard P. Muller\n"
                              "Released under the Gnu GPL\n",

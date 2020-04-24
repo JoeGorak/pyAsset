@@ -474,7 +474,7 @@ class AssetGrid(grd.Grid):
         print("OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
                                                  evt.GetCol(),
                                                  evt.GetPosition()))
-        self.frame.make_transaction_grid(evt.GetRow(), evt.GetCol())
+        self.frame.add_transaction_frame(evt.GetRow(), evt.GetCol())
         evt.Skip()
 
     def OnCellRightClick(self, evt):
