@@ -107,15 +107,14 @@ class TransactionFrame(wx.Frame):
         self.filemenu.Append(wx.ID_EXIT, "Exit\tCtrl-q",
                              "Exit PyAsset", wx.ITEM_NORMAL)
         self.menubar.Append(self.filemenu, "&File")
-        wx.EVT_MENU(self, wx.ID_OPEN, self.load_file)
-        wx.EVT_MENU(self, wx.ID_SAVE, self.save_file)
-        wx.EVT_MENU(self, wx.ID_SAVEAS, self.save_as_file)
-        wx.EVT_MENU(self, ID_IMPORT_CSV, self.import_CSV_file)
-#        wx.EVT_MENU(self, ID_EXPORT_TEXT, self.export_text)
-        wx.EVT_MENU(self, ID_ARCHIVE, self.archive)
-        wx.EVT_MENU(self, wx.ID_CLOSE, self.close)
-        wx.EVT_MENU(self, wx.ID_EXIT, self.quit)
-        return
+        self.Bind(wx.EVT_MENU, self.load_file, None, wx.ID_OPEN)
+        self.Bind(wx.EVT_MENU, self.save_file, None, wx.ID_SAVE)
+        self.Bind(wx.EVT_MENU, self.save_as_file, None, wx.ID_SAVEAS)
+        self.Bind(wx.EVT_MENU, self.import_CSV_file, None, ID_IMPORT_CSV)
+#        self.Bind(wx.EVT_MENU, self.export_text, None, ID_EXPORT_TEXT)
+        self.Bind(wx.EVT_MENU, self.archive, None, ID_ARCHIVE)
+        self.Bind(wx.EVT_MENU, self.close, None, wx.ID_CLOSE)
+        self.Bind(wx.EVT_MENU, self.quit, None, wx.ID_EXIT)
 
     def make_editmenu(self):
         ID_SORT = wx.NewId()
@@ -139,12 +138,12 @@ class TransactionFrame(wx.Frame):
         self.editmenu.Append(ID_RECONCILE, "Reconcile\tCtrl-r",
                              "Reconcile your Asset", wx.ITEM_NORMAL)
         self.menubar.Append(self.editmenu, "&Edit")
-        wx.EVT_MENU(self, wx.ID_NEW, self.newentry)
-        wx.EVT_MENU(self, ID_SORT, self.sort)
-        wx.EVT_MENU(self, ID_MARK_ENTRY, self.markcleared)
-        wx.EVT_MENU(self, ID_VOID_ENTRY, self.voidentry)
-        wx.EVT_MENU(self, ID_DELETE_ENTRY, self.deleteentry)
-        wx.EVT_MENU(self, ID_RECONCILE, self.reconcile)
+        self.Bind(wx.EVT_MENU, self.newentry, None, wx.ID_NEW)
+        self.Bind(wx.EVT_MENU, self.sort, None, ID_SORT)
+        self.Bind(wx.EVT_MENU, self.markcleared, None, ID_MARK_ENTRY)
+        self.Bind(wx.EVT_MENU, self.voidentry, None, ID_VOID_ENTRY)
+        self.Bind(wx.EVT_MENU, self.deleteentry, None, ID_DELETE_ENTRY)
+        self.Bind(wx.EVT_MENU, self.reconcile, None, ID_RECONCILE)
         return
 
     def make_helpmenu(self):
@@ -156,9 +155,8 @@ class TransactionFrame(wx.Frame):
                              "PyAsset Help", wx.ITEM_NORMAL)
 
         self.menubar.Append(self.helpmenu, "&Help")
-        wx.EVT_MENU(self, wx.ID_ABOUT, self.about)
-        wx.EVT_MENU(self, ID_HELP, self.gethelp)
-        return
+        self.Bind(wx.EVT_MENU, self.about, None, wx.ID_ABOUT)
+        self.Bind(wx.EVT_MENU, self.gethelp, None, ID_HELP)
 
     def make_transaction_grid(self):
         self.transaction_grid = TransactionGrid(self)
