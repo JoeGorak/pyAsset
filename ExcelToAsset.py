@@ -40,7 +40,7 @@ class ExcelToAsset:
         self.ignore_sheets = ignore_sheets
 
     def OpenXLSMFile(self, FileName):
-        self.wb = load_workbook(FileName, read_only=True, data_only=True, guess_types=False)
+        self.wb = load_workbook(FileName, read_only=True, data_only=True)
 
     def ProcessAssetsSheet(self) -> object:
         AssetsFound = AssetList()
