@@ -42,8 +42,10 @@ from Transaction import Transaction
 from TransactionGrid import TransactionGrid
 
 class TransactionFrame(wx.Frame):
-    def __init__(self, style, parent, my_id, transactions, title="PyAsset:Transaction", myfile=None, **kwds):
+    def __init__(self, style, parent, my_id, asset_index, transactions, title="PyAsset:Transaction", myfile=None, **kwds):
+        self.asset_index = asset_index
         self.transactions = transactions
+        self.parent = parent
 
         if len(self.transactions) > 0:
             self.cur_transaction = self.transactions[0]
@@ -182,19 +184,39 @@ class TransactionFrame(wx.Frame):
 
     def redraw_all(self, index=None):
         ntransactions = len(self.transactions)
+        start_range = 0
+        end_range = ntransactions
         if index == -1:
             nrows = self.transaction_grid.GetNumberRows()
             if nrows > 0 and (index == None or index == -1):
                 self.transaction_grid.DeleteRows(0, nrows)
                 nrows = 0
-            start_range = 0
-            end_range = ntransactions
             if nrows < ntransactions:
                 rows_needed = ntransactions - nrows
                 self.transaction_grid.AppendRows(rows_needed)
         else:
             start_range = index
             end_range = start_range + 1
+
+        #Compute running balances for transactions
+        new_balance = 0                 # need to new_balance as local for computation
+        if (start_range == 0):
+            new_balance = self.parent.assets[self.asset_index].get_total()
+        else:
+            new_balance = self.transactions[self.asset_index - 1].get_balance()
+        for row in range(start_range, end_range):
+            action = self.transactions[row].get_action()
+            row_amount = self.transactions[row].get_amount()
+            if (action == '+'):
+                new_balance += row_amount
+            elif (action == '-'):
+                new_balance -= row_amount
+            else:
+                print("Unknown action " + action + " ignored")
+            self.transactions[row].set_balance(new_balance)
+        self.parent.assets[self.asset_index].set_value_proj(new_balance)
+
+        #Display the transactions
         for row in range(start_range, end_range):
             for col in range(self.transaction_grid.getNumLayoutCols()):
                 ret_val = wx.OK
@@ -227,6 +249,7 @@ class TransactionFrame(wx.Frame):
         win_height = len(self.transactions)*self.rowSize + 120
         self.SetSize(size=(self.total_width, win_height))
         self.Show()
+        self.parent.redraw_all(-1)      # Make sure balances get updated!
 
     def cellchange(self, evt):
         doredraw = 0

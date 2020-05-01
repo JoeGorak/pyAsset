@@ -34,6 +34,7 @@ class Transaction:
         self.payee = None
         self.amount = None
         self.action = None
+        self.balance = None
         self.sched_date = None
         self.due_date = None
         self.cleared = 0
@@ -50,9 +51,11 @@ class Transaction:
         if self.check_num:
             lines.append("Check_num: %1d " % self.check_num)
         lines.append("Payee: %1s " % string_limit(self.payee, 40))
-        lines.append("Amount: %4.2f Cleared: " % self.amount)
+        lines.append("Amount: %4.2f " % self.amount)
         if self.action:
             lines.append("Action: %s " % self.action)
+            lines.append("Balance: %4.2f " % self.balance)
+        lines.append("Cleared: ")
         if self.cleared:
             lines.append("x ")
         else:
@@ -97,6 +100,10 @@ class Transaction:
 
     def set_action(self, rest):
         self.action = rest
+
+    def set_balance(self, rest):
+        rounded_amount = float(int(float(rest) * 100 + 0.5)) / 100.0
+        self.balance = float(rounded_amount)
 
     def set_sched_date(self, rest):
         self.sched_date = rest
@@ -143,6 +150,9 @@ class Transaction:
 
     def get_action(self):
         return self.action
+
+    def get_balance(self):
+        return self.balance
 
     def get_comment(self):
         return self.comment

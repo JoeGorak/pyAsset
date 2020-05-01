@@ -173,7 +173,7 @@ class AssetFrame(wx.Frame):
     def add_transaction_frame(self, row, col):
         name = self.assets[row].name
         transactions = self.assets[row].transactions
-        transaction_frame = TransactionFrame(None, self, -1, transactions, name)
+        transaction_frame = TransactionFrame(None, self, -1, row, transactions, name)
 
     def set_properties(self):
         self.total_width = self.assetGrid.set_properties(self)

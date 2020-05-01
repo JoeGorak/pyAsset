@@ -151,6 +151,8 @@ class TransactionGrid(grd.Grid):
             return self.frame.transactions[row].amount
         elif i == self.TRANS_ACTION_COL:
             return self.frame.transactions[row].action
+        elif i == self.TRANS_BALANCE_COL:
+            return self.frame.transactions[row].balance
         elif i == self.TRANS_DUE_DATE_COL:
             return self.frame.transactions[row].due_date
         elif i == self.TRANS_SCHED_DATE_COL:
