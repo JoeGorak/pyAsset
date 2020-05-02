@@ -214,7 +214,7 @@ class Asset:
         try:
             self.avail_proj = round(float(avail_proj), 2)
         except:
-            self.avai_proj = 0.0
+            self.avail_proj = 0.0
 
     def get_rate(self):
         return self.rate

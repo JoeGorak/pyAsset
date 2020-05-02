@@ -199,7 +199,7 @@ class TransactionFrame(wx.Frame):
             end_range = start_range + 1
 
         #Compute running balances for transactions
-        new_balance = 0                 # need to new_balance as local for computation
+        new_balance = 0                 # introduce new_balance as local variable for computation
         if (start_range == 0):
             new_balance = self.parent.assets[self.asset_index].get_total()
         else:

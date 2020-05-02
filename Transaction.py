@@ -95,21 +95,27 @@ class Transaction:
         self.pmt_method = rest
 
     def set_amount(self, rest):
-        rounded_amount = float(int(float(rest) * 100 + 0.5)) / 100.0
-        self.amount = float(rounded_amount)
+        try:
+            self.amount = round(float(rest), 2)
+        except:
+            self.amount = 0.0
 
     def set_action(self, rest):
         self.action = rest
 
     def set_balance(self, rest):
-        rounded_amount = float(int(float(rest) * 100 + 0.5)) / 100.0
-        self.balance = float(rounded_amount)
+        try:
+            self.balance = round(float(rest), 2)
+        except:
+            self.balance = 0.0
 
     def set_sched_date(self, rest):
-        self.sched_date = rest
+        if rest != 0:
+            self.sched_date = str(rest).split(" ")[0]
 
     def set_due_date(self, rest):
-        self.due_date = rest
+        if rest != 0:
+            self.due_date = str(rest).split(" ")[0]
 
     def set_payee(self, rest):
         self.payee = rest
