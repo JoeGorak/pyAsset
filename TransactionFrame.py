@@ -183,6 +183,8 @@ class TransactionFrame(wx.Frame):
         return wx.CANCEL
 
     def redraw_all(self, index=None):
+        if index == None:
+            index = -1
         ntransactions = len(self.transactions)
         start_range = 0
         end_range = ntransactions
@@ -239,12 +241,19 @@ class TransactionFrame(wx.Frame):
                     self.transaction_grid.GridCellStringRenderer(row, col)
                 else:
                     self.transaction_grid.GridCellErrorRenderer(row, col)
+        cursorCell = index
         if index == -1:
-            self.transaction_grid.SetGridCursor(ntransactions - 1, 0)
-            self.transaction_grid.MakeCellVisible(ntransactions - 1, True)
-        elif index > 0:
-            self.transaction_grid.SetGridCursor(index, 0)
-            self.transaction_grid.MakeCellVisible(index, True)
+            if ntransactions > 0:
+                cursorCell = ntransactions - 1
+            else:
+                cursorCell = 0
+        else:
+            if index > ntransactions:
+                cursorCell = ntransactions - 1
+            else:
+                cursorCell = index
+        self.transaction_grid.SetGridCursor(cursorCell, 0)
+        self.transaction_grid.MakeCellVisible(cursorCell, True)
 
         win_height = len(self.transactions)*self.rowSize + 120
         self.SetSize(size=(self.total_width, win_height))
