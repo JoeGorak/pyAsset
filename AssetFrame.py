@@ -34,6 +34,7 @@ import wx
 import csv
 import os
 import copy
+from wx import Button
 from Asset import Asset
 from AssetList import AssetList
 from BillList import BillList
@@ -45,9 +46,9 @@ from HelpDialog import HelpDialog
 from ExcelToAsset import ExcelToAsset
 from iMacrosToAsset import iMacrosToAsset
 
-
 class AssetFrame(wx.Frame):
     def __init__(self, style, parent, my_id, title="PyAsset:Asset", myfile=None, **kwds):
+        self.parent = parent
         self.assets = AssetList()
         self.bills = BillList()
         self.cur_asset = None
@@ -67,7 +68,8 @@ class AssetFrame(wx.Frame):
             self.redraw_all(-1)
             if self.cur_asset.get_name() != None:
                 self.SetTitle("PyAsset: Asset %s" % self.cur_asset.get_name())
-        return
+ #       return
+        self.Show()
 
     def DisplayMsg(self, str):
         d = wx.MessageDialog(self, str, "Error", wx.OK | wx.ICON_INFORMATION)
@@ -82,9 +84,11 @@ class AssetFrame(wx.Frame):
         self.make_filemenu()
         self.make_editmenu()
         self.make_helpmenu()
+        self.make_bill_button()
         self.make_asset_grid()
         self.set_properties()
         self.do_layout()
+        self.Show()
 
     def make_filemenu(self):
         self.filemenu = wx.Menu()
@@ -167,8 +171,19 @@ class AssetFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.about, None, wx.ID_ABOUT)
         self.Bind(wx.EVT_MENU, self.gethelp, None, ID_HELP)
 
+    def make_bill_button(self):
+        self.billButton = Button(self, label = "Bills")
+        self.billButton.Show()
+
+        self.billButton.Bind(wx.EVT_LEFT_DOWN, self.onBillButtonClick)
+
+    def onBillButtonClick(self, evt):
+        self.DisplayMsg("Bill button clicked!")
+
     def make_asset_grid(self):
-        self.assetGrid = AssetGrid(self)
+        billButtonSize = self.billButton.GetDefaultSize()
+        self.assetGrid = AssetGrid(self, pos=wx.Point(billButtonSize.GetHeight()+10, billButtonSize.GetWidth()+10))
+        self.assetGrid.Show()
 
     def add_transaction_frame(self, row, col):
         name = self.assets[row].name
@@ -180,11 +195,12 @@ class AssetFrame(wx.Frame):
 
     def do_layout(self):
         self.sizer_1 = wx.BoxSizer(wx.VERTICAL)
+        self.sizer_1.Add(self.billButton, 0, wx.FIXED_LENGTH, 0)
         self.sizer_1.Add(self.assetGrid, 1, wx.EXPAND, 0)
         self.SetSizer(self.sizer_1)
-        self.SetAutoLayout(True)
         self.sizer_1.Fit(self)
         self.sizer_1.SetSizeHints(self)
+        self.SetAutoLayout(True)
         self.Layout()
         self.Show()
 

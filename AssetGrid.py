@@ -27,9 +27,10 @@ import re
 from datetime import date, datetime
 
 class AssetGrid(grd.Grid):
-    def __init__(self, frame):
-        self.grid = grd.Grid.__init__(self, frame, -1)
+    def __init__(self, frame, **keywrds):
+        self.grid = grd.Grid.__init__(self, frame, **keywrds)
         self.frame = frame
+
         self.Bind(grd.EVT_GRID_CELL_CHANGING, self.cellchanging)
 
         # test all the events
@@ -141,8 +142,6 @@ class AssetGrid(grd.Grid):
             [self.ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE,
              self.ZERO_SUPPRESS],
         ]
-
-        return
 
     def getColName(self, col):
         return self.GetColLabelValue(col)

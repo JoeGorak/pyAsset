@@ -349,3 +349,8 @@ class Asset:
             self.cash_avail = round(float(cash_avail), 2)
         except:
             self.cash_avail = 0.0
+
+def getNumAssetColumns(self):
+    tempAsset = Asset()
+    return tempAsset.__sizeof__()
+
