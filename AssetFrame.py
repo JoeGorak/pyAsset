@@ -188,14 +188,14 @@ class AssetFrame(wx.Frame):
     def add_transaction_frame(self, row, col):
         name = self.assets[row].name
         transactions = self.assets[row].transactions
-        transaction_frame = TransactionFrame(None, self, -1, row, transactions, name)
+        TransactionFrame(None, self, -1, row, transactions, name)
 
     def set_properties(self):
         self.total_width = self.assetGrid.set_properties(self)
 
     def do_layout(self):
         self.sizer_1 = wx.BoxSizer(wx.VERTICAL)
-        self.sizer_1.Add(self.billButton, 0, wx.FIXED_LENGTH, 0)
+        self.sizer_1.Add(self.billButton, 0, 0, 0)
         self.sizer_1.Add(self.assetGrid, 1, wx.EXPAND, 0)
         self.SetSizer(self.sizer_1)
         self.sizer_1.Fit(self)
