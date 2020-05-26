@@ -350,7 +350,7 @@ class Asset:
         except:
             self.cash_avail = 0.0
 
-def getNumAssetColumns(self):
+def getNumAssetColumns():
     tempAsset = Asset()
     return tempAsset.__sizeof__()
 

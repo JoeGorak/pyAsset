@@ -470,7 +470,7 @@ class AssetGrid(grd.Grid):
         return self.total_width
 
     def OnCellLeftClick(self, evt):
-        print("OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
+        print("OnCellLeftClick: AssetGrid (%d,%d) %s\n" % (evt.GetRow(),
                                                  evt.GetCol(),
                                                  evt.GetPosition()))
         self.frame.add_transaction_frame(evt.GetRow(), evt.GetCol())
@@ -495,7 +495,7 @@ class AssetGrid(grd.Grid):
         evt.Skip()
 
     def OnLabelLeftClick(self, evt):
-        print("OnLabelLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
+        print("OnLabelLeftClick: AssetGrid (%d,%d) %s\n" % (evt.GetRow(),
                                                   evt.GetCol(),
                                                   evt.GetPosition()))
         evt.Skip()

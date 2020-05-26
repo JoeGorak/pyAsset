@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016, Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016,2020 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -30,17 +30,15 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Search functions
 # goto date
 
+import wx
 import time
 
 class Date:
-    def __init__(self, datestring=None):
-        self.year = 0
-        self.month = 0
-        self.day = 0
-        if datestring:
-            self.parse_datestring(datestring)
-        else:
-            self.set_today()
+    def __init__(self, curr_date=None):
+        self.set_curr_date(curr_date)
+        self.set_proj_date(curr_date)
+        self.set_last_paydate(curr_date)
+        self.set_next_paydate(curr_date)
 
     def __cmp__(self, other):
         val = cmp(self.year, other.year)
@@ -56,42 +54,70 @@ class Date:
         return self.formatUS()
 
     def formatUS(self):
-        return "%02d/%02d/%02d" % (self.month, self.day, self.year2digit())
+        return "%02d/%02d/%04d" % (self.month, self.day, self.year)
 
-    def year2digit(self):
-        if self.year >= 2000:
-            return self.year - 2000
-        return self.year - 1900
+    def parse_datestring(self, in_date):
+        dt = wx.DateTime()  # Uninitialized datetime
+        if dt.ParseFormat(in_date, "%m-%d-%Y") > 0:
+            err_stat = "good"
+        elif dt.ParseFormat(in_date, "%m/%d/%Y") > 0:
+            err_stat = "good"
+        else:
+            err_stat = "bad"
+        if err_stat == "bad" or dt.year < 1000:
+            return None
+        else:
+            return {"year": dt.year, "month": dt.month + 1, "day": dt.day}
 
-    def parse_datestring(self, datestring):
-        # set the date to today, then overwrite if more data
-        today = Date()
-        [self.month, self.day, self.year] = today.month, today.day, today.year
+    def set_curr_date(self, curr_date):
+        if (curr_date == None):
+            self.curr_date = time.localtime(time.time())
+            self.year = self.curr_date[0]
+            self.month = self.curr_date[1]
+            self.day = self.curr_date[2]
+        else:
+            self.curr_date = curr_date
+            self.parse_datestring(curr_date)
+        return print(self.curr_date)
 
-        words = datestring.replace('-','/').split('/')
-        if len(words) == 3:
-            month, day, year = int(words[0]), int(words[1]), int(words[2])
-        elif len(words) == 2:
-            month, day = int(words[0]), int(words[1])
-        # Don't support any other options
+    def set_proj_date(self, proj_date):
+        if (proj_date == None):
+            self.proj_date = time.localtime(time.time())
+            self.year = self.proj_date[0]
+            self.month = self.proj_date[1]
+            self.day = self.proj_date[2]
+        else:
+            self.proj_date = proj_date
+            self.parse_datestring(proj_date)
 
-        if month > 12 or month < 1:
-            print("Error: Bad month: %d/%d/%d " % (month, day, year))
-        if year < 10:
-            year += 2000
-        elif year < 100:
-            year += 1900
-        elif year < 1970:
-            print("Error: Bad year: %d/%d/%d " % (month, day, year))
+    def set_last_paydate(self, last_paydate):
+        if (last_paydate == None):
+            self.last_paydate = time.localtime(time.time())
+            self.year = self.last_paydate[0]
+            self.month = self.last_paydate[1]
+            self.day = self.last_paydate[2]
+        else:
+            self.last_paydate = last_paydate
+            self.parse_datestring(last_paydate)
 
-        self.year = year
-        self.month = month
-        self.day = day
-        return
+    def set_next_paydate(self, next_paydate):
+        if (next_paydate == None):
+            self.next_paydate = time.localtime(time.time())
+            self.year = self.next_paydate[0]
+            self.month = self.next_paydate[1]
+            self.day = self.next_paydate[2]
+        else:
+            self.next_paydate = next_paydate
+            self.parse_datestring(next_paydate)
 
-    def set_today(self):
-        today = time.localtime(time.time())
-        self.year = today[0]
-        self.month = today[1]
-        self.day = today[2]
-        return
+    def get_curr_date(self):
+        return self.curr_date
+
+    def get_proj_date(self):
+        return self.proj_date
+
+    def get_last_paydate(self):
+        return self.last_paydate
+
+    def get_next_paydate(self):
+        return self.next_paydate
