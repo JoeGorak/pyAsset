@@ -39,7 +39,7 @@ from Asset import Asset
 from AssetList import AssetList
 from BillList import BillList
 from AssetGrid import AssetGrid
-from PayDateForm import FrameWithForms
+from PropertiesForm import FrameWithForms
 from Date import Date
 from TransactionFrame import TransactionFrame
 from Transaction import Transaction
@@ -48,18 +48,15 @@ from ExcelToAsset import ExcelToAsset
 from iMacrosToAsset import iMacrosToAsset
 
 class AssetFrame(wx.Frame):
-    def __init__(self, parent, my_id, title="PyAsset:Asset", myfile=None, **kwds):
+    def __init__(self, parent, title="PyAsset:Asset", myfile=None):
         self.parent = parent
         self.frame = self
         self.assets = AssetList()
         self.bills = BillList()
         self.cur_asset = None
         self.edited = 0
-        self.rowSize = 27
-        self.colSize = 20
 
-        kwds["style"] = wx.DEFAULT_FRAME_STYLE
-        wx.Frame.__init__(self, parent, my_id, title, **kwds)
+        super(AssetFrame, self).__init__(parent, title=title)
 
         self.make_widgets()
 
@@ -68,7 +65,6 @@ class AssetFrame(wx.Frame):
             self.redraw_all(-1)
             if self.cur_asset.get_name() != None:
                 self.SetTitle("PyAsset: Asset %s" % self.cur_asset.get_name())
-        self.Show()
 
     def DisplayMsg(self, str):
         d = wx.MessageDialog(self, str, "Error", wx.OK | wx.ICON_INFORMATION)
@@ -79,15 +75,10 @@ class AssetFrame(wx.Frame):
     def make_widgets(self):
         self.menubar = wx.MenuBar()
         self.SetMenuBar(self.menubar)
-        self.statusbar = self.CreateStatusBar(1, 0)
         self.make_filemenu()
         self.make_editmenu()
         self.make_helpmenu()
-        self.make_bill_button()
-        self.make_date_grid()
-        self.make_asset_grid()
-        self.set_properties()
-        self.do_layout()
+        self.setup_layout()
 
     def make_filemenu(self):
         self.filemenu = wx.Menu()
@@ -170,23 +161,23 @@ class AssetFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.about, None, wx.ID_ABOUT)
         self.Bind(wx.EVT_MENU, self.gethelp, None, ID_HELP)
 
-    def make_bill_button(self):
-        self.billButton = Button(self.frame, label = "Bills")
+    def make_bill_button(self, panel):
+        self.billButton = Button(panel, label = "Bills")
         self.billButton.Bind(wx.EVT_LEFT_DOWN, self.onBillButtonClick)
 
     def onBillButtonClick(self, evt):
         self.DisplayMsg("Bill button clicked!")
 
-    def make_date_grid(self):
-        self.currDateLabel = wx.StaticText(parent=self, label="Curr Date")
+    def make_date_grid(self, panel):
+        self.currDateLabel = wx.StaticText(panel, label="Curr Date")
         self.curr_date = Date()
-        self.currDate = wx.StaticText(parent=self, label=str(self.curr_date))
-        self.projDateLabel = wx.StaticText(parent=self, label="Proj Date")
-        self.projDateInput = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER, value= "mm/dd/YYYY")
-        self.lastPayDateLabel = wx.StaticText(parent=self, label="Last Pay Date")
-        self.lastPayDateInput = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER, value= "mm/dd/YYYY")
-        self.nextPayDateLabel = wx.StaticText(parent=self, label="Next Pay Date")
-        self.nextPayDateInput = wx.TextCtrl(self, style=wx.TE_PROCESS_ENTER, value= "mm/dd/YYYY")
+        self.currDate = wx.StaticText(panel, label=str(self.curr_date))
+        self.projDateLabel = wx.StaticText(panel, label="Proj Date")
+        self.projDateInput = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER, value= "mm/dd/YYYY")
+        self.lastPayDateLabel = wx.StaticText(panel, label="Last Pay Date")
+        self.lastPayDateInput = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER, value= "mm/dd/YYYY")
+        self.nextPayDateLabel = wx.StaticText(panel, label="Next Pay Date")
+        self.nextPayDateInput = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER, value= "mm/dd/YYYY")
 
         self.projDateInput.Bind(wx.EVT_TEXT_ENTER,self.onProjDateEntered)
         self.lastPayDateInput.Bind(wx.EVT_TEXT_ENTER,self.onLastPayDateEntered)
@@ -212,37 +203,45 @@ class AssetFrame(wx.Frame):
     def onNextPayDateEntered(self, evt):
         self.DisplayMsg("Next Pay Date Entered! Value: %" % (evt.String()))
 
-    def make_asset_grid(self):
-        self.assetGrid = AssetGrid(self.frame)
+    def make_asset_grid(self, panel):
+        self.assetGrid = AssetGrid(panel)
+        self.needed_width = self.assetGrid.set_properties(self)
 
     def add_transaction_frame(self, row, col):
         name = self.assets[row].name
         transactions = self.assets[row].transactions
         TransactionFrame(None, self, -1, row, transactions, name)
 
-    def set_properties(self):
-        self.total_width = self.assetGrid.set_properties(self)
+    def setup_layout(self):
+        self.panel = wx.Panel(self)
 
-    def do_layout(self):
-        dateSizer = wx.BoxSizer(wx.HORIZONTAL)
-        dateSizer.Add(self.billButton)
-        dateSizer.Add(self.currDateLabel,proportion=1,flag=wx.EXPAND)
-        dateSizer.Add(self.currDate,proportion=1,flag=wx.EXPAND)
-        dateSizer.Add(self.projDateLabel,proportion=1,flag=wx.EXPAND)
-        dateSizer.Add(self.projDateInput,proportion=1,flag=wx.EXPAND)
-        dateSizer.Add(self.lastPayDateLabel,proportion=1,flag=wx.EXPAND)
-        dateSizer.Add(self.lastPayDateInput,proportion=1,flag=wx.EXPAND)
-        dateSizer.Add(self.nextPayDateLabel,proportion=1,flag=wx.EXPAND)
-        dateSizer.Add(self.nextPayDateInput,proportion=1,flag=wx.EXPAND)
+        self.make_bill_button(self.panel)
+        self.make_date_grid(self.panel)
+        self.make_asset_grid(self.panel)
 
-        assetSizer = wx.BoxSizer(wx.VERTICAL)
-        assetSizer.Add(self.assetGrid,proportion=1,flag=wx.EXPAND)
+        self.date_fgs = wx.FlexGridSizer(1, 9, 5, 5)
+        self.date_fgs.AddMany([(self.billButton),
+        (self.currDateLabel,1,wx.ALIGN_CENTER),
+        (self.currDate,1,wx.ALIGN_CENTER),
+        (self.projDateLabel,1,wx.ALIGN_CENTER),
+        (self.projDateInput,1,wx.EXPAND),
+        (self.lastPayDateLabel,1,wx.ALIGN_CENTER),
+        (self.lastPayDateInput,1,wx.EXPAND),
+        (self.nextPayDateLabel,1,wx.ALIGN_CENTER),
+        (self.nextPayDateInput,1,wx.EXPAND)])
 
-        mainSizer = wx.BoxSizer(wx.VERTICAL)
-        mainSizer.Add(dateSizer)
-        mainSizer.Add(assetSizer)
+        self.asset_fgs = wx.FlexGridSizer(2,1,0,0)
+        self.asset_fgs.Add(self.assetGrid,proportion=1,flag=wx.RESERVE_SPACE_EVEN_IF_HIDDEN|wx.EXPAND)
 
-        self.SetSizer(mainSizer)
+        self.mainSizer = wx.BoxSizer(wx.VERTICAL)
+        self.mainSizer.Add(self.date_fgs)
+        self.mainSizer.Add(self.asset_fgs)
+
+        self.panel.Fit()
+        self.panel.SetSizer(self.mainSizer)
+        self.date_fgs.SetSizeHints(self.panel)
+        self.asset_fgs.SetSizeHints(self.panel)
+
         self.Fit()
         self.Layout()
         self.Show()
@@ -251,7 +250,7 @@ class AssetFrame(wx.Frame):
         nassets = len(self.assets)
         if index == -1:
             nrows = self.assetGrid.GetNumberRows()
-            if nrows > 0 and (index == None or index == -1):
+            if nrows > 0 and (index == None or index == -1) and (nrows > self.assetGrid.getMinNumRows()):
                 self.assetGrid.DeleteRows(0, nrows)
                 nrows = 0
             start_range = 0
@@ -299,9 +298,6 @@ class AssetFrame(wx.Frame):
         elif index > 0:
             self.assetGrid.SetGridCursor(index, 0)
             self.assetGrid.MakeCellVisible(index, True)
-        nassets = len(self.assets)
-        self.SetSize(size=(self.total_width, nassets*self.rowSize))
-        self.Show()
 
     def assetchange(self, evt):
         row = evt.GetRow()
@@ -382,7 +378,7 @@ class AssetFrame(wx.Frame):
         self.assets = AssetList()
         self.cur_asset = None
         nrows = self.assetGrid.GetNumberRows()
-        if nrows > 0:
+        if (nrows > 0) and (nrows > self.assetGrid.getMinNumRows()):
             self.assetGrid.DeleteRows(0, nrows)
             self.redraw_all(-1)
         self.edited = 0
@@ -447,7 +443,6 @@ class AssetFrame(wx.Frame):
     #
 
     def read_csv(self, inf_, outf_, deff_):  # will need to receive input csv and def file
-
         csvdeff = csv.reader(deff_, delimiter=',')
         next(csvdeff, None)
 
@@ -562,17 +557,11 @@ class AssetFrame(wx.Frame):
                     sheet_index = self.assets.index(sheet)
                     if sheet_index != -1:
                         self.assets[sheet_index].transactions = xlsm.ProcessTransactionSheet(sheet)
- #                       if len(self.assets[sheet_index].transactions) > 0:
- #                           print("latest transactions from " + sheet + " (sheet_index = " + str(sheet_index) + ")", end="")
- #                           print(str(self.assets[sheet_index].transactions))
- #                       else:
- #                           print("no transactions for " + sheet)
                     else:
                         print(sheet + " not found in  asset list")
 #TODO: Process latest_bills
 #                latest_bills = xlsm.ProcessBillsSheet(self.bills)
 #                print(latest_bills)
-                pass
             else:
                 d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
                 d.ShowModal()
@@ -645,8 +634,7 @@ class AssetFrame(wx.Frame):
         self.redraw_all(-1)
 
     def properties(self, *args):
-# TODO  properties
-        frame = FrameWithForms(self, title='PayDate Form')
+        frame = FrameWithForms(self, title="Properties Form")
         frame.Show()
 
     def export_text(self, *args):

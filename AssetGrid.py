@@ -28,12 +28,18 @@ from datetime import date, datetime
 
 class AssetGrid(grd.Grid):
     def __init__(self, frame, **keywrds):
+        self.columnNames = ["Account", "Value (Curr)", "Value (Proj)", "last pulled",
+                            "Limit", "Avail (Online)", "Avail (Proj)", "Rate",
+                            "Payment", "Due Date", "Sched", "Min Pmt", "Stmt Bal",
+                            "Amt Over", "Cash Limit", "Cash used", "Cash avail"];
         self.grid = grd.Grid.__init__(self, frame, **keywrds)
+        self.minNumRows = frame.BestSize.Height
+        self.CreateGrid(self.minNumRows, len(self.columnNames))
         self.frame = frame
 
+        # Define all needed evenent bindings
         self.Bind(grd.EVT_GRID_CELL_CHANGING, self.cellchanging)
 
-        # test all the events
         self.Bind(grd.EVT_GRID_CELL_LEFT_CLICK, self.OnCellLeftClick)
         self.Bind(grd.EVT_GRID_CELL_RIGHT_CLICK, self.OnCellRightClick)
         self.Bind(grd.EVT_GRID_CELL_LEFT_DCLICK, self.OnCellLeftDClick)
@@ -48,8 +54,8 @@ class AssetGrid(grd.Grid):
         self.Bind(grd.EVT_GRID_COL_SIZE, self.OnColSize)
 
         self.Bind(grd.EVT_GRID_RANGE_SELECT, self.OnRangeSelect)
-        #        self.Bind(grd.EVT_GRID_CELL_CHANGE, self.OnCellChange)
-        #        self.Bind(grd.EVT_GRID_SELECT_CELL, self.OnSelectCell)
+#        self.Bind(grd.EVT_GRID_CELL_CHANGE, self.OnCellChange)
+        self.Bind(grd.EVT_GRID_SELECT_CELL, self.OnSelectCell)
 
         self.Bind(grd.EVT_GRID_EDITOR_SHOWN, self.OnEditorShown)
         self.Bind(grd.EVT_GRID_EDITOR_HIDDEN, self.OnEditorHidden)
@@ -118,17 +124,12 @@ class AssetGrid(grd.Grid):
         # Grid layout array
         self.col_info = [
             [self.ACCT_NAME_COL, ACCT_NAME_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-            [self.ACCT_CURR_VAL_COL, ACCT_CURR_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE,
-             self.NO_ZERO_SUPPRESS],
-            [self.ACCT_PROJ_VAL_COL, ACCT_PROJ_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE,
-             self.NO_ZERO_SUPPRESS],
-            [self.ACCT_LAST_PULL_COL, ACCT_LAST_PULL_COL_WIDTH, self.DATE_TIME_TYPE, self.NOT_EDITABLE,
-             self.ZERO_SUPPRESS],
+            [self.ACCT_CURR_VAL_COL, ACCT_CURR_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
+            [self.ACCT_PROJ_VAL_COL, ACCT_PROJ_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
+            [self.ACCT_LAST_PULL_COL, ACCT_LAST_PULL_COL_WIDTH, self.DATE_TIME_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
             [self.ACCT_LIMIT_COL, ACCT_LIMIT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-            [self.ACCT_AVAIL_ONLINE_COL, ACCT_AVAIL_ONLINE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE,
-             self.ZERO_SUPPRESS],
-            [self.ACCT_AVAIL_PROJ_COL, ACCT_AVAIL_PROJ_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE,
-             self.ZERO_SUPPRESS],
+            [self.ACCT_AVAIL_ONLINE_COL, ACCT_AVAIL_ONLINE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
+            [self.ACCT_AVAIL_PROJ_COL, ACCT_AVAIL_PROJ_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
             [self.ACCT_RATE_COL, ACCT_RATE_COL_WIDTH, self.RATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
             [self.ACCT_PAYMENT_COL, ACCT_PAYMENT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
             [self.ACCT_DUE_DATE_COL, ACCT_DUE_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
@@ -137,11 +138,15 @@ class AssetGrid(grd.Grid):
             [self.ACCT_STMT_BAL_COL, ACCT_STMT_BAL_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
             [self.ACCT_AMT_OVER_COL, ACCT_AMT_OVER_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
             [self.ACCT_CASH_LIMIT_COL, ACCT_CASH_LIMIT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-            [self.ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE,
-             self.ZERO_SUPPRESS],
-            [self.ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE,
-             self.ZERO_SUPPRESS],
+            [self.ACCT_CASH_USED_COL, ACCT_CASH_USED_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
+            [self.ACCT_CASH_AVAIL_COL, ACCT_CASH_AVAIL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
         ]
+
+    def getMinNumRows(self):
+        return(self.minNumRows)
+
+    def getNumColumns(self):
+        return(len(self.columnNames))
 
     def getColName(self, col):
         return self.GetColLabelValue(col)
@@ -165,39 +170,43 @@ class AssetGrid(grd.Grid):
         else:
             self.col_info[i][self.ZERO_SUPPRESS_COL] = zero_suppress
 
+    def getFrame(self):
+        return(self.Parent.Parent)
+
     def getColMethod(self, row, i):
+        currAsset = self.getFrame().assets[row]
         if i == self.ACCT_NAME_COL:
-            return self.frame.assets[row].name
+            return currAsset.name
         elif i == self.ACCT_CURR_VAL_COL:
-            return self.frame.assets[row].total
+            return currAsset.total
         elif i == self.ACCT_PROJ_VAL_COL:
-            return self.frame.assets[row].value_proj
+            return currAsset.value_proj
         elif i == self.ACCT_LAST_PULL_COL:
-            return self.frame.assets[row].last_pull_date
+            return currAsset.last_pull_date
         elif i == self.ACCT_LIMIT_COL:
-            return self.frame.assets[row].limit
+            return currAsset.limit
         elif i == self.ACCT_AVAIL_ONLINE_COL:
-            return self.frame.assets[row].avail
+            return currAsset.avail
         elif i == self.ACCT_AVAIL_PROJ_COL:
-            return self.frame.assets[row].avail_proj
+            return currAsset.avail_proj
         elif i == self.ACCT_RATE_COL:
-            return self.frame.assets[row].rate
+            return currAsset.rate
         elif i == self.ACCT_PAYMENT_COL:
-            return self.frame.assets[row].payment
+            return currAsset.payment
         elif i == self.ACCT_DUE_DATE_COL:
-            return self.frame.assets[row].due_date
+            return currAsset.due_date
         elif i == self.ACCT_SCHED_DATE_COL:
-            return self.frame.assets[row].sched
+            return currAsset.sched
         elif i == self.ACCT_MIN_PMT_COL:
-            return self.frame.assets[row].min_pay
+            return currAsset.min_pay
         elif i == self.ACCT_STMT_BAL_COL:
-            return self.frame.assets[row].stmt_bal
+            return currAsset.stmt_bal
         elif i == self.ACCT_CASH_LIMIT_COL:
-            return self.frame.assets[row].cash_limit
+            return currAsset.cash_limit
         elif i == self.ACCT_CASH_USED_COL:
-            return self.frame.assets[row].cash_used
+            return currAsset.cash_used
         elif i == self.ACCT_CASH_AVAIL_COL:
-            return self.frame.assets[row].cash_avail
+            return currAsset.cash_avail
         else:
             return "??"
 
@@ -210,7 +219,7 @@ class AssetGrid(grd.Grid):
         cellValue = str(self.getColMethod(row, col))
         self.SetCellAlignment(row, col, wx.ALIGN_LEFT, wx.ALIGN_CENTER)
         tableValue = "Bad: %s" % (cellValue)
-        self.frame.assetGrid.SetCellValue(row, col, tableValue)
+        self.getFrame().assetGrid.SetCellValue(row, col, tableValue)
 
     def GridCellDefaultRenderer(self, row, col):
         self.SetCellTextColour(row, col, 'black')
@@ -275,13 +284,14 @@ class AssetGrid(grd.Grid):
             format_start = "%%%1ds" % (num_blanks)
             num_format = "%%%1ds" % (num_chars)
             if negative:
-                self.frame.assetGrid.SetCellTextColour(row, col, 'red')
+                self.getFrame().assetGrid.SetCellTextColour(row, col, 'red')
                 format_str = format_start + "-$" + num_format
                 tableValue = format_str % (blanks, str_out)
             else:
+                self.getFrame().assetGrid.SetCellTextColour(row, col, 'black')
                 format_str = format_start + " $" + num_format
                 tableValue = format_str % (blanks, str_out)
-        self.frame.assetGrid.SetCellValue(row, col, tableValue)
+        self.getFrame().assetGrid.SetCellValue(row, col, tableValue)
 
     def GridCellPercentRenderer(self, row, col):
         cellValue = str(self.getColMethod(row, col))
@@ -293,7 +303,7 @@ class AssetGrid(grd.Grid):
             tableValue = ""
         else:
             tableValue = "%13.3f%%" % (rate * 100.0)
-        self.frame.assetGrid.SetCellValue(row, col, tableValue)
+        self.getFrame().assetGrid.SetCellValue(row, col, tableValue)
 
     def GridCellDateRenderer(self, row, col):
         cellValue = str(self.getColMethod(row, col))
@@ -308,7 +318,7 @@ class AssetGrid(grd.Grid):
             year = dateParts[0]
             self.SetCellAlignment(row, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
             tableValue = "%02s/%02s/%04s" % (month, day, year)
-        self.frame.assetGrid.SetCellValue(row, col, tableValue)
+        self.getFrame().assetGrid.SetCellValue(row, col, tableValue)
 
     def GridCellDateTimeRenderer(self, row, col):
         cellValue = str(self.getColMethod(row, col))
@@ -332,7 +342,7 @@ class AssetGrid(grd.Grid):
             tableValue = ""
         else:
             tableValue = cellValue
-        self.frame.assetGrid.SetCellValue(row, col, tableValue)
+        self.getFrame().assetGrid.SetCellValue(row, col, tableValue)
 
     def DisplayMsg(self, str):
         d = wx.MessageDialog(self, str, "Error", wx.OK | wx.ICON_INFORMATION)
@@ -345,7 +355,7 @@ class AssetGrid(grd.Grid):
         col = evt.GetCol()
         ret_val = wx.OK
         new_value = evt.String
-        if row < 0 or row >= len(self.frame.assets):
+        if row < 0 or row >= len(self.getFrame().assets):
             str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
             ret_val = self.DisplayMsg(str)
         elif self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
@@ -360,7 +370,7 @@ class AssetGrid(grd.Grid):
                 if "." not in dollar_amount:
                     dollar_amount += ".00"
                     evt.Veto()
-                    self.frame.assetGrid.SetCellValue(row, col, dollar_amount)
+                    self.getFrame().assetGrid.SetCellValue(row, col, dollar_amount)
                 evt.String = dollar_amount
             else:
                 str = "%s is not a valid dollar string" % (new_value)
@@ -441,39 +451,29 @@ class AssetGrid(grd.Grid):
                 str = "Warning: cellchanging not allowed for cell %d %d!" % (row, col)
                 ret_val = self.DisplayMsg(str)
         if ret_val == wx.OK:
-            self.frame.assetchange(evt)
-            self.frame.redraw_all(row)  # only redraw current row
+            self.getFrame().assetchange(evt)
+            self.getFrame().redraw_all(row)  # only redraw current row
         else:
             evt.Veto()
 
     def set_properties(self, frame):
         frame.SetTitle("PyAsset: Asset")
-        frame.statusbar.SetStatusWidths([-1])
-        statusbar_fields = [""]
-        columnNames = ["Account", "Value (Curr)", "Value (Proj)", "last pulled", "Limit", "Avail (Online)",
-                       "Avail (Proj)",
-                       "Rate",
-                       "Payment", "Due Date", "Sched", "Min Pmt", "Stmt Bal", "Amt Over", "Cash Limit", "Cash used",
-                       "Cash avail"];
-
-        for i in range(len(statusbar_fields)):
-            frame.statusbar.SetStatusText(statusbar_fields[i], i)
-        self.CreateGrid(0, len(columnNames))
-        self.SetRowLabelSize(frame.rowSize)
-        self.SetColLabelSize(frame.colSize)
-        self.total_width = 60  # non-zero start value to account for record number of assetGrid frame!
-        for i in range(len(columnNames)):
-            self.SetColLabelValue(i, columnNames[i])
+        self.total_width = 60  # non-zero start value to account for record number and status lines of frame!
+        for i in range(len(self.columnNames)):
+            self.SetColLabelValue(i, self.columnNames[i])
             cur_width = self.getColWidth(i)
             self.total_width += cur_width
             self.SetColSize(i, cur_width)
         return self.total_width
 
     def OnCellLeftClick(self, evt):
-        print("OnCellLeftClick: AssetGrid (%d,%d) %s\n" % (evt.GetRow(),
-                                                 evt.GetCol(),
-                                                 evt.GetPosition()))
-        self.frame.add_transaction_frame(evt.GetRow(), evt.GetCol())
+        row = evt.GetRow()
+        col = evt.GetCol()
+        pos = evt.GetPosition()
+        if col == self.ACCT_NAME_COL:
+            self.getFrame().add_transaction_frame(row, col)
+        else:
+            print("OnCellLeftClick: AssetGrid (%d,%d) %s\n" % (row, col, pos))
         evt.Skip()
 
     def OnCellRightClick(self, evt):
@@ -599,4 +599,3 @@ class AssetGrid(grd.Grid):
         print("OnEditorCreated: (%d, %d) %s\n" % (evt.GetRow(),
                                                   evt.GetCol(),
                                                   evt.GetControl()))
-

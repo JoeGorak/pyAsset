@@ -51,6 +51,7 @@ class Form(wx.Panel):
     def onSave(self, event):
         self.__log('User clicked on button with id %d' % event.GetId())
 
+
     def onNetPayEntered(self, event):
         money_regex = "^[\\-]*[\$]*[0-9]{1,3}((\,*)[0-9]{3})*[\\.][0-9]{2}$"
         in_netpay = event.GetString()
@@ -78,10 +79,11 @@ class Form(wx.Panel):
 
     def __log(self, message):
         ''' Private method to print a string to the console
-            control. '''
-        print('%s' % message)
+            control. (Only used for debugging and turned off for now! JJG 5/27/2020)'''
+        if (False):                         # Change this to True to print out debug messages
+            print('%s' % message)
 
-class FormWithSizer(Form):
+class myForm(Form):
     def doLayout(self):
         ''' Layout the controls by means of sizers. '''
 
@@ -115,15 +117,15 @@ class FormWithSizer(Form):
 class FrameWithForms(wx.Frame):
     def __init__(self, *args, **kwargs):
         super(FrameWithForms, self).__init__(*args, **kwargs)
-        FormWithSizer(self)
+        myForm(self)
         # We just set the frame to the right size manually. This is feasible
         # for the frame since the frame contains just one component. If the
         # frame had contained more than one component, we would use sizers
-        # of course, as demonstrated in the FormWithSizer class above.
+        # of course, as demonstrated in the myForm class above.
         self.SetClientSize(self.GetBestSize())
 
 if __name__ == '__main__':
     app = wx.App(0)
-    frame = FrameWithForms(None, title='PayDate Form')
+    frame = FrameWithForms(None, title='Properties Form')
     frame.Show()
     app.MainLoop()
