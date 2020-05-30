@@ -55,10 +55,6 @@ class AssetFrame(wx.Frame):
         self.bills = BillList()
         self.cur_asset = None
         self.edited = 0
-        # For testing payType, ref_date and netpay are initialized here. These will be moved to pyAsset.cfg in the next version JJG 05/29/2020
-#        self.payType = -1
-#        self.ref_date = "05/01/2020"
-#        self.netpay = "500.00"
         self.payType = -1
         self.ref_date = ""
         self.netpay = ""
@@ -66,10 +62,10 @@ class AssetFrame(wx.Frame):
 
         super(AssetFrame, self).__init__(parent, title=title)
 
-        self.make_widgets()
-
         if cfgFile:
             self.readConfigFile(cfgFile)
+
+        self.make_widgets()
 
         if assetFile:
             self.cur_asset.read_qif(assetFile)
@@ -199,18 +195,19 @@ class AssetFrame(wx.Frame):
 
     def make_date_grid(self, panel):
         self.currDateLabel = wx.StaticText(panel, label="Curr Date")
-        self.curr_date = Date()
+        dates = Date(self, self.payType, self.ref_date, self.netpay)
+        self.curr_date = dates.get_curr_date()
         self.currDate = wx.StaticText(panel, label=str(self.curr_date))
         self.projDateLabel = wx.StaticText(panel, label="Proj Date")
         self.projDateInput = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER, value= "mm/dd/YYYY")
-        self.lastPayDateLabel = wx.StaticText(panel, label="Last Pay Date")
-        self.lastPayDateInput = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER, value= "mm/dd/YYYY")
+        self.currPayDateLabel = wx.StaticText(panel, label="Current Pay Date")
+        self.currPayDate=dates.get_curr_paydate()
+        self.currPayDateOutput = wx.StaticText(panel, label=str(self.currPayDate))
         self.nextPayDateLabel = wx.StaticText(panel, label="Next Pay Date")
-        self.nextPayDateInput = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER, value= "mm/dd/YYYY")
+        self.nextPayDate=dates.get_next_paydate()
+        self.nextPayDateOutput = wx.StaticText(panel, label=str(self.nextPayDate))
 
         self.projDateInput.Bind(wx.EVT_TEXT_ENTER,self.onProjDateEntered)
-        self.lastPayDateInput.Bind(wx.EVT_TEXT_ENTER,self.onLastPayDateEntered)
-        self.nextPayDateInput.Bind(wx.EVT_TEXT_ENTER,self.onNextPayDateEntered)
 
     def onProjDateEntered(self, evt):
         in_date = evt.String
@@ -225,12 +222,6 @@ class AssetFrame(wx.Frame):
         else:
             self.proj_date = None
             print("Bad projected date: %s" % (in_date))
-
-    def onLastPayDateEntered(self, evt):
-        self.DisplayMsg("Last Pay Date Entered! Value: %" % (evt.String()))
-
-    def onNextPayDateEntered(self, evt):
-        self.DisplayMsg("Next Pay Date Entered! Value: %" % (evt.String()))
 
     def make_asset_grid(self, panel):
         self.assetGrid = AssetGrid(panel)
@@ -254,10 +245,10 @@ class AssetFrame(wx.Frame):
         (self.currDate,1,wx.ALIGN_CENTER),
         (self.projDateLabel,1,wx.ALIGN_CENTER),
         (self.projDateInput,1,wx.EXPAND),
-        (self.lastPayDateLabel,1,wx.ALIGN_CENTER),
-        (self.lastPayDateInput,1,wx.EXPAND),
+        (self.currPayDateLabel,1,wx.ALIGN_CENTER),
+        (self.currPayDateOutput,1,wx.ALIGN_CENTER),
         (self.nextPayDateLabel,1,wx.ALIGN_CENTER),
-        (self.nextPayDateInput,1,wx.EXPAND)])
+        (self.nextPayDateOutput,1,wx.ALIGN_CENTER)])
 
         self.asset_fgs = wx.FlexGridSizer(2,1,0,0)
         self.asset_fgs.Add(self.assetGrid,proportion=1,flag=wx.RESERVE_SPACE_EVEN_IF_HIDDEN|wx.EXPAND)
@@ -288,7 +279,6 @@ class AssetFrame(wx.Frame):
                 rows_needed = nassets - nrows
                 self.assetGrid.AppendRows(rows_needed)
         else:
-            nrows = 1
             start_range = index
             end_range =  start_range + 1
         for row in range(start_range, end_range):
@@ -365,7 +355,6 @@ class AssetFrame(wx.Frame):
             self.assets[row].set_cash_avail(val)
         else:
             print("assetchange: Warning: modifying incorrect cell! row, ", row, " col ", col)
-        return
 
     def load_file(self, *args):
         self.close()
@@ -378,7 +367,6 @@ class AssetFrame(wx.Frame):
             self.cur_asset.read_qif(os.path.join(dir, fname))
             self.redraw_all(-1)
         if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
-        return
 
     def save_file(self, *args):
         for cur_asset in self.assets:
@@ -387,7 +375,6 @@ class AssetFrame(wx.Frame):
             else:
                 self.edited = 0
             self.cur_asset.write_qif()
-        return
 
     def save_as_file(self, *args):
         d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.FD_SAVE)
@@ -396,7 +383,6 @@ class AssetFrame(wx.Frame):
             dir = d.GetDirectory()
             self.cur_asset.write_qif(os.path.join(dir, fname))
         if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
-        return
 
     def close(self, *args):
         if self.edited:
@@ -412,7 +398,6 @@ class AssetFrame(wx.Frame):
             self.redraw_all(-1)
         self.edited = 0
         self.SetTitle("PyAsset: Asset")
-        return
 
     def quit(self, *args):
         self.close()
@@ -540,7 +525,6 @@ class AssetFrame(wx.Frame):
                 d.Destroy()
                 return
         if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
-        return
 
     def process_asset_list(self, assetList):
         for i in range(len(assetList)):
@@ -673,13 +657,21 @@ class AssetFrame(wx.Frame):
     def setNetPay(self, new_netpay):
         self.netpay = new_netpay
 
+    def getPayType(self):
+        return self.payType
+
+    def getRefDate(self):
+        return self.ref_date
+
+    def getNetPay(aelf):
+        return self.netpay
+
     def export_text(self, *args):
         d = wx.FileDialog(self, "Save", "", "", "*.txt", wx.SAVE)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
             self.cur_asset.write_txt(os.path.join(dir, fname))
-        return
 
     def archive(self, *args):
         d = wx.TextEntryDialog(self,
@@ -690,7 +682,8 @@ class AssetFrame(wx.Frame):
         else:
             date = None
         d.Destroy()
-        if not date: return
+        if not date:
+            return
         archive = Asset()
         newcb_starttransaction = Transaction()
         newcb_starttransaction.amount = 0
@@ -723,7 +716,6 @@ class AssetFrame(wx.Frame):
         archive.write_qif(os.path.join(dir, fname))
         self.redraw_all(-1)
         self.edited = 1
-        return
 
     def newentry(self, *args):
         self.edited = 1
@@ -741,30 +733,25 @@ class AssetFrame(wx.Frame):
     def deleteentry(self, *args):
         index = self.assetGrid.GetGridCursorRow()
         indices = self.assetGrid.SelectedCells
-        if index < 0: return
-        d = wx.MessageDialog(self,
-                             "Really delete this asset?",
-                             "Really delete?", wx.YES_NO)
-        if d.ShowModal() == wx.ID_YES:
-            del self.cur_asset[index]
-        self.redraw_all(index - 1)  # only redraw cells [index-1:]
-        return
+        if index >= 0:
+            d = wx.MessageDialog(self,
+                                 "Really delete this asset?",
+                                 "Really delete?", wx.YES_NO)
+            if d.ShowModal() == wx.ID_YES:
+                del self.cur_asset[index]
+            self.redraw_all(index - 1)  # only redraw cells [index-1:]
 
     def about(self, *args):
         d = wx.MessageDialog(self,
                              "Python Asset Manager\n"
                              "Copyright (c) 2016,2017,2018,2019,2020 Joseph J. Gorak\n"
-                             "Based on idea from Python Checkbook (pyCheckbook)\n"
-                             "written by Richard P. Muller\n"
                              "Released under the Gnu GPL\n",
                              "About PyAsset",
                              wx.OK | wx.ICON_INFORMATION)
         d.ShowModal()
         d.Destroy()
-        return
 
     def gethelp(self, *args):
         d = HelpDialog(self, -1, "Help", __doc__)
         val = d.ShowModal()
         d.Destroy()
-        return

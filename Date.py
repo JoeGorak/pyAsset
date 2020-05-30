@@ -34,11 +34,15 @@ import wx
 import time
 
 class Date:
-    def __init__(self, curr_date=None):
-        self.set_curr_date(curr_date)
+    def __init__(self, parent, in_payType, in_ref_date, in_netpay):
+        self.parent = parent
+        self.payType = in_payType
+        self.ref_date = in_ref_date
+        self.netpay = in_netpay
+        curr_date = self.set_curr_date()
         self.set_proj_date(curr_date)
-        self.set_last_paydate(curr_date)
-        self.set_next_paydate(curr_date)
+        self.set_curr_paydate()
+        self.set_next_paydate()
 
     def __cmp__(self, other):
         val = cmp(self.year, other.year)
@@ -54,7 +58,8 @@ class Date:
         return self.formatUS()
 
     def formatUS(self):
-        return "%02d/%02d/%04d" % (self.month, self.day, self.year)
+        dateStr = "%02d/%02d/%04d" % (self.month, self.day, self.year)
+        return dateStr
 
     def parse_datestring(self, in_date):
         dt = wx.DateTime()  # Uninitialized datetime
@@ -69,16 +74,14 @@ class Date:
         else:
             return {"year": dt.year, "month": dt.month + 1, "day": dt.day}
 
-    def set_curr_date(self, curr_date):
-        if (curr_date == None):
-            self.curr_date = time.localtime(time.time())
-            self.year = self.curr_date[0]
-            self.month = self.curr_date[1]
-            self.day = self.curr_date[2]
-        else:
-            self.curr_date = curr_date
-            self.parse_datestring(curr_date)
-        return print(self.curr_date)
+    def set_curr_date(self):
+        curr = time.localtime(time.time())
+        dateStr = "%02d/%02d/%04d" % (curr.tm_mon, curr.tm_mday, curr.tm_year)
+        self.curr_date = dateStr
+        self.year = curr.tm_year
+        self.month = curr.tm_mon
+        self.day = curr.tm_mday
+        return self.curr_date
 
     def set_proj_date(self, proj_date):
         if (proj_date == None):
@@ -88,27 +91,51 @@ class Date:
             self.day = self.proj_date[2]
         else:
             self.proj_date = proj_date
-            self.parse_datestring(proj_date)
+ #           self.parse_datestring(proj_date)
 
-    def set_last_paydate(self, last_paydate):
-        if (last_paydate == None):
-            self.last_paydate = time.localtime(time.time())
-            self.year = self.last_paydate[0]
-            self.month = self.last_paydate[1]
-            self.day = self.last_paydate[2]
+    def set_curr_paydate(self):
+        self.curr_paydate = ""
+        test_curr_paydate = wx.DateTime.FromDMY(self.day, self.month-1, self.year)
+        ref_date_parsed = self.parse_datestring(self.ref_date)
+        ref_date = wx.DateTime.FromDMY(ref_date_parsed['day'], ref_date_parsed['month']-1, ref_date_parsed['year'])
+        print("In Date - set_curr_paydate: ref_Date %s, test_curr_paydate %s" % (ref_date, test_curr_paydate))
+        if self.payType == 0:
+            incr = wx.DateSpan(weeks=1)
+        elif self.payType == 1:
+            incr = wx.DateSpan(weeks=2)
+        elif self.payType == 2:
+            incr = wx.DateSpan(months=1)
         else:
-            self.last_paydate = last_paydate
-            self.parse_datestring(last_paydate)
+            self.MsgBox("Bad pay Type - paydate calculations ignored!")
+            return
+        while ref_date < test_curr_paydate:
+            ref_date.Add(incr)
+        if test_curr_paydate < ref_date:
+            while test_curr_paydate < ref_date:
+                test_curr_paydate.Add(incr)
+        elif test_curr_paydate > ref_date:
+            while test_curr_paydate > ref_date:
+                test_curr_paydate.Subtract(incr)
+        self.curr_paydate = str(test_curr_paydate).split(' ')[0]
 
-    def set_next_paydate(self, next_paydate):
-        if (next_paydate == None):
-            self.next_paydate = time.localtime(time.time())
-            self.year = self.next_paydate[0]
-            self.month = self.next_paydate[1]
-            self.day = self.next_paydate[2]
+    def set_next_paydate(self):
+        next_paydate_parsed = self.parse_datestring(self.curr_paydate)
+        next_paydate = wx.DateTime.FromDMY(next_paydate_parsed['day'], next_paydate_parsed['month']-1, next_paydate_parsed['year'])
+        if self.payType == 0:
+            incr = wx.DateSpan(weeks=1)
+        elif self.payType == 1:
+            incr = wx.DateSpan(weeks=2)
+        elif self.payType == 2:
+            incr = wx.DateSpan(months=1)
         else:
-            self.next_paydate = next_paydate
-            self.parse_datestring(next_paydate)
+            self.MsgBox("Bad pay Type - paydate calculations ignored!")
+            return
+        next_paydate.Add(incr)
+        self.next_paydate = str(next_paydate).split(' ')[0]
+        return self.next_paydate
+
+    def get_next_paydate(self):
+        return self.next_paydate
 
     def get_curr_date(self):
         return self.curr_date
@@ -116,8 +143,16 @@ class Date:
     def get_proj_date(self):
         return self.proj_date
 
-    def get_last_paydate(self):
-        return self.last_paydate
+    def get_curr_paydate(self):
+        return self.curr_paydate
 
     def get_next_paydate(self):
         return self.next_paydate
+
+    # Helper method(s):
+
+    def MsgBox(self, message):
+        d = wx.MessageDialog(self, message, "error", wx.OK | wx.ICON_INFORMATION)
+        d.ShowModal()
+        d.Destroy()
+
