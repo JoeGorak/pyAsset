@@ -48,29 +48,58 @@ from ExcelToAsset import ExcelToAsset
 from iMacrosToAsset import iMacrosToAsset
 
 class AssetFrame(wx.Frame):
-    def __init__(self, parent, title="PyAsset:Asset", myfile=None):
+    def __init__(self, parent, title="PyAsset:Asset", cfgFile=None, assetFile=None):
         self.parent = parent
         self.frame = self
         self.assets = AssetList()
         self.bills = BillList()
         self.cur_asset = None
         self.edited = 0
+        # For testing payType, ref_date and netpay are initialized here. These will be moved to pyAsset.cfg in the next version JJG 05/29/2020
+#        self.payType = -1
+#        self.ref_date = "05/01/2020"
+#        self.netpay = "500.00"
+        self.payType = -1
+        self.ref_date = ""
+        self.netpay = ""
+        self.cfgFile = cfgFile
 
         super(AssetFrame, self).__init__(parent, title=title)
 
         self.make_widgets()
 
-        if myfile:
-            self.cur_asset.read_qif(myfile)
+        if cfgFile:
+            self.readConfigFile(cfgFile)
+
+        if assetFile:
+            self.cur_asset.read_qif(assetFile)
             self.redraw_all(-1)
             if self.cur_asset.get_name() != None:
                 self.SetTitle("PyAsset: Asset %s" % self.cur_asset.get_name())
+
+    def readConfigFile(self, cfgFile):
+        try:
+            file = open(self.cfgFile, 'r')
+            lines = file.readlines()
+            self.payType = int(lines.pop(0))
+            self.ref_date = lines.pop(0).replace('\n','')
+            self.netpay = lines.pop(0).replace('\n','')
+            file.close()
+        except:
+            error = self.cfgFile + ' does not exist / cannot be opened !!\n'
+            self.DisplayMsg(error)
+
+    def writeConfigFile(self):
+        file = open(self.cfgFile, 'w')
+        file.write("%d\n" % self.payType)
+        file.write("%s\n" % self.ref_date)
+        file.write("%s\n" % self.netpay)
+        file.close()
 
     def DisplayMsg(self, str):
         d = wx.MessageDialog(self, str, "Error", wx.OK | wx.ICON_INFORMATION)
         d.ShowModal()
         d.Destroy()
-        return wx.CANCEL
 
     def make_widgets(self):
         self.menubar = wx.MenuBar()
@@ -506,7 +535,7 @@ class AssetFrame(wx.Frame):
                 deffile.close()
                 self.redraw_all(-1)
             else:
-                d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
+                d = wx.MessageDialog(self, error, "errpr", wx.OK | wx.ICON_INFORMATION)
                 d.ShowModal()
                 d.Destroy()
                 return
@@ -540,9 +569,9 @@ class AssetFrame(wx.Frame):
             error = ""
             try:
                 fromfile = open(total_name_in, 'r')
+                fromfile.close()
             except:
                 error = total_name_in + ' does not exist / cannot be opened !!\n'
-            fromfile.close()
 
             if error == "":
                 self.cur_assets = None
@@ -560,12 +589,10 @@ class AssetFrame(wx.Frame):
                     else:
                         print(sheet + " not found in  asset list")
 #TODO: Process latest_bills
-#                latest_bills = xlsm.ProcessBillsSheet(self.bills)
+#                latest_bills = xlsm.PmportocessBillsSheet(self.bills)
 #                print(latest_bills)
             else:
-                d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
-                d.ShowModal()
-                d.Destroy()
+                self.DisplayMsg(error)
 
     def update_from_net(self, *args):
         w = iMacrosToAsset()
@@ -634,8 +661,17 @@ class AssetFrame(wx.Frame):
         self.redraw_all(-1)
 
     def properties(self, *args):
-        frame = FrameWithForms(self, title="Properties Form")
+        frame = FrameWithForms(self, self.payType, self.ref_date, self.netpay)
         frame.Show()
+
+    def setPayType(self, new_type):
+        self.payType = new_type
+
+    def setRefDate(self, new_ref_date):
+        self.ref_date = new_ref_date
+
+    def setNetPay(self, new_netpay):
+        self.netpay = new_netpay
 
     def export_text(self, *args):
         d = wx.FileDialog(self, "Save", "", "", "*.txt", wx.SAVE)

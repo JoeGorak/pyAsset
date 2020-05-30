@@ -47,7 +47,7 @@ QIF file.
 *Help* Print this help file.
 
 INSTALLATION/REQUIREMENTS
-PyAsset requires Python (>=2.1) and wxPython.
+PyAsset requires Python (>=3.7) and wxPython.
 
 COPYRIGHT/LICENSING
 Copyright (c) 2016, Joseph J. Gorak. All rights reserved.
@@ -79,10 +79,13 @@ from AssetFrame import AssetFrame
 version = 0.1
 
 if __name__ == '__main__':
-    myfile = None
+    cfgFile = None
     if len(sys.argv) > 1:
-        myfile = sys.argv[1]
+        cfgFile = sys.argv[1]
+    assetFile = None
+    if len(sys.argv) > 2:
+        assetFile = sys.argv[2]
     app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
-    app.frame = AssetFrame(None, 'PyAsset', myfile)
+    app.frame = AssetFrame(None, 'PyAsset', cfgFile, assetFile)
     app.frame.Show()
     app.MainLoop()
