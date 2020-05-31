@@ -36,6 +36,7 @@ import time
 class Date:
     def __init__(self, parent, in_payType, in_ref_date, in_netpay):
         self.parent = parent
+        self.dateFormat = "%m/%d/%Y"
         self.payType = in_payType
         self.ref_date = in_ref_date
         self.netpay = in_netpay
@@ -91,14 +92,14 @@ class Date:
             self.day = self.proj_date[2]
         else:
             self.proj_date = proj_date
- #           self.parse_datestring(proj_date)
+            self.parsed_proj_date = self.parse_datestring(proj_date)
 
     def set_curr_paydate(self):
         self.curr_paydate = ""
-        test_curr_paydate = wx.DateTime.FromDMY(self.day, self.month-1, self.year)
+        test_curr_paydate = wx.DateTime.FromDMY(self.day-1, self.month-1, self.year)
         ref_date_parsed = self.parse_datestring(self.ref_date)
         ref_date = wx.DateTime.FromDMY(ref_date_parsed['day'], ref_date_parsed['month']-1, ref_date_parsed['year'])
-        print("In Date - set_curr_paydate: ref_Date %s, test_curr_paydate %s" % (ref_date, test_curr_paydate))
+#        print("In Date - set_curr_paydate: ref_Date %s, test_curr_paydate %s" % (ref_date, test_curr_paydate))
         if self.payType == 0:
             incr = wx.DateSpan(weeks=1)
         elif self.payType == 1:
@@ -106,7 +107,7 @@ class Date:
         elif self.payType == 2:
             incr = wx.DateSpan(months=1)
         else:
-            self.MsgBox("Bad pay Type - paydate calculations ignored!")
+            self.MsgBox("Bad pay Type - curr paydate calculations ignored!")
             return
         while ref_date < test_curr_paydate:
             ref_date.Add(incr)
@@ -116,7 +117,7 @@ class Date:
         elif test_curr_paydate > ref_date:
             while test_curr_paydate > ref_date:
                 test_curr_paydate.Subtract(incr)
-        self.curr_paydate = str(test_curr_paydate).split(' ')[0]
+        self.curr_paydate = test_curr_paydate.Format(self.dateFormat)
 
     def set_next_paydate(self):
         next_paydate_parsed = self.parse_datestring(self.curr_paydate)
@@ -128,10 +129,10 @@ class Date:
         elif self.payType == 2:
             incr = wx.DateSpan(months=1)
         else:
-            self.MsgBox("Bad pay Type - paydate calculations ignored!")
+            self.MsgBox("Bad pay Type - next paydate calculations ignored!")
             return
         next_paydate.Add(incr)
-        self.next_paydate = str(next_paydate).split(' ')[0]
+        self.next_paydate = next_paydate.Format(self.dateFormat)
         return self.next_paydate
 
     def get_next_paydate(self):

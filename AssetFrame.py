@@ -59,6 +59,7 @@ class AssetFrame(wx.Frame):
         self.ref_date = ""
         self.netpay = ""
         self.cfgFile = cfgFile
+        self.dateFormat = "%m/%d/%Y"      # TODO: Put this in cfgFile and add selections to PropertiesForm
 
         super(AssetFrame, self).__init__(parent, title=title)
 
@@ -213,15 +214,15 @@ class AssetFrame(wx.Frame):
         in_date = evt.String
         returned_date = Date.parse_datestring(self, in_date)
         if returned_date != None:
-            self.proj_date = in_date
-            print('User entered projected date: %s' % self.proj_date)
+            self.proj_date = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"] - 1, returned_date["year"])
             self.proj_year = returned_date["year"]
             self.proj_month = returned_date["month"]
             self.proj_day = returned_date["day"]
-            print("Projected date parse: Month: %02d, Day: %02d, Year: %04d" % (self.proj_month, self.proj_day, self.proj_year))
+            print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
+                  (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
         else:
             self.proj_date = None
-            print("Bad projected date: %s" % (in_date))
+            self.DisplayMsg("Bad projected date ignored: %s" % (in_date))
 
     def make_asset_grid(self, panel):
         self.assetGrid = AssetGrid(panel)
