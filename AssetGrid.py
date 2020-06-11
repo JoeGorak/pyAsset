@@ -470,11 +470,12 @@ class AssetGrid(grd.Grid):
         row = evt.GetRow()
         col = evt.GetCol()
         pos = evt.GetPosition()
-        if col == self.ACCT_NAME_COL:
-            self.getFrame().add_transaction_frame(row, col)
-        else:
-            print("OnCellLeftClick: AssetGrid (%d,%d) %s\n" % (row, col, pos))
-        evt.Skip()
+        if row < len(self.getFrame().assets):
+            if col == self.ACCT_NAME_COL:
+                self.getFrame().add_transaction_frame(row, col)
+            else:
+                print("OnCellLeftClick: AssetGrid (%d,%d) %s\n" % (row, col, pos))
+            evt.Skip()
 
     def OnCellRightClick(self, evt):
         print("OnCellRightClick: (%d,%d) %s\n" % (evt.GetRow(),

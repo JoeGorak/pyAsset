@@ -1,7 +1,7 @@
 #!/usr/bin/env /usr/local/bin/pythonw
 """
 INSTALLATION/REQUIREMENTS
-PyAsset requires Python (>=2.1) and wxPython.
+PyAsset requires Python (>=3.7) and wxPython.
 
 COPYRIGHT/LICENSING
 Copyright (c) 2016,2017,2019,2020 Joseph J. Gorak. All rights reserved.

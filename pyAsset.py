@@ -79,10 +79,10 @@ from AssetFrame import AssetFrame
 version = 0.1
 
 if __name__ == '__main__':
-    cfgFile = None
+    cfgFile = ""
     if len(sys.argv) > 1:
         cfgFile = sys.argv[1]
-    assetFile = None
+    assetFile = ""
     if len(sys.argv) > 2:
         assetFile = sys.argv[2]
     app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.

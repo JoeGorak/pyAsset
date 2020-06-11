@@ -8,17 +8,42 @@ class myForm(wx.Panel):
         the responsibility of subclasses (by means of the doLayout() method).
     '''
 
-    def __init__(self, parent, in_payType=-1, in_refDate="", in_netpay=""):
+    def __init__(self, parent, in_dateFormat="", in_payType="", in_refDate="", in_netpay="", in_payDepositAcct="none"):
         self.parent = parent
         super(myForm, self).__init__(parent)
+        self.assetFrame = self.GetGrandParent()
+        self.dateFormats = ['%m/%d/%Y', "%Y/%m/%d"]
+        if in_dateFormat != "":
+            try:
+                self.dateFormatChoice = self.dateFormats.index(in_dateFormat)
+            except:
+                self.dateFormatChoice = -1
+            if self.dateFormatChoice == -1:
+                today = self.parent.Parent.curr_date
+                if today.index("/") == 4:
+                    self.dateFormatChoice = 1
+                else:
+                    self.dateFormatChoice = 0
+                defaultDateFormat = self.dateFormats[self.dateFormatChoice].replace("%m", "mm").replace("%d", "dd").replace("%y", "yy").replace("%Y", "yyyy")
+                self.MsgBox("Unknown date format %s ignored - default to %s" % (in_dateFormat, defaultDateFormat))
+        else:
+            self.dateFormatChoice = 0
+        self.dateFormat = self.dateFormats[self.dateFormatChoice]
+        self.inDateFormat = self.dateFormats[self.dateFormatChoice]
         self.payTypes = ['every week', 'every 2 weeks', 'monthly']
-        if in_payType != -1:
-            self.payType = in_payType
+        if in_payType != "":
+            try:
+                self.payType = self.payTypes.index(in_payType)
+            except:
+                self.payType = -1
+            if self.payType == -1:
+                self.payType = 1
+                self.MsgBox("Unknown pay frequency %s ignored - default to %s" % (in_payType, self.payTypes[self.payType]))
         else:
             self.payType = 1
-#            self.MsgBox("Pay type default to %d (%s)" % (self.payType, self.payTypes[self.payType]))
         self.ref_date = in_refDate
         self.netpay = in_netpay
+        self.payDepositAcct = in_payDepositAcct
         self.createControls()
         self.setControlInitValues()
         self.bindEvents()
@@ -27,19 +52,50 @@ class myForm(wx.Panel):
     def createControls(self):
         self.saveButton = wx.Button(self, label="Save")
         self.abortButton = wx.Button(self, label="Abort")
+        display_dateFormats = []
+        for next_format in self.dateFormats:
+            next_format = next_format.replace("%m", "mm").replace("%d", "dd").replace("%y", "yy").replace("%Y", "yyyy")
+            display_dateFormats.append(next_format)
+        self.dateFormatRadioBox = wx.RadioBox(self,
+                                         label="Format for dates?",
+                                         choices=display_dateFormats,
+                                         majorDimension=2,
+                                         style=wx.RA_SPECIFY_COLS)
         self.netPay = wx.StaticText(self, label="Net pay (take home amount):")
-        self.netPayTextCtrl = wx.TextCtrl(self, style = wx.TE_PROCESS_ENTER, value="$d,ddd.dd")
+        self.netPayTextCtrl = wx.TextCtrl(self,
+                                          style = wx.TE_PROCESS_ENTER,
+                                          value="$d,ddd.dd")
         self.refPayDate = wx.StaticText(self, label="Reference pay date:")
-        self.refPayDateTextCtrl = wx.TextCtrl(self, style = wx.TE_PROCESS_ENTER, value="mm/dd/yyyy")
+        self.payAcct = wx.StaticText(self, label="Direct deposit account:")
+        self.payment_accounts = self.Parent.Parent.assets.getPaymentAccounts()
+        self.payAcctCtrl = wx.Choice(self,
+                                     choices=self.payment_accounts)
+        self.refPayDateTextCtrl = wx.TextCtrl(self,
+                                              style=wx.TE_PROCESS_ENTER,
+                                              value=self.dateFormat)
         self.payTypeRadioBox = wx.RadioBox(self,
                                          label="How often are you paid?",
-                                         choices=self.payTypes, majorDimension=3, style=wx.RA_SPECIFY_COLS)
+                                         choices=self.payTypes,
+                                         majorDimension=3,
+                                         style=wx.RA_SPECIFY_COLS)
 
     def setControlInitValues(self):
+        self.dateFormatRadioBox.SetSelection(self.dateFormatChoice)
+        self.dateFormatRadioBox.Refresh()
         self.netPayTextCtrl.LabelText = self.netpay
         self.netPayTextCtrl.Refresh()
         self.refPayDateTextCtrl.LabelText = self.ref_date
         self.refPayDateTextCtrl.Refresh()
+        self.payAcct.Refresh()
+        try:
+            self.payDepositChoice = self.payment_accounts.index(self.payDepositAcct)
+        except:
+            self.payDepositChoice = -1
+        if self.payDepositChoice == -1:
+            self.payDepositChoice = 0
+            self.MsgBox("Unknown payment account %s ignored - default to %s" % (self.payDepositAcct, self.payment_accounts[self.payDepositChoice]))
+        self.payAcctCtrl.SetSelection(self.payDepositChoice)
+        self.payAcctCtrl.Refresh()
         self.payTypeRadioBox.SetSelection(self.payType)
         self.payTypeRadioBox.Refresh()
 
@@ -49,14 +105,30 @@ class myForm(wx.Panel):
                  (self.abortButton, wx.EVT_BUTTON, self.onAbort),
                  (self.netPayTextCtrl, wx.EVT_TEXT_ENTER, self.onNetPayEntered),
                  (self.refPayDateTextCtrl, wx.EVT_TEXT_ENTER, self.onRefPayDateEntered),
-                 (self.payTypeRadioBox, wx.EVT_RADIOBOX, self.onPayTypechanged)]:
+                 (self.dateFormatRadioBox, wx.EVT_RADIOBOX, self.onDateFormatchanged),
+                 (self.payTypeRadioBox, wx.EVT_RADIOBOX, self.onPayTypechanged),
+                 (self.payAcctCtrl, wx.EVT_CHOICE, self.onDepositAcctChanged)]:
             control.Bind(event, handler)
 
     # Callback methods:
 
+    def onDateFormatchanged(self, event):
+        self.inDateFormat = self.dateFormats[self.dateFormatChoice]
+        self.dateFormatChoice = event.GetInt()
+        self.dateFormat = self.dateFormats[self.dateFormatChoice]
+        self.__log('Desired date format: %s' % self.dateFormat)
+#        print("Ref date:")
+        self.ref_date = Date.convertDateFormat(self, self.ref_date, self.inDateFormat, self.dateFormat)
+        self.refPayDateTextCtrl.LabelText = self.ref_date
+        self.refPayDateTextCtrl.Refresh()
+
     def onPayTypechanged(self, event):
         self.payType = event.GetInt()
         self.__log('User is paid: %s' % self.payTypes[self.payType])
+
+    def onDepositAcctChanged(self, event):
+        self.payDepositAcct = event.GetInt()
+        self.__log('Deposit into: %s' % self.payment_accounts[self.payDepositAcct])
 
     def onNetPayEntered(self, event):
         money_regex = "^[\\-]*[\$]*[0-9]{1,3}((\,*)[0-9]{3})*[\\.][0-9]{2}$"
@@ -104,13 +176,18 @@ class myForm(wx.Panel):
         if error != "":
             self.MsgBox(error)
         else:
-            print("%s, %s, %s" % (self.payTypes[self.payType], self.ref_date, self.netpay))
-            assetFrame = self.GetGrandParent()
-            if assetFrame != None:
-                assetFrame.setPayType(self.payType)
-                assetFrame.setRefDate(self.ref_date)
-                assetFrame.setNetPay(self.netpay)
-                assetFrame.writeConfigFile()
+            self.dateFormat = self.dateFormats[self.dateFormatChoice]
+            depositAcct = self.payment_accounts[self.payDepositChoice]
+            payType = self.payTypes[self.payType]
+            print("%s, %s, %s, %s, %s" % (self.dateFormat, payType, self.ref_date, self.netpay, depositAcct))
+            if self.assetFrame != None:
+                self.assetFrame.setDateFormat(self.dateFormat)
+                self.assetFrame.setPayType(payType)
+                self.assetFrame.setRefDate(self.ref_date)
+                self.assetFrame.setNetPay(self.netpay)
+                self.assetFrame.setPayDepositAcct(depositAcct)
+                self.assetFrame.writeConfigFile()
+                self.assetFrame.update_all_Date_Formats(self.inDateFormat, self.dateFormat)
             self.Parent.Destroy()
 
     def onAbort(self, event):
@@ -126,14 +203,14 @@ class myForm(wx.Panel):
     def __log(self, message):
         ''' Private method to print a string to the console
             control. (Only used for debugging and turned off for now! JJG 5/27/2020)'''
-        if (False):                         # Change this to True to print out debug messages
+        if (True):                         # Change this to True to print out debug messages
             print('%s' % message)
 
     def doLayout(self):
         ''' Layout the controls by means of sizers. '''
 
         # A GridSizer will contain the input controls:
-        gridSizer = wx.FlexGridSizer(rows=8, cols=1, vgap=10, hgap=10)
+        gridSizer = wx.FlexGridSizer(rows=20, cols=1, vgap=10, hgap=10)
 
         # Aother GridSizer has the Save and Abort buttons
         buttonGridSizer = wx.FlexGridSizer(rows=1, cols=2, vgap=10, hgap=10)
@@ -146,11 +223,15 @@ class myForm(wx.Panel):
         # Add the controls to the sizers:
         for control, options in \
                 [emptySpace,
-                 (self.payTypeRadioBox, expandOption),
-                 (self.netPay, expandOption),
+                (self.netPay, expandOption),
                  (self.netPayTextCtrl, expandOption),
+                 (self.payTypeRadioBox, expandOption),
+                 (self.dateFormatRadioBox, expandOption),
                  (self.refPayDate, expandOption),
                  (self.refPayDateTextCtrl, expandOption),
+                 emptySpace,
+                 (self.payAcct, expandOption),
+                 (self.payAcctCtrl, expandOption),
                  emptySpace
                 ]:
             gridSizer.Add(control, **options)
@@ -173,10 +254,10 @@ class myForm(wx.Panel):
         self.SetSizerAndFit(mainSizer)
 
 class FrameWithForms(wx.Frame):
-    def __init__(self, parent, in_payType=-1, in_refDate="", in_netpay=""):
+    def __init__(self, parent, in_dateFormat="", in_payType="", in_refDate="", in_netpay="", in_payDepositAcct=""):
         super(FrameWithForms, self).__init__(parent)
         self.SetTitle('Properties Form')
-        myForm(self, in_payType, in_refDate, in_netpay)
+        myForm(self, in_dateFormat, in_payType, in_refDate, in_netpay, in_payDepositAcct)
         # We just set the frame to the right size manually. This is feasible
         # for the frame since the frame contains just one component. If the
         # frame had contained more than one component, we would use sizers
@@ -185,6 +266,6 @@ class FrameWithForms(wx.Frame):
 
 if __name__ == '__main__':
     app = wx.App(0)
-    frame = FrameWithForms(None, 1, "05/29/2020", "$5,000.00")
+    frame = FrameWithForms(None, 1, 1, "05/29/2020", "$5,000.00", "none")
     frame.Show()
     app.MainLoop()

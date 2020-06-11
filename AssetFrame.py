@@ -48,23 +48,24 @@ from ExcelToAsset import ExcelToAsset
 from iMacrosToAsset import iMacrosToAsset
 
 class AssetFrame(wx.Frame):
-    def __init__(self, parent, title="PyAsset:Asset", cfgFile=None, assetFile=None):
+    def __init__(self, parent, title="PyAsset:Asset", cfgFile="", assetFile=None):
         self.parent = parent
         self.frame = self
         self.assets = AssetList()
         self.bills = BillList()
         self.cur_asset = None
         self.edited = 0
-        self.payType = -1
+        self.payType = ""
         self.ref_date = ""
         self.netpay = ""
-        self.cfgFile = cfgFile
-        self.dateFormat = "%m/%d/%Y"      # TODO: Put this in cfgFile and add selections to PropertiesForm
+        self.payDepositAcct = ""
+        self.cfgFile = copy.deepcopy(cfgFile)
+#        self.dateFormat = "%m/%d/%Y"      # TODO: Put this in cfgFile and add selections to PropertiesForm
+        self.dateFormat = "%Y/%m/%d"
 
         super(AssetFrame, self).__init__(parent, title=title)
 
-        if cfgFile:
-            self.readConfigFile(cfgFile)
+        self.readConfigFile(cfgFile)
 
         self.make_widgets()
 
@@ -75,22 +76,42 @@ class AssetFrame(wx.Frame):
                 self.SetTitle("PyAsset: Asset %s" % self.cur_asset.get_name())
 
     def readConfigFile(self, cfgFile):
+        if cfgFile == "":
+            d = wx.FileDialog(self, "", "", "", "*.cfg", wx.FD_OPEN)
+            if d.ShowModal() == wx.ID_OK:
+                fname = d.GetFilename()
+                dir = d.GetDirectory()
+                total_name_in = os.path.join(dir, fname)
+                self.cfgFile = total_name_in
+        else:
+            self.cfgFile = cfgFile
         try:
             file = open(self.cfgFile, 'r')
             lines = file.readlines()
-            self.payType = int(lines.pop(0))
+            self.dateFormat = lines.pop(0).replace('\n','')
+            self.payType = lines.pop(0).replace('\n','')
             self.ref_date = lines.pop(0).replace('\n','')
             self.netpay = lines.pop(0).replace('\n','')
+            self.payDepositAcct = lines.pop(0).replace('\n','')
             file.close()
         except:
             error = self.cfgFile + ' does not exist / cannot be opened !!\n'
             self.DisplayMsg(error)
 
     def writeConfigFile(self):
+        if self.cfgFile == "":
+            d = wx.FileDialog(self, "", "", "", "*.cfg", wx.FD_OPEN)
+            if d.ShowModal() == wx.ID_OK:
+                fname = d.GetFilename()
+                dir = d.GetDirectory()
+                total_name_in = os.path.join(dir, fname)
+                self.cfgFile = total_name_in
         file = open(self.cfgFile, 'w')
-        file.write("%d\n" % self.payType)
+        file.write("%s\n" % self.dateFormat)
+        file.write("%s\n" % self.payType)
         file.write("%s\n" % self.ref_date)
         file.write("%s\n" % self.netpay)
+        file.write("%s\n" % self.payDepositAcct)
         file.close()
 
     def DisplayMsg(self, str):
@@ -196,19 +217,41 @@ class AssetFrame(wx.Frame):
 
     def make_date_grid(self, panel):
         self.currDateLabel = wx.StaticText(panel, label="Curr Date")
-        dates = Date(self, self.payType, self.ref_date, self.netpay)
+        dates = Date(self, self.dateFormat, self.payType, self.ref_date)
         self.curr_date = dates.get_curr_date()
         self.currDate = wx.StaticText(panel, label=str(self.curr_date))
         self.projDateLabel = wx.StaticText(panel, label="Proj Date")
-        self.projDateInput = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER, value= "mm/dd/YYYY")
+        displayDateFormat = self.dateFormat.replace("%m", "mm").replace("%d", "dd").replace("%y","yy").replace("%Y", "yyyy")
+        self.projDateInput = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER, value= displayDateFormat)
         self.currPayDateLabel = wx.StaticText(panel, label="Current Pay Date")
-        self.currPayDate=dates.get_curr_paydate()
+        self.currPayDate = dates.get_curr_paydate()
         self.currPayDateOutput = wx.StaticText(panel, label=str(self.currPayDate))
         self.nextPayDateLabel = wx.StaticText(panel, label="Next Pay Date")
-        self.nextPayDate=dates.get_next_paydate()
+        self.nextPayDate = dates.get_next_paydate()
         self.nextPayDateOutput = wx.StaticText(panel, label=str(self.nextPayDate))
 
         self.projDateInput.Bind(wx.EVT_TEXT_ENTER,self.onProjDateEntered)
+
+    def update_date_grid_dates(self, oldDateFormat, newDateFormat):
+#        print("Update_date_grid_dates called: %s %s" % (oldDateFormat, newDateFormat))
+        self.curr_date = Date.convertDateFormat(self, self.curr_date, oldDateFormat, newDateFormat)
+        self.currDate.LabelText = self.curr_date
+        self.currDate.Refresh()
+        try:
+            self.proj_date = Date.convertDateFormat(self, self.proj_date, oldDateFormat, newDateFormat)
+            if self.proj_date == None:
+                self.projDateInput.LabelText = newDateFormat.replace("%m", "mm").replace("%d", "dd").replace("%y","yy").replace("%Y", "yyyy")
+            else:
+                self.projDateInput.LabelText = self.proj_date
+        except:
+            self.projDateInput.LabelText = newDateFormat.replace("%m", "mm").replace("%d", "dd").replace("%y","yy").replace("%Y", "yyyy")
+        self.projDateInput.Refresh()
+        self.currPayDate = Date.convertDateFormat(self, self.currPayDate, oldDateFormat, newDateFormat)
+        self.currPayDateOutput.LabelText = self.currPayDate
+        self.currPayDateOutput.Refresh()
+        self.nextPayDate = Date.convertDateFormat(self, self.nextPayDate, oldDateFormat, newDateFormat)
+        self.nextPayDateOutput.LabelText = self.nextPayDate
+        self.nextPayDateOutput.Refresh()
 
     def onProjDateEntered(self, evt):
         in_date = evt.String
@@ -220,6 +263,7 @@ class AssetFrame(wx.Frame):
             self.proj_day = returned_date["day"]
             print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
                   (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
+            Date.set_proj_date(self, in_date)
         else:
             self.proj_date = None
             self.DisplayMsg("Bad projected date ignored: %s" % (in_date))
@@ -357,6 +401,10 @@ class AssetFrame(wx.Frame):
         else:
             print("assetchange: Warning: modifying incorrect cell! row, ", row, " col ", col)
 
+    def update_all_Date_Formats(self, oldDateFormat, newDateFormat):
+        self.update_date_grid_dates(oldDateFormat, newDateFormat)
+        # TODO:  Add code to update assdt_grids and transaction grids   JJG 06/10/2020
+
     def load_file(self, *args):
         self.close()
         self.cur_asset = Asset()
@@ -462,7 +510,7 @@ class AssetFrame(wx.Frame):
         next(csvdeff, None)
 
         for settings in csvdeff:
-            date_ = (settings[0])  # convert to 
+            date_ = (settings[0])  # convert to
             amount_ = (settings[2])  # How much was the transaction
             memo_ = (settings[3])  # discription of the transaction
             payee_ = (settings[4])  # Where the money is going
@@ -521,9 +569,7 @@ class AssetFrame(wx.Frame):
                 deffile.close()
                 self.redraw_all(-1)
             else:
-                d = wx.MessageDialog(self, error, "errpr", wx.OK | wx.ICON_INFORMATION)
-                d.ShowModal()
-                d.Destroy()
+                self.Display(error)
                 return
         if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
 
@@ -646,8 +692,11 @@ class AssetFrame(wx.Frame):
         self.redraw_all(-1)
 
     def properties(self, *args):
-        frame = FrameWithForms(self, self.payType, self.ref_date, self.netpay)
+        frame = FrameWithForms(self, self.dateFormat, self.payType, self.ref_date, self.netpay, self.payDepositAcct)
         frame.Show()
+
+    def setDateFormat(self, new_DateFormat):
+        self.dateFormat = new_DateFormat
 
     def setPayType(self, new_type):
         self.payType = new_type
@@ -658,6 +707,12 @@ class AssetFrame(wx.Frame):
     def setNetPay(self, new_netpay):
         self.netpay = new_netpay
 
+    def setPayDepositAcct(self, new_PayDepositAcct):
+        self.payDepositAcct = new_PayDepositAcct
+
+    def getDateFormat(self):
+        return self.dateFormat
+
     def getPayType(self):
         return self.payType
 
@@ -666,6 +721,9 @@ class AssetFrame(wx.Frame):
 
     def getNetPay(aelf):
         return self.netpay
+
+    def getPayDepositAcct(self):
+        return self.payDepositAcct
 
     def export_text(self, *args):
         d = wx.FileDialog(self, "Save", "", "", "*.txt", wx.SAVE)

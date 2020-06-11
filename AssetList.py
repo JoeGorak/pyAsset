@@ -22,11 +22,14 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
 from Asset import Asset
+import copy
 
 class AssetList:
     def __init__(self):
         # type: () -> object
         self.assets = []
+        self.defaultPaymentAccounts = ['none', 'TBD', 'cash']
+        self.numDefaultPaymentAccounts = len(self.defaultPaymentAccounts)
 
     def __len__(self):
         return len(self.assets)
@@ -93,3 +96,17 @@ class AssetList:
         account = Asset(name)
         self.assets.append(account)
         return account
+
+    def getPaymentAccounts(self):
+        paymentAccts = copy.deepcopy(self.defaultPaymentAccounts)
+        for cur_asset in self.assets:
+            cur_asset_type = cur_asset.get_type()
+            if cur_asset_type in [
+                "checking",
+                "savings",
+                "money market",
+                "credit card",
+                "store card"
+            ]:
+                paymentAccts.append(cur_asset.get_name())
+        return paymentAccts
