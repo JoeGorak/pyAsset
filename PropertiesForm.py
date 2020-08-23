@@ -127,8 +127,9 @@ class myForm(wx.Panel):
         self.__log('User is paid: %s' % self.payTypes[self.payType])
 
     def onDepositAcctChanged(self, event):
-        self.payDepositAcct = event.GetInt()
-        self.__log('Deposit into: %s' % self.payment_accounts[self.payDepositAcct])
+        self.payDepositChoice = event.GetInt()
+        self.payDepositAcct = self.payment_accounts[self.payDepositChoice]
+        self.__log('Deposit into: %s' % self.payDepositAcct)
 
     def onNetPayEntered(self, event):
         money_regex = "^[\\-]*[\$]*[0-9]{1,3}((\,*)[0-9]{3})*[\\.][0-9]{2}$"
@@ -177,15 +178,14 @@ class myForm(wx.Panel):
             self.MsgBox(error)
         else:
             self.dateFormat = self.dateFormats[self.dateFormatChoice]
-            depositAcct = self.payment_accounts[self.payDepositChoice]
             payType = self.payTypes[self.payType]
-            print("%s, %s, %s, %s, %s" % (self.dateFormat, payType, self.ref_date, self.netpay, depositAcct))
+            print("%s, %s, %s, %s, %s" % (self.dateFormat, payType, self.ref_date, self.netpay, self.payDepositAcct))
             if self.assetFrame != None:
                 self.assetFrame.setDateFormat(self.dateFormat)
                 self.assetFrame.setPayType(payType)
                 self.assetFrame.setRefDate(self.ref_date)
                 self.assetFrame.setNetPay(self.netpay)
-                self.assetFrame.setPayDepositAcct(depositAcct)
+                self.assetFrame.setPayDepositAcct(self.payDepositAcct)
                 self.assetFrame.writeConfigFile()
                 self.assetFrame.update_all_Date_Formats(self.inDateFormat, self.dateFormat)
             self.Parent.Destroy()

@@ -1,7 +1,7 @@
 #!/usr/bin/env /usr/local/bin/pythonw
 """
 INSTALLATION/REQUIREMENTS
-PyAsset requires Python (>=2.1) and wxPython.
+PyAsset requires Python (>=3.7) and wxPython.
 
 COPYRIGHT/LICENSING
 Copyright (c) 2017 Joseph J. Gorak. All rights reserved.
@@ -56,7 +56,7 @@ class iMacrosToAsset:
             return("Loan")
         elif "Mortgage" in asset_name:
             return("Mortgage")
-        elif "Visa" in asset_name or "MC" in asset_name:
+        elif "Visa" in asset_name or "MC" in asset_name or "Mastercard" in asset_name:
             return("Credit Card")
         elif "Store Card" in asset_name or "Macy's" in asset_name or "Sears" in asset_name:
             return("Store Card")
@@ -66,7 +66,7 @@ class iMacrosToAsset:
     def Init(self):
         import win32com.client
         self.iim = win32com.client.Dispatch("imacros")
-        self.iim.iimInit("", 1)
+        self.iim.iimInit("-ie", 1)
 
     def GetNetInfo(self, net_asset_code):
         from datetime import datetime

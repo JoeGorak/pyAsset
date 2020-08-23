@@ -175,7 +175,7 @@ class Date:
             paydates.append(ref_date)
         else:
             ref_date.Add(incr)
-        while ref_date <= end_date:
+        while ref_date < end_date:
             pay_date = ref_date.Format(self.dateFormat)
             paydates.append(pay_date)
             ref_date.Add(incr)

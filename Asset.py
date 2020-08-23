@@ -38,9 +38,10 @@ OTHER = 9
 from TransactionList import TransactionList
 
 class Asset:
-    def __init__(self, name = "<none", type = "OTHER", last_pull_date = 0, total = 0.0, value_proj = 0.0, est_method = "none", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
+    def __init__(self, name = "", type = "OTHER", last_pull_date = 0, total = 0.0, value_proj = 0.0, est_method = "", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
                  payment = 0.0, due_date = 0, sched = 0, min_pay = 0.0, stmt_bal = 0.0, amt_over = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
         self.name = name
+        self.filename = self.name + ".qif"
         self.type = self.set_type(type)
         self.last_pull_date = last_pull_date
         self.limit = limit

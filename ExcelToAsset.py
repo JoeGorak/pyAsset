@@ -89,7 +89,7 @@ class ExcelToAsset:
                             new_asset.set_type("Overdraft")
                         elif "TSP" in asset_name or "Annuity" in asset_name or "Life" in asset_name:
                             new_asset.set_type("Retirement")
-                        elif "Visa" in asset_name or "MC" in asset_name or "Blue" in asset_name or "Credit Card" in asset_name:
+                        elif "Visa" in asset_name or "MC" in asset_name or "Master Card" in asset_name or "Blue" in asset_name or "Credit Card" in asset_name:
                             new_asset.set_type("Credit Card")
                         elif "Sears" in asset_name or "Macy's" in asset_name:
                             new_asset.set_type("Store Card")

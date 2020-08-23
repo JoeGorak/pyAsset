@@ -48,13 +48,13 @@ from ExcelToAsset import ExcelToAsset
 from iMacrosToAsset import iMacrosToAsset
 
 class AssetFrame(wx.Frame):
-    def __init__(self, parent, title="PyAsset:Asset", cfgFile="", assetFile=None):
+    def __init__(self, parent, title="PyAsset:Asset", cfgFile="", assetFile=""):
         self.parent = parent
         self.frame = self
         self.assets = AssetList()
         self.bills = BillList()
         self.cur_asset = None
-        self.edited = 0
+        self.edited = False
         self.payType = ""
         self.ref_date = ""
         self.netpay = ""
@@ -403,12 +403,12 @@ class AssetFrame(wx.Frame):
 
     def update_all_Date_Formats(self, oldDateFormat, newDateFormat):
         self.update_date_grid_dates(oldDateFormat, newDateFormat)
-        # TODO:  Add code to update assdt_grids and transaction grids   JJG 06/10/2020
+        #TODO:  Add code to update assdt_grids and transaction grids   JJG 06/10/2020
 
     def load_file(self, *args):
         self.close()
         self.cur_asset = Asset()
-        self.edited = 0
+        self.edited = False
         d = wx.FileDialog(self, "Open", "", "", "*.qif", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
@@ -419,10 +419,10 @@ class AssetFrame(wx.Frame):
 
     def save_file(self, *args):
         for cur_asset in self.assets:
-            if not cur_asset.filename:
+            if cur_asset.filename == "":
                 self.save_as_file()
             else:
-                self.edited = 0
+                self.edited = False
             self.cur_asset.write_qif()
 
     def save_as_file(self, *args):
@@ -431,7 +431,8 @@ class AssetFrame(wx.Frame):
             fname = d.GetFilename()
             dir = d.GetDirectory()
             self.cur_asset.write_qif(os.path.join(dir, fname))
-        if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
+        if self.cur_asset.name:
+            self.SetTitle("PyAsset: %s" % self.cur_asset.name)
 
     def close(self, *args):
         if self.edited:
@@ -445,7 +446,7 @@ class AssetFrame(wx.Frame):
         if (nrows > 0) and (nrows > self.assetGrid.getMinNumRows()):
             self.assetGrid.DeleteRows(0, nrows)
             self.redraw_all(-1)
-        self.edited = 0
+        self.edited = False
         self.SetTitle("PyAsset: Asset")
 
     def quit(self, *args):
@@ -532,7 +533,7 @@ class AssetFrame(wx.Frame):
         # Appends the records from a .csv file to the current Asset
         d = wx.FileDialog(self, "Import", "", "", "*.csv", wx.OPEN)
         if d.ShowModal() == wx.ID_OK:
-            self.edited = 1
+            self.edited = True
             fname = d.GetFilename()
             dir = d.GetDirectory()
             total_name_in = os.path.join(dir, fname)
@@ -593,7 +594,7 @@ class AssetFrame(wx.Frame):
         # Appends or Merges as appropriate the records from a .xlsm file to the current Asset
         d = wx.FileDialog(self, "Import", "", "", "*.xlsm", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
-            self.edited = 1
+            self.edited = True
             fname = d.GetFilename()
             dir = d.GetDirectory()
             total_name_in = os.path.join(dir, fname)
@@ -628,16 +629,19 @@ class AssetFrame(wx.Frame):
     def update_from_net(self, *args):
         w = iMacrosToAsset()
         w.Init()
-        net_asset_codes = [("HFCU",1,[False,False,False,True]),
-                           ("BOA",-1,[False,True]),
-                           ("CITI",-1,[True]),
-                           ("MACYS",-1,[True]),
-                           ("SEARS",-1,[True]),
+        net_asset_codes = [
+#                           ("HFCU",1,[False,False,False,True]),
+#                           ("BOA",-1,[False,True]),
+#                           ("AMEX",-1,[True,True]),
+#                           ("CITI",-1,[True]),
+#                           ("MACYS",-1,[True]),
+#                           ("SYW",-1,[True]),
                            ("TSP",-1,[False,False,False,True]),
-                           ("MET",1,[False])]
+#                           ("MET",1,[False])
+                           ]
         for net_asset_code in net_asset_codes:
             latest_assets = w.GetNetInfo(net_asset_code)
-    #        print latest_assets
+#            print latest_assets
             for i in range(len(latest_assets)):
                 net_asset = latest_assets.__getitem__(i)
                 if net_asset != None:
@@ -687,7 +691,6 @@ class AssetFrame(wx.Frame):
                         self.assets[net_index].set_cash_used(net_asset.get_cash_used())
                     if net_asset.get_cash_avail() != 0.0:
                         self.assets[net_index].set_cash_avail(net_asset.get_cash_avail())
-
         w.Finish()
         self.redraw_all(-1)
 
@@ -774,10 +777,10 @@ class AssetFrame(wx.Frame):
             if fname: break
         archive.write_qif(os.path.join(dir, fname))
         self.redraw_all(-1)
-        self.edited = 1
+        self.edited = True
 
     def newentry(self, *args):
-        self.edited = 1
+        self.edited = True
         self.cur_asset.append(Asset())
         self.assetGrid.AppendRows()
         nassets = self.assetGrid.GetNumberRows()
@@ -785,7 +788,7 @@ class AssetFrame(wx.Frame):
         self.assetGrid.MakeCellVisible(nassets - 1, 1)
 
     def sort(self, *args):
-        self.edited = 1
+        self.edited = True
         self.cur_asset.sort()
         self.redraw_all(-1)
 
