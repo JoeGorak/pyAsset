@@ -66,7 +66,7 @@ class iMacrosToAsset:
     def Init(self):
         import win32com.client
         self.iim = win32com.client.Dispatch("imacros")
-        self.iim.iimInit("-ie", 1)
+        self.iim.iimInit("-cr", 1)              # -cr starts Chrome, -ie starts Internet Explorer, -fx starts Firefox, more flags at https://wiki.imacros.net/iimInit()
 
     def GetNetInfo(self, net_asset_code):
         from datetime import datetime

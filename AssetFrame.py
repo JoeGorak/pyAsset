@@ -630,13 +630,13 @@ class AssetFrame(wx.Frame):
         w = iMacrosToAsset()
         w.Init()
         net_asset_codes = [
-#                           ("HFCU",1,[False,False,False,True]),
-#                           ("BOA",-1,[False,True]),
+                           ("HFCU",1,[False,False,False,True]),
+                           ("BOA",-1,[False,True]),
 #                           ("AMEX",-1,[True,True]),
 #                           ("CITI",-1,[True]),
 #                           ("MACYS",-1,[True]),
 #                           ("SYW",-1,[True]),
-                           ("TSP",-1,[False,False,False,True]),
+#                           ("TSP",-1,[False,False,False,True]),
 #                           ("MET",1,[False])
                            ]
         for net_asset_code in net_asset_codes:
