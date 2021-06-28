@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016,2017,2019,2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2021 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -22,15 +22,17 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
 #  Version information
-#  6/25/2016     Initial version v0.1
+#  06/25/2016     Initial version v0.1
+#  06/27/2021     Added limit to structure
 
 from Transaction import Transaction
 
 
 class TransactionList:
-    def __init__(self):
+    def __init__(self,limit = None):
         # type: () -> object
         self.transactions = []
+        self.limit = limit
 
     def __len__(self):
         return len(self.transactions)
@@ -43,6 +45,8 @@ class TransactionList:
 
     def __str__(self):
         ret_str = ""
+        if limit != None:
+            ret_str = "limit: %s\n" % (self.limit)
         for i in range(len(self.transactions)):
             ret_str = "%s\n%s" % (ret_str, self.transactions[i])
         return ret_str
@@ -67,6 +71,7 @@ class TransactionList:
         if after == len(self.transactions):
             self.transactions.append(new_transaction)
         else:
-#            self.transactions.append(Transaction())
             self.transactions[after+1:] = self.transactions[after:len(self.transactions)]
             self.transactions[after] = new_transaction
+
+# TODO: def update_avail_transaction_balances -  called when a transaction is inserted or appended
