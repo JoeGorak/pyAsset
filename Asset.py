@@ -61,7 +61,7 @@ class Asset:
         self.cash_limit = cash_limit
         self.cash_used = cash_used
         self.cash_avail = cash_avail
-        self.transactions = TransactionList()
+        self.transactions = TransactionList(limit)
         return
 
     def __len__(self):
