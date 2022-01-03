@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -26,7 +26,6 @@ import copy
 
 class AssetList:
     def __init__(self):
-        # type: () -> object
         self.assets = []
         self.defaultPaymentAccounts = ['none', 'TBD', 'cash']
         self.numDefaultPaymentAccounts = len(self.defaultPaymentAccounts)

@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -40,18 +40,69 @@ class Date:
         self.payType = in_payType
         self.ref_date = in_ref_date
         self.set_curr_date()
+        self.year, self.month, self.day = self.parse_datestring(self.curr_date)
         self.set_proj_date(self.curr_date)
         self.set_curr_paydate()
         self.set_next_paydate()
 
-    def __cmp__(self, other):
-        val = cmp(self.year, other.year)
+    def __lt__(self, other):
+        val = __lt__(self.year, other.year)
         if val:
             return val
-        val = cmp(self.month, other.month)
+        val = __lt__(self.month, other.month)
         if val:
             return val
-        val = cmp(self.day, other.day)
+        val = __lt__(self.day, other.day)
+        return val
+
+    def __gt__(self, other):
+        val = __gt__(self.year, other.year)
+        if val:
+            return val
+        val = __gt__(self.month, other.month)
+        if val:
+            return val
+        val = __gt__(self.day, other.day)
+        return val
+
+    def __le__(self, other):
+        val = __le__(self.year, other.year)
+        if val:
+            return val
+        val = __le__(self.month, other.month)
+        if val:
+            return val
+        val = __le__(self.day, other.day)
+        return val
+
+    def __ge__(self, other):
+        val = __ge__(self.year, other.year)
+        if val:
+            return val
+        val = __ge__(self.month, other.month)
+        if val:
+            return val
+        val = __ge__(self.day, other.day)
+        return val
+
+    def __eq__(self, other):
+        val = __eq__(self.year, other.year)
+        if val:
+            return val
+        val = __eq__(self.month, other.month)
+        if val:
+            return val
+        val = __eq__(self.day, other.day)
+        return val
+
+    def __ne__(self, other):
+        val = __ne__(self.year, other.year)
+        if val:
+            return val
+        val = __ne__(self.month, other.month)
+        if val:
+            return val
+        val = __ne__(self.day, other.day)
         return val
 
     def parse_datestring(self, in_date):
