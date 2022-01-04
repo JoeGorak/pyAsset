@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -43,7 +43,7 @@ class BillList:
         for i in range(len(self.bills)):
             cur_bill = self.bills[i]
             cd = cur_bill.details
-            ret_str += "%-10s $%8.2f %s %s" % (cur_bill.name, cd.get_total(), cd.get_last_pull_date(), cd.get_type())
+            ret_str += "%-10s $%8.2f %s %s" % (cur_bill.name, cd.get_value(), cd.get_last_pull_date(), cd.get_type())
             limit = cd.get_limit()
             if limit != 0:
                 ret_str += " $%8.2f $%8.2f" % (limit, cd.get_avail())
@@ -54,11 +54,11 @@ class BillList:
             if payment != 0:
                 ret_str += " $%8.2f" % (payment)
             due_date = cd.get_due_date()
-            if due_date != 0:
+            if due_date != None:
                 ret_str += " %s" % (due_date)
-            sched = cd.get_sched()
-            if sched != 0:
-                ret_str += " %s" % (sched)
+            sched_date = cd.get_sched_date()
+            if sched_date != None:
+                ret_str += " %s" % (sched_date)
             min_pay = cd.get_min_pay()
             if min_pay != 0:
                 ret_str += " $%8.2f" % (min_pay)

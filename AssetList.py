@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -21,12 +21,17 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+#  Version information
+#  06/11/2016     Initial version v0.1
+#  08/07/2021     Version v0.2
+
 from Asset import Asset
 import copy
 
-class AssetList:
-    def __init__(self):
+class AssetList():
+    def __init__(self, parent):
         # type: () -> object
+        self.parent = parent
         self.assets = []
         self.defaultPaymentAccounts = ['none', 'TBD', 'cash']
         self.numDefaultPaymentAccounts = len(self.defaultPaymentAccounts)
@@ -44,7 +49,7 @@ class AssetList:
         ret_str = ""
         for i in range(len(self.assets)):
             cur_asset = self.assets[i]
-            ret_str += "%s: Value (curr) $%.2f Value (proj) $%.2f last pulled %s type %s" % (cur_asset.get_name(), cur_asset.get_total(), cur_asset.get_value_proj(), cur_asset.get_last_pull_date(), cur_asset.get_type())
+            ret_str += "%s: Value (curr) $%.2f Value (proj) $%.2f last pulled %s type %s" % (cur_asset.get_name(), cur_asset.get_value(), cur_asset.get_value_proj(), cur_asset.get_last_pull_date(), cur_asset.get_type())
             limit = cur_asset.get_limit()
             if limit != 0:
                 ret_str += " Limit $%.2f Avail (online) $%.2f Avail (proj) $%.2f" % (limit, cur_asset.get_avail(), cur_asset.get_avail_proj())
@@ -55,11 +60,11 @@ class AssetList:
             if payment != 0:
                 ret_str += " Payment $%.2f" % (payment)
             due_date = cur_asset.get_due_date()
-            if due_date != 0:
+            if due_date != None:
                 ret_str += " Due date %s" % (due_date)
-            sched = cur_asset.get_sched()
-            if sched != 0:
-                ret_str += " Sched date %s" % (sched)
+            sched_date = cur_asset.get_sched_date()
+            if sched_date != None:
+                ret_str += " Sched date %s" % (sched_date)
             min_pay = cur_asset.get_min_pay()
             if min_pay != 0:
                 ret_str += " Min pmt $%.2f" % (min_pay)
@@ -93,9 +98,12 @@ class AssetList:
         return ret_index
 
     def append(self, name):
-        account = Asset(name)
+        account = Asset(self, name)
         self.assets.append(account)
         return account
+
+    def sort(self):
+        return self.assets.sort()
 
     def getPaymentAccounts(self):
         paymentAccts = copy.deepcopy(self.defaultPaymentAccounts)

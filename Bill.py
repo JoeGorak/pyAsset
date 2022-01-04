@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2017 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -38,7 +38,7 @@ YEARLY = 12
 MANUAL = -1
 
 class Bill:
-    def __init__(self, name = None, amount = 0.0, min_due = 0.0, due_date = 0, sched_date = 0,
+    def __init__(self, name = None, amount = 0.0, min_due = 0.0, due_date = None, sched_date = None,
                  pmt_acct = "Other", pmt_method = "Other", check_number = 0, pmt_freq = "Manual" ):
         self.name = name
         self.amount = amount

@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016=2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -21,13 +21,21 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+#  Version information
+#  06/11/2016     Initial version v0.1
+#  08/07/2021     Version v0.2
+
 import wx
+from wx.core import DefaultTimeSpanFormat
 import wx.grid as grd
 import re
 from datetime import date, datetime
+from Date import Date
 
 class AssetGrid(grd.Grid):
     def __init__(self, frame, **keywrds):
+        self.dateFormat = Date.get_global_date_format(self)
+        self.dateSep = Date.get_global_date_sep(self)
         self.columnNames = ["Account", "Value (Curr)", "Value (Proj)", "last pulled",
                             "Limit", "Avail (Online)", "Avail (Proj)", "Rate",
                             "Payment", "Due Date", "Sched", "Min Pmt", "Stmt Bal",
@@ -54,7 +62,7 @@ class AssetGrid(grd.Grid):
         self.Bind(grd.EVT_GRID_COL_SIZE, self.OnColSize)
 
         self.Bind(grd.EVT_GRID_RANGE_SELECT, self.OnRangeSelect)
-#        self.Bind(grd.EVT_GRID_CELL_CHANGE, self.OnCellChange)
+        #self.Bind(grd.EVT_GRID_CELL_CHANGE, self.OnCellChange)
         self.Bind(grd.EVT_GRID_SELECT_CELL, self.OnSelectCell)
 
         self.Bind(grd.EVT_GRID_EDITOR_SHOWN, self.OnEditorShown)
@@ -176,37 +184,37 @@ class AssetGrid(grd.Grid):
     def getColMethod(self, row, i):
         currAsset = self.getFrame().assets[row]
         if i == self.ACCT_NAME_COL:
-            return currAsset.name
+            return currAsset.get_name()
         elif i == self.ACCT_CURR_VAL_COL:
-            return currAsset.total
+            return currAsset.get_value()
         elif i == self.ACCT_PROJ_VAL_COL:
-            return currAsset.value_proj
+            return currAsset.get_value_proj()
         elif i == self.ACCT_LAST_PULL_COL:
-            return currAsset.last_pull_date
+            return currAsset.get_last_pull_date()
         elif i == self.ACCT_LIMIT_COL:
-            return currAsset.limit
+            return currAsset.get_limit()
         elif i == self.ACCT_AVAIL_ONLINE_COL:
-            return currAsset.avail
+            return currAsset.get_avail()
         elif i == self.ACCT_AVAIL_PROJ_COL:
-            return currAsset.avail_proj
+            return currAsset.get_avail_proj()
         elif i == self.ACCT_RATE_COL:
-            return currAsset.rate
+            return currAsset.get_rate()
         elif i == self.ACCT_PAYMENT_COL:
-            return currAsset.payment
+            return currAsset.get_payment()
         elif i == self.ACCT_DUE_DATE_COL:
-            return currAsset.due_date
+            return currAsset.get_due_date()
         elif i == self.ACCT_SCHED_DATE_COL:
-            return currAsset.sched
+            return currAsset.get_sched_date()
         elif i == self.ACCT_MIN_PMT_COL:
-            return currAsset.min_pay
+            return currAsset.get_min_pay()
         elif i == self.ACCT_STMT_BAL_COL:
-            return currAsset.stmt_bal
+            return currAsset.get_stmt_bal()
         elif i == self.ACCT_CASH_LIMIT_COL:
-            return currAsset.cash_limit
+            return currAsset.get_cash_limit()
         elif i == self.ACCT_CASH_USED_COL:
-            return currAsset.cash_used
+            return currAsset.get_cash_used()
         elif i == self.ACCT_CASH_AVAIL_COL:
-            return currAsset.cash_avail
+            return currAsset.get_cash_avail()
         else:
             return "??"
 
@@ -236,9 +244,9 @@ class AssetGrid(grd.Grid):
         self.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
         try:
             NumberAmount = cellValue.replace("$", "").replace(",", "")
-            amount = float(NumberAmount)
+            amount = round(float(NumberAmount),2)
         except:
-            amount = float(0.0)
+            amount = round(float(0.0),2)
         if amount < 0:
             negative = True
             amount = -amount
@@ -252,10 +260,9 @@ class AssetGrid(grd.Grid):
             if dotPos == len(cellValue) - 2:
                 cent_val *= 10
         cents = "%02d" % (cent_val)
-        cents = str(cents)
         groups = [cents]
         groups.append(".")
-        amount -= float(cent_val) / 100
+        amount = round(amount - float(cent_val) / 100, 2)
         if amount < 1:
             groups.append("0")
             groups.append(",")
@@ -269,7 +276,7 @@ class AssetGrid(grd.Grid):
                 next_digits = digit + next_digits
             groups.append(next_digits)
             groups.append(",")
-            amount /= 1000
+            amount = round(amount / 1000, 2)
         str_out = ""
         for j in range(len(groups) - 2, -1, -1):
             str_out += str(groups[j])
@@ -312,12 +319,29 @@ class AssetGrid(grd.Grid):
         elif self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):
             tableValue = ""
         else:
-            dateParts = cellValue.split("-")
-            month = dateParts[1]
-            day = dateParts[2]
-            year = dateParts[0]
-            self.SetCellAlignment(row, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
-            tableValue = "%02s/%02s/%04s" % (month, day, year)
+            returned_date = Date.parse_date(self, cellValue, Date.get_global_date_format(self))
+            if returned_date != None:
+                tableDate = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"]-1, returned_date["year"])
+                dateFormat = Date.get_global_date_format(self)
+                date_sep = Date.get_global_date_sep(self)
+                dateParts = dateFormat.split(date_sep)
+                tableValue = ""
+                for i in range(len(dateParts)):
+                    if dateParts[i] == "%m":
+                        tableValue = tableValue + "%02d" % (int(returned_date["month"]))
+                    elif dateParts[i] == "%d":
+                        tableValue = tableValue + "%02d" % (int(returned_date["day"]))
+                    elif dateParts[i] == "%Y":
+                        tableValue = tableValue + "%04d" % (int(returned_date["year"]))
+                    elif dateParts[i] == "%y":
+                        # assume all 2 digit years are in the range 2000 <= year < 2099.  Don't expect this software to be used in the year 2100!! JJG 07/08/2021
+                        tableValue = tableValue + "%04d" % (2000 + int(returned_date["year"]))
+                    if i < len(dateParts)-1:
+                        tableValue = tableValue + "%s" % (Date.get_global_date_sep(self))
+            else:
+                tableValue = ""
+                self.DisplayMsg("Bad cell date for row %d col %d ignored: %s" % (row, col, cellValue))
+        self.SetCellAlignment(row, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
         self.getFrame().assetGrid.SetCellValue(row, col, tableValue)
 
     def GridCellDateTimeRenderer(self, row, col):
@@ -365,7 +389,7 @@ class AssetGrid(grd.Grid):
             # TODO  move regular expression for dollar format to new object
             m = re.match("^-?\$?\d{1,3}(\,?\d{3})*(\.\d{2})*$", new_value)
             if m:
-                self.edited = 1
+                self.edited = True
                 dollar_amount = new_value.replace("$", "").replace(",", "")
                 if "." not in dollar_amount:
                     dollar_amount += ".00"
@@ -379,7 +403,7 @@ class AssetGrid(grd.Grid):
             # TODO  move regular expression for rate format to new object
             m = re.match("^\d{1,3}(\.\d{1,3})?\%?$", new_value)
             if m:
-                self.edited = 1
+                self.edited = True
                 evt.Veto()
                 rate_amount = float(new_value.replace("%", "")) / 100.0
                 evt.String = "%8.5f" % (rate_amount)
@@ -406,7 +430,7 @@ class AssetGrid(grd.Grid):
                         str = "%s is not a valid date string" % (new_value)
                         ret_val = self.DisplayMsg(str)
                     else:
-                        self.edited = 1
+                        self.edited = True
                         in_date_string = "%04s-%02d-%02d" % (year, mon, day)
                         evt.String = in_date_string
                 else:
@@ -438,7 +462,7 @@ class AssetGrid(grd.Grid):
                         str = "%s is not a valid datetime string" % (new_value)
                         ret_val = self.DisplayMsg(str)
                     else:
-                        self.edited = 1
+                        self.edited = True
                         in_datetime_string = "%04s-%02d-%02d %02d:%02d:%02d" % (year, mon, day, hour, min, sec)
                         evt.String = in_datetime_string
                 else:

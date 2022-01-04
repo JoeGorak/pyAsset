@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016,2017,2019,2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -22,7 +22,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
 #  Version information
-#  6/25/2016     Initial version v0.1
+#  06/25/2016     Initial version v0.1
+#  08/07/2021     Version v0.2
 
 # To Do list:
 # Speed redraw_all: break into redraw_all, redraw_range, redraw_totals
@@ -46,13 +47,15 @@ class TransactionFrame(wx.Frame):
         self.asset_index = asset_index
         self.transactions = transactions
         self.parent = parent
+        self.dateFormat = Date.get_global_date_format(self)
+        self.dateSep = Date.get_global_date_sep(self)
 
         if len(self.transactions) > 0:
             self.cur_transaction = self.transactions[0]
         else:
             self.cur_transaction = None
 
-        self.edited = 0
+        self.edited = False
         self.rowSize = 30
         self.colSize = 20
 
@@ -67,7 +70,7 @@ class TransactionFrame(wx.Frame):
             self.cur_transaction.read_qif(myfile)
 
         self.SetTitle("PyAsset:Transactions for %s" % title)
-        self.redraw_all(-1)
+        self.redraw_all()
 
     def make_widgets(self):
         self.menubar = wx.MenuBar()
@@ -113,7 +116,7 @@ class TransactionFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.save_file, None, wx.ID_SAVE)
         self.Bind(wx.EVT_MENU, self.save_as_file, None, wx.ID_SAVEAS)
         self.Bind(wx.EVT_MENU, self.import_CSV_file, None, ID_IMPORT_CSV)
-#        self.Bind(wx.EVT_MENU, self.export_text, None, ID_EXPORT_TEXT)
+        #self.Bind(wx.EVT_MENU, self.export_text, None, ID_EXPORT_TEXT)
         self.Bind(wx.EVT_MENU, self.archive, None, ID_ARCHIVE)
         self.Bind(wx.EVT_MENU, self.close, None, wx.ID_CLOSE)
         self.Bind(wx.EVT_MENU, self.quit, None, wx.ID_EXIT)
@@ -200,25 +203,11 @@ class TransactionFrame(wx.Frame):
             start_range = index
             end_range = start_range + 1
 
-        #Compute running balances for transactions
-        new_balance = 0                 # introduce new_balance as local variable for computation
-        if (start_range == 0):
-            new_balance = self.parent.assets[self.asset_index].get_total()
-        else:
-            new_balance = self.transactions[self.asset_index - 1].get_balance()
-        for row in range(start_range, end_range):
-            action = self.transactions[row].get_action()
-            row_amount = self.transactions[row].get_amount()
-            if (action == '+'):
-                new_balance += row_amount
-            elif (action == '-'):
-                new_balance -= row_amount
-            else:
-                print("Unknown action " + action + " ignored")
-            self.transactions[row].set_balance(new_balance)
-        self.parent.assets[self.asset_index].set_value_proj(new_balance)
+        # Make sure current balances are corrent from the starting range for the rest of the transactions!
+        proj_value = self.transactions.update_current_and_projected_values(start_range)
+        self.transactions.parent.set_value_proj(proj_value)
 
-        #Display the transactions
+        # Display the transactions
         for row in range(start_range, end_range):
             for col in range(self.transaction_grid.getNumLayoutCols()):
                 ret_val = wx.OK
@@ -268,7 +257,7 @@ class TransactionFrame(wx.Frame):
         if row >= len(self.cur_transaction):
             print("Warning: modifying incorrect cell!")
             return
-        self.edited = 1
+        self.edited = True
         transaction = self.cur_transaction[row]
         val = self.cbgrid.GetCellValue(row, col)
         if col == 0:
@@ -279,7 +268,7 @@ class TransactionFrame(wx.Frame):
             transaction.setpayee(val)
         elif col == 3:
             if val:
-                transaction.setcleared('x')
+                transaction.set_state("cleared")
         elif col == 4:
             transaction.setmemo(val)
         elif col == 5:
@@ -294,7 +283,7 @@ class TransactionFrame(wx.Frame):
     def load_file(self, *args):
         self.close()
         self.cur_transaction = Transaction()
-        self.edited = 0
+        self.edited = False
         d = wx.FileDialog(self, "Open", "", "", "*.qif", wx.OPEN)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
@@ -309,7 +298,7 @@ class TransactionFrame(wx.Frame):
             if not cur_transaction.filename:
                 self.save_as_file()
             else:
-                self.edited = 0
+                self.edited = False
             self.cur_transaction.write_qif()
         return
 
@@ -327,10 +316,6 @@ class TransactionFrame(wx.Frame):
             d = wx.MessageDialog(self, 'Save file before closing', 'Question',
                                  wx.YES_NO)
             if d.ShowModal() == wx.ID_YES: self.save_file()
-        nrows = self.cbgrid.GetNumberRows()
-        if nrows: self.cbgrid.DeleteRows(0, nrows)
-        self.edited = 0
-        self.cur_transaction = Asset()
         return
 
     def quit(self, *args):
@@ -416,9 +401,9 @@ class TransactionFrame(wx.Frame):
 
     def import_CSV_file(self, *args):
         # Appends the records from a .csv file to the current Asset
-        d = wx.FileDialog(self, "Import", "", "", "*.csv", wx.OPEN)
+        d = wx.FileDialog(self, "Import", "", "", "*.csv", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
-            self.edited = 1
+            self.edited = True
             fname = d.GetFilename()
             dir = d.GetDirectory()
             total_name_in = os.path.join(dir, fname)
@@ -428,7 +413,7 @@ class TransactionFrame(wx.Frame):
             if total_name_extension_place != -1:
                 total_name_def = total_name_in[:total_name_extension_place] + ".def"
                 total_name_qif = total_name_in[:total_name_extension_place] + ".qif"
-            # print total_name_in, total_name_def, total_name_qif
+            # print value_name_in, value_name_def, value_name_qif
             error = ""
             try:
                 fromfile = open(total_name_in, 'r')
@@ -454,13 +439,17 @@ class TransactionFrame(wx.Frame):
                 fromfile.close()
                 deffile.close()
                 self.redraw_all(-1)
+
+                if self.cur_transaction.name:
+                    title = "PyAsset: %s" % self.cur_transaction.name
+                else:
+                    title = "Pyasset"
+                self.SetTitle(title)
+
             else:
                 d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
                 d.ShowModal()
                 d.Destroy()
-                return
-        if self.cur_transaction.name: self.SetTitle("PyAsset: %s" % self.cur_transaction.name)
-        return
 
     def export_text(self, *args):
         d = wx.FileDialog(self, "Save", "", "", "*.txt", wx.SAVE)
@@ -485,7 +474,7 @@ class TransactionFrame(wx.Frame):
         newcb_starttransaction.amount = 0
         newcb_starttransaction.payee = "Starting Balance"
         newcb_starttransaction.memo = "Archived by PyAsset"
-        newcb_starttransaction.cleared = 1
+        newcb_starttransaction.state = "cleared"
         newcb_starttransaction.date = date
 
         newcb = Asset()
@@ -495,7 +484,7 @@ class TransactionFrame(wx.Frame):
         archtot = 0
 
         for transaction in self.cur_transaction:
-            if transaction.date < date and transaction.cleared:
+            if transaction.date < date and transaction.state == "cleared":
                 archive.append(transaction)
                 archtot += transaction.amount
             else:
@@ -511,49 +500,75 @@ class TransactionFrame(wx.Frame):
             if fname: break
         archive.write_qif(os.path.join(dir, fname))
         self.redraw_all(-1)
-        self.edited = 1
+        self.edited = True
         return
 
     def newentry(self, *args):
-        self.edited = 1
-        self.cur_transaction.append(Transaction())
-        self.cbgrid.AppendRows()
-        ntransactions = self.cbgrid.GetNumberRows()
-        self.cbgrid.SetGridCursor(ntransactions - 1, 0)
-        self.cbgrid.MakeCellVisible(ntransactions - 1, 1)
+        self.edited = True
+        self.transactions.append()
+        self.transaction_grid.AppendRows()
+        ntransactions = self.transaction_grid.GetNumberRows()
+        self.transaction_grid.SetGridCursor(ntransactions - 1, 0)
+        self.transaction_grid.MakeCellVisible(ntransactions - 1, 1)
 
     def sort(self, *args):
-        self.edited = 1
+        self.edited = True
         self.cur_transaction.sort()
         self.redraw_all(-1)
 
     def voidentry(self, *args):
-        index = self.cbgrid.GetGridCursorRow()
-        if index < 0: return
-        d = wx.MessageDialog(self,
-                             "Really void this transaction?",
-                             "Really void?", wx.YES_NO)
-        if d.ShowModal() == wx.ID_YES:
-            self.edited = 1
-            transaction = self.cur_transaction[index]
-            today = Date()
-            transaction.amount = 0
-            transaction.payee = "VOID: " + transaction.payee
-            transaction.memo = "voided %s" % today.formatUS()
-        self.redraw_all(index)  # redraw only [index:]
-        return
+        index = self.transaction_grid.GetGridCursorRow()
+        if index < 0:
+            errorMsg = "index out of bounds in void - %d: ignored" % (index)
+            self.DisplayMsg(errorMsg)
+        else:
+            transaction = self.transactions[index]
+            if transaction.get_state() != "void":
+                msg = "Really void this transaction?"
+                title = "Really void?"
+                void = True
+            else:
+                msg = "Really unvoid this transaction?"
+                title = "Really unvoid?"
+                void = False
+            d = wx.MessageDialog(self,
+                                 msg,
+                                 title, wx.YES_NO)
+            if d.ShowModal() == wx.ID_YES:
+                self.edited = True
+                today_date = Date.get_curr_date(self.parent)
+                # Toggle values so if it was void make it active and if active make it void
+                if void:
+                    transaction.set_payee("VOID: " + transaction.get_payee())
+                    transaction.set_memo("voided %s" % today_date)
+                    transaction.set_prev_state(transaction.get_state())
+                    transaction.set_state("void")
+                else:
+                    new_payee = transaction.get_payee()[5:]
+                    transaction.set_payee(new_payee)
+                    unvoid_msg = "; unvoided %s" % today_date
+                    transaction.set_memo(transaction.get_memo() + unvoid_msg)
+                    new_state = transaction.get_prev_state()
+                    transaction.set_state(new_state)
+                proj_value = self.transactions.update_current_and_projected_values(0)
+                self.transactions.parent.set_value_proj(proj_value)
+                for i in range(index,len(self.transactions)):
+                    self.transaction_grid.setValue(i, "Value", str(round(self.transactions[i].get_current_value(),2)))
+                self.redraw_all()  # redraw only [index:]
 
     def deleteentry(self, *args):
-        index = self.cbgrid.GetGridCursorRow()
-        if index < 0: return
-        d = wx.MessageDialog(self,
-                             "Really delete this transaction?",
-                             "Really delete?", wx.YES_NO)
-        if d.ShowModal() == wx.ID_YES:
-            del self.cur_transaction[index]
-        self.redraw_all(index - 1)  # only redraw cells [index-1:]
-        return
-
+        index = self.transaction_grid.GetGridCursorRow()
+        if index < 0:
+            errorMsg = "index out of bounds in deleteentry - %d: ignored" % (index)
+            self.DisplayMsg(errorMsg)
+        else:
+            d = wx.MessageDialog(self,
+                                 "Really delete this transaction?",
+                                 "Really delete?", wx.YES_NO)
+            if d.ShowModal() == wx.ID_YES:
+                del self.transactions[index]
+            self.redraw_all()  # only redraw cells [index-1:]
+ 
     def reconcile(self, *args):
         d = wx.TextEntryDialog(self,
                                "What is the balance of your last statement?",
@@ -565,7 +580,7 @@ class TransactionFrame(wx.Frame):
         d.Destroy()
         if not current_balance: return
 
-        cleared_balance = self.get_cleared_balance()
+        _balance = self.get_celared_balance()
         difference = current_balance - cleared_balance
         if abs(difference) < 0.01:
             d = wx.MessageDialog(self,
@@ -583,28 +598,28 @@ class TransactionFrame(wx.Frame):
         return
 
     def adjust_balance(self, diff):
-        self.edited = 1
-        transaction = Transaction()
+        self.edited = True
+        #transaction = Transaction()
+        transactions = self.transactions.append()
         transaction.payee = "Balance Adjustment"
         transaction.amount = diff
-        transaction.cleared = 1
+        transaction.state = "cleared"
         transaction.memo = "Adjustment"
-        self.cur_transaction.append(transaction)
         self.redraw_all(-1)  # only redraw [-1]?
         return
 
     def get_cleared_balance(self):
-        total = 0.
+        value = 0.0
         for transaction in self.cur_transaction:
-            if transaction.cleared:
-                total = total + transaction.amount
-        return total
+            if transaction.get_state() == "cleared":
+                value = value + transaction.amount
+        return value
 
     def about(self, *args):
         d = wx.MessageDialog(self,
                              "Python Asset Manager\n"
-                             "Copyright (c) 2016,2017,2109, 2020 Joseph J. Gorak\n"
-                             "Based on idea from Python Checkbook (pyCheckbook)\n"
+                             "Copyright (c) 2016-2021 Joseph J. Gorak\n"
+                             "Extended from ideas in Python Checkbook (pyCheckbook)\n"
                              "written by Richard P. Muller\n"
                              "Released under the Gnu GPL\n",
                              "About PyAsset",
@@ -620,9 +635,56 @@ class TransactionFrame(wx.Frame):
         return
 
     def markcleared(self, *args):
-        index = self.cbgrid.GetGridCursorRow()
-        if index < 0: return
-        if not self.cur_transaction[index].cleared: self.edited = 1
-        self.cur_transaction[index].cleared = 1
-        self.cbgrid.SetCellValue(index, 3, 'x')
+        index = self.transaction_grid.GetGridCursorRow()
+        if index < 0:
+            errorMsg = "index out of bounds in markcleared - %d: ignored" % (index)
+            self.DisplayMsg(errorMsg)
+        else:
+            self.edited = True
+            prev_state = self.transactions[index].get_prev_state()
+            cur_state = self.transactions[index].get_state()
+            self.transactions[index].set_prev_state(cur_state)
+            if cur_state == "cleared":
+                self.transactions[index].set_state(cur_state)
+                self.transaction_grid.setValue(index, "State", cur_state)
+            else:
+                self.transactions[index].set_state(prev_state)
+                self.transaction_grid.setValue(index, "State", prev_state)
         return
+
+    def assetchange(self, which_transaction, which_column, new_value):
+        colName = self.transaction_grid.getColName(which_column)
+        transaction_changed = self.transactions[which_transaction]
+        modified = True
+        print("TransactionFrame: Recieved notification that transaction ", transaction_changed.get_payee(), " column", colName, "changed, new_value", new_value)
+        if colName == "Pmt Method":
+            transaction_changed.set_pmt_method(new_value)
+        elif colName == "Chk #":
+            transaction_changed.set_check_num(new_value)
+        elif colName == "Payee":
+            transaction_changed.set_payee(new_value)
+        elif colName == "Amount":
+            transaction_changed.set_amount(new_value)
+        elif colName == "Action":
+            transaction_changed.set_action(new_value)
+        elif colName == "Value":
+            transaction_changed.set_current_value(new_value)
+        elif colName == "Due Date":
+            transaction_changed.set_due_date(new_value)
+        elif colName == "Sched Date":
+            transaction_changed.set_sched_date(new_value)
+        elif colName == "State":
+            transaction_changed.set_state(new_value)
+        elif colName == "Comment":
+            transaction_changed.set_comment(new_value)
+        elif colName == "Memo":
+            transaction_changed.set_memo(new_value)
+        else:
+            self.DisplayMsg("Unknown column " + colName + " ignored!")
+            modified = False
+
+        if modified == True:
+            transaction_changed.assetchange(which_column, new_value)
+            del self.transactions[which_transaction]
+            self.transactions.insert(transaction_changed)
+            self.edited = True

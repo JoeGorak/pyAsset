@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016,2017,2019,2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -21,14 +21,21 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+#  Version information
+#  06/11/2016     Initial version v0.1
+#  08/07/2021     Version v0.2
+
 import wx
 import wx.grid as grd
 import re
 from datetime import date, datetime
+from Date import Date
 
 class TransactionGrid(grd.Grid):
-    def __init__(self, frame):
-        self.grid = grd.Grid.__init__(self, frame, -1)
+    def __init__(self, frame, **keywords):
+        self.dateFormat = Date.get_global_date_format(self)
+        self.dateSep = Date.get_global_date_sep(self)
+        self.grid = grd.Grid.__init__(self, frame, **keywords)
         self.frame = frame
         self.Bind(grd.EVT_GRID_CELL_CHANGING, self.cellchanging)
 
@@ -47,8 +54,8 @@ class TransactionGrid(grd.Grid):
         self.Bind(grd.EVT_GRID_COL_SIZE, self.OnColSize)
 
         self.Bind(grd.EVT_GRID_RANGE_SELECT, self.OnRangeSelect)
-#        self.Bind(grd.EVT_GRID_CELL_CHANGE, self.OnCellChange)
-#        self.Bind(grd.EVT_GRID_SELECT_CELL, self.OnSelectCell)
+        #self.Bind(grd.EVT_GRID_CELL_CHANGE, self.OnCellChange)
+        #self.Bind(grd.EVT_GRID_SELECT_CELL, self.OnSelectCell)
 
         self.Bind(grd.EVT_GRID_EDITOR_SHOWN, self.OnEditorShown)
         self.Bind(grd.EVT_GRID_EDITOR_HIDDEN, self.OnEditorHidden)
@@ -60,10 +67,10 @@ class TransactionGrid(grd.Grid):
         self.TRANS_PAYEE_COL = 2
         self.TRANS_AMOUNT_COL = 3
         self.TRANS_ACTION_COL = 4
-        self.TRANS_BALANCE_COL = 5
+        self.TRANS_VALUE_COL = 5
         self.TRANS_SCHED_DATE_COL = 6
         self.TRANS_DUE_DATE_COL = 7
-        self.TRANS_CLEARED_COL = 8
+        self.TRANS_STATE_COL = 8
         self.TRANS_COMMENT_COL = 9
         self.TRANS_MEMO_COL = 10
 
@@ -73,10 +80,10 @@ class TransactionGrid(grd.Grid):
         TRANS_PAYEE_COL_WIDTH = 400
         TRANS_AMOUNT_COL_WIDTH = 60
         TRANS_ACTION_COL_WIDTH = 50
-        TRANS_BALANCE_COL_WIDTH = 65
+        TRANS_VALUE_COL_WIDTH = 65
         TRANS_SCHED_DATE_COL_WIDTH = 70
         TRANS_DUE_DATE_COL_WIDTH = 70
-        TRANS_CLEARED_COL_WIDTH = 50
+        TRANS_STATE_COL_WIDTH = 70
         TRANS_COMMENT_COL_WIDTH = 400
         TRANS_MEMO_COL_WIDTH = 400
 
@@ -108,11 +115,11 @@ class TransactionGrid(grd.Grid):
                          [self.TRANS_CHECK_NUM_COL, TRANS_CHECK_NUM_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
                          [self.TRANS_PAYEE_COL, TRANS_PAYEE_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
                          [self.TRANS_AMOUNT_COL, TRANS_AMOUNT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_ACTION_COL, TRANS_ACTION_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_BALANCE_COL, TRANS_BALANCE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_ACTION_COL, TRANS_ACTION_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_VALUE_COL, TRANS_VALUE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
                          [self.TRANS_SCHED_DATE_COL, TRANS_SCHED_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
                          [self.TRANS_DUE_DATE_COL, TRANS_DUE_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_CLEARED_COL, TRANS_CLEARED_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_STATE_COL, TRANS_STATE_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
                          [self.TRANS_COMMENT_COL, TRANS_COMMENT_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
                          [self.TRANS_MEMO_COL, TRANS_MEMO_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
         ]
@@ -142,27 +149,27 @@ class TransactionGrid(grd.Grid):
 
     def getColMethod(self, row, i):
         if i == self.TRANS_PMT_METHOD_COL:
-            return self.frame.transactions[row].pmt_method
+            return self.frame.transactions[row].get_pmt_method()
         elif i == self.TRANS_CHECK_NUM_COL:
-            return self.frame.transactions[row].check_num
+            return self.frame.transactions[row].get_check_num()
         elif i == self.TRANS_PAYEE_COL:
-            return self.frame.transactions[row].payee
+            return self.frame.transactions[row].get_payee()
         elif i == self.TRANS_AMOUNT_COL:
-            return self.frame.transactions[row].amount
+            return self.frame.transactions[row].get_amount()
         elif i == self.TRANS_ACTION_COL:
-            return self.frame.transactions[row].action
-        elif i == self.TRANS_BALANCE_COL:
-            return self.frame.transactions[row].balance
+            return self.frame.transactions[row].get_action()
+        elif i == self.TRANS_VALUE_COL:
+            return self.frame.transactions[row].get_current_value()
         elif i == self.TRANS_DUE_DATE_COL:
-            return self.frame.transactions[row].due_date
+            return self.frame.transactions[row].get_due_date()
         elif i == self.TRANS_SCHED_DATE_COL:
-            return self.frame.transactions[row].sched_date
-        elif i == self.TRANS_CLEARED_COL:
-            return self.frame.transactions[row].cleared
+            return self.frame.transactions[row].get_sched_date()
+        elif i == self.TRANS_STATE_COL:
+            return self.frame.transactions[row].get_state()
         elif i == self.TRANS_COMMENT_COL:
-            return self.frame.transactions[row].comment
+            return self.frame.transactions[row].get_comment()
         elif i == self.TRANS_MEMO_COL:
-            return self.frame.transactions[row].memo
+            return self.frame.transactions[row].get_memo()
         else:
             return "??"
 
@@ -192,9 +199,9 @@ class TransactionGrid(grd.Grid):
         self.SetCellAlignment(row, col, wx.ALIGN_RIGHT, wx.ALIGN_CENTER)
         try:
             NumberAmount = cellValue.replace("$", "").replace(",", "")
-            amount = float(NumberAmount)
+            amount = round(float(NumberAmount),2)
         except:
-            amount = float(0.0)
+            amount = round(float(0.0),2)
         if amount < 0:
             negative = True
             amount = -amount
@@ -208,10 +215,9 @@ class TransactionGrid(grd.Grid):
             if dotPos == len(cellValue) - 2:
                 cent_val *= 10
         cents = "%02d" % (cent_val)
-        cents = str(cents)
         groups = [cents]
         groups.append(".")
-        amount -= float(cent_val) / 100
+        amount = round(amount - float(cent_val) / 100, 2)
         if amount < 1:
             groups.append("0")
             groups.append(",")
@@ -225,7 +231,7 @@ class TransactionGrid(grd.Grid):
                 next_digits = digit + next_digits
             groups.append(next_digits)
             groups.append(",")
-            amount /= 1000
+            amount = round(amount / 1000, 2)
         str_out = ""
         for j in range(len(groups) - 2, -1, -1):
             str_out += str(groups[j])
@@ -267,12 +273,29 @@ class TransactionGrid(grd.Grid):
         elif self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):
             tableValue = ""
         else:
-            dateParts = cellValue.split("-")
-            month = dateParts[1]
-            day = dateParts[2][:2]
-            year = dateParts[0]
-            self.SetCellAlignment(row, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
-            tableValue = "%02s/%02s/%04s" % (month, day, year)
+            returned_date = Date.parse_date(self, cellValue, Date.get_global_date_format(self))
+            if returned_date != None:
+                tableDate = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"] - 1, returned_date["year"])
+                dateFormat = Date.get_global_date_format(self)
+                date_sep = Date.get_global_date_sep(self)
+                dateParts = dateFormat.split(date_sep)
+                tableValue = ""
+                for i in range(len(dateParts)):
+                    if dateParts[i] == "%m":
+                        tableValue = tableValue + "%02d" % (int(returned_date["month"]))
+                    elif dateParts[i] == "%d":
+                        tableValue = tableValue + "%02d" % (int(returned_date["day"]))
+                    elif dateParts[i] == "%Y":
+                        tableValue = tableValue + "%04d" % (int(returned_date["year"]))
+                    elif dateParts[i] == "%y":
+                        # assume all 2 digit years are in the range 2000 <= year < 2099.  Don't expect this software to be used in the year 2100!! JJG 07/08/2021
+                        tableValue = tableValue + "%04d" % (2000 + int(returned_date["year"]))
+                    if i < len(dateParts)-1:
+                        tableValue = tableValue + "%s" % (date_sep)
+            else:
+                tableValue = ""
+                self.DisplayMsg("Bad cell date for row %d col %d ignored: %s" % (row, col, cellValue))
+        self.SetCellAlignment(row, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
         self.frame.transaction_grid.SetCellValue(row, col, tableValue)
 
     def GridCellDateTimeRenderer(self, row, col):
@@ -317,10 +340,10 @@ class TransactionGrid(grd.Grid):
             str = "Warning: Changes not allowed for column %s!" % (self.getColName(col))
             ret_val =  self.DisplayMsg(str)
         if ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.DOLLAR_TYPE:
-#TODO  move regular expression for dollar format to new object
+            #TODO  move regular expression for dollar format to new object
             m = re.match("^-?\$?\d{1,3}(\,?\d{3})*(\.\d{2})*$", new_value)
             if m:
-                self.edited = 1
+                self.edited = True
                 dollar_amount = new_value.replace("$", "").replace(",", "")
                 if "." not in dollar_amount:
                     dollar_amount += ".00"
@@ -331,12 +354,12 @@ class TransactionGrid(grd.Grid):
                 str = "%s is not a valid dollar string" % (new_value)
                 ret_val =  self.DisplayMsg(str)
         elif ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.RATE_TYPE:
-#TODO  move regular expression for rate format to new object
+            #TODO  move regular expression for rate format to new object
             m = re.match("^\d{1,3}(\.\d{1,3})?\%?$", new_value)
             if m:
-                self.edited = 1
+                self.edited = True
                 evt.Veto()
-                rate_amount = float(new_value.replace("%", ""))/100.0
+                rate_amount = Round(float(new_value.replace("%", ""))/100.0, 2)
                 evt.String = "%8.5f" % (rate_amount)
             else:
                 str = "%s is not a valid rate string" % (new_value)
@@ -345,33 +368,38 @@ class TransactionGrid(grd.Grid):
             if new_value == "" and self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS:
                 evt.Veto()
             else:
-#TODO  move regular expression for date format to new object
-                m = re.match("^\d{1,2}([/-])\d{1,2}([/-])\d{4}?$", new_value)
-                if m:
-                    sep = m.groups()
-                    evt.Veto()
-                    pos1 = new_value.index(sep[0])
-                    pos2 = new_value.rindex(sep[1])
-                    mon = int(new_value[0:pos1])
-                    day = int(new_value[pos1+1:pos2])
-                    year = int(new_value[pos2+1:])
-                    try:
-                        in_date = date(year,mon,day)
-                    except:
-                        str = "%s is not a valid date string" % (new_value)
-                        ret_val = self.DisplayMsg(str)
-                    else:
-                        self.edited = 1
-                        in_date_string = "%04s-%02d-%02d" % (year, mon, day)
-                        evt.String = in_date_string
-                else:
+                dateFormat = Date.get_global_date_format(self)
+                date_sep = Date.get_global_date_sep(self)
+                input_date = new_value.split(date_sep)
+                dateParts = dateFormat.split(date_sep)
+                tableValue = ""
+                if len(input_date) == 3:
+                    for i in range(len(dateParts)):
+                        if dateParts[i] == "%m":
+                            tableValue = tableValue + "%02d" % (int(input_date[i]))
+                        elif dateParts[i] == "%d":
+                            tableValue = tableValue + "%02d" % (int(input_date[i]))
+                        elif dateParts[i] == "%Y":
+                            tableValue = tableValue + "%04d" % (int(input_date[i]))
+                        elif dateParts[i] == "%y":
+                            # assume all 2 digit years are in the range 2000 <= year < 2099.  Don't expect this software to be used in the year 2100!! JJG 07/08/2021
+                            tableValue = tableValue + "%04d" % (2000 + int(input_date[i]))
+                        if i < len(dateParts)-1:
+                            tableValue = tableValue + "%s" % (date_sep)
+                evt.Veto()
+                try:
+                    returned_date = Date.parse_date(self, tableValue, Date.get_global_date_format(self))
+                except:
                     str = "%s is not a valid date string" % (new_value)
                     ret_val = self.DisplayMsg(str)
+                else:
+                    self.edited = True
+                    evt.String = tableValue
         elif ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.DATE_TIME_TYPE:
             if new_value == "" and self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS:
                 evt.Veto()
             else:
-#TODO  move regular expression for datetime format to new object
+                #TODO  move regular expression for datetime format to new object
                 m = re.match("^\d{1,2}([/-])\d{1,2}([/-])\d{4} \d{2}:\d{2}:\d{2}?$", new_value)
                 if m:
                     sep = m.groups()
@@ -393,41 +421,56 @@ class TransactionGrid(grd.Grid):
                         str = "%s is not a valid datetime string" % (new_value)
                         ret_val = self.DisplayMsg(str)
                     else:
-                        self.edited = 1
+                        self.edited = True
                         in_datetime_string = "%04s-%02d-%02d %02d:%02d:%02d" % (year, mon, day, hour, min, sec)
                         evt.String = in_datetime_string
                 else:
                     str = "%s is not a valid datetime string" % (new_value)
                     ret_val = self.DisplayMsg(str)
         elif ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.STRING_TYPE:
-            pass
+            if col == self.TRANS_ACTION_COL:
+                if new_value != "+" and new_value != "-":
+                    str = "%s is not a valid action string" % (new_value)
+                    ret_val = self.DisplayMsg(str)
+            else:
+                pass
         else:
             if ret_val != wx.OK:
                 str = "Warning: cellchanging not allowed for cell %d %d!" % (row, col)
                 ret_val =  self.DisplayMsg(str)
         if ret_val == wx.OK:
-            self.frame.assetchange(evt)
-            self.frame.redraw_all(row)  # only redraw current row
+            print("TransactionGrid: Change detected for row", row, ", col", col)
+            self.frame.assetchange(row, col, new_value)
+            self.frame.redraw_all()
         else:
             evt.Veto()
+
+    def setValue(self, row, colName, cellValue):
+        found = False
+        for i in range(len(self.columnNames)):
+            if self.columnNames[i] == colName:
+                found = True
+                break
+        if found:
+            self.SetCellValue(row, i, cellValue)
 
     def set_properties(self, frame):
         frame.statusbar.SetStatusWidths([-1])
         statusbar_fields = [""]
-        columnNames = ["Pmt Method", "Chk #", "Payee", "Amount", "Action", "Balance", "Sched Date", "Due Date", "Cleared",
+        self.columnNames = ["Pmt Method", "Chk #", "Payee", "Amount", "Action", "Value", "Sched Date", "Due Date", "State",
                        "Comment",
                        "Memo"];
 
         for i in range(len(statusbar_fields)):
             frame.statusbar.SetStatusText(statusbar_fields[i], i)
-        self.CreateGrid(0, len(columnNames))
-        self.total_width = 60  # non-zero start value to account for record number of TransactionGrid frame!
-        for i in range(len(columnNames)):
-            self.SetColLabelValue(i, columnNames[i])
+        self.CreateGrid(0, len(self.columnNames))
+        self.value_width = 60  # non-zero start value to account for record number of TransactionGrid frame!
+        for i in range(len(self.columnNames)):
+            self.SetColLabelValue(i, self.columnNames[i])
             cur_width = self.getColWidth(i)
-            self.total_width += cur_width
+            self.value_width += cur_width
             self.SetColSize(i, cur_width)
-        return self.total_width
+        return self.value_width
 
     def OnCellLeftClick(self, evt):
         print("OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
