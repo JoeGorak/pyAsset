@@ -58,13 +58,12 @@ class AssetFrame(wx.Frame):
         self.frame = self
         self.assets = AssetList(self)
         self.bills = BillList()
-        self.cur_asset = None
+        self.cur_asset = Asset(name=assetFile)
         self.edited = False
         self.payType = ""
         self.ref_date = None
         self.netpay = ""
         self.payDepositAcct = ""
-
         super(AssetFrame, self).__init__(parent, title=title)
 
         if self.readConfigFile(cfgFile):
@@ -784,7 +783,7 @@ class AssetFrame(wx.Frame):
     def getRefDate(self):
         return self.ref_date
 
-    def getNetPay(aelf):
+    def getNetPay(self):
         return self.netpay
 
     def getPayDepositAcct(self):

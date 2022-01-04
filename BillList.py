@@ -25,7 +25,6 @@ from Bill import Bill
 
 class BillList:
     def __init__(self):
-        # type: () -> object
         self.bills = []
 
     def __len__(self):

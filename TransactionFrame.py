@@ -38,7 +38,9 @@ import wx
 import wx.grid
 import csv
 import os
+from Asset import Asset
 from Date import Date
+from HelpDialog import HelpDialog
 from Transaction import Transaction
 from TransactionGrid import TransactionGrid
 
