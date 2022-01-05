@@ -569,7 +569,10 @@ class AssetGrid(grd.Grid):
         # call SetGridCursor here since we are nested inside one so it
         # won't have any effect.  Instead, set coordinates to move to in
         # idle time.
-        value = self.GetCellValue(evt.GetRow(), evt.GetCol())
+        try:
+            value = self.GetCellValue(evt.GetRow(), evt.GetCol())
+        except:
+            value = 'no good'
 
         if value == 'no good':
             self.moveTo = evt.GetRow(), evt.GetCol()
@@ -590,9 +593,12 @@ class AssetGrid(grd.Grid):
             self.HideCellEditControl()
             self.DisableCellEditControl()
 
-        value = self.GetCellValue(row, col)
+        try:
+            value = self.GetCellValue(row, col)
+        except:
+            value = 'no good'
 
-        if value == 'no good 2':
+        if value == 'no good':
             return  # cancels the cell selection
 
         evt.Skip()
