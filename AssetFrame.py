@@ -58,7 +58,7 @@ class AssetFrame(wx.Frame):
         self.frame = self
         self.assets = AssetList(self)
         self.bills = BillList()
-        self.cur_asset = Asset(name=assetFile)
+        self.cur_asset = Asset(parent, name=assetFile)
         self.edited = False
         self.payType = ""
         self.ref_date = None
@@ -288,7 +288,7 @@ class AssetFrame(wx.Frame):
         returned_date = Date.parse_date(self, in_date, date_format)
         if returned_date != None:
             self.proj_date = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"]-1, returned_date["year"])
-            curr_date = Date.parse_date(self, Date.get_global_curr_date(self)["dt"])
+            curr_date = Date.parse_date(self, Date.get_global_curr_date(self),  Date.get_global_date_format(self))
             curr_date = wx.DateTime.FromDMY(curr_date["day"], curr_date["month"]-1, curr_date["year"])
             if self.proj_date < curr_date:
                 self.proj_date = None
