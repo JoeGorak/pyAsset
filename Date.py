@@ -125,7 +125,7 @@ class Date:
         year = 0
         date_sep = Date.get_global_date_sep(self)
         date_fields = self.dateFormat.split(date_sep)
-        m = re.match("^[\d]{2,4}([/-])[\d]{1,2}([/-])[\d]{2,4}$", in_date)
+        m = re.match("^[\d]{2,4}([/-])[\d]{1,2}([/-\'])[\d]{2,4}$", in_date)        # JJG 1/9/2022 Added ' to second date separator to handle Quicken .QIF files!
         if m:
             sep = m.groups()
             pos1 = in_date.index(sep[0])
