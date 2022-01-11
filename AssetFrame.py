@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2021 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -21,6 +21,10 @@ along with this program if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+#  Version information
+#  06/11/2016     Initial version v0.1
+#  08/07/2021     Version v0.2
+
 # To Do list (possible new features?):
 # Speed redraw_all: break o redraw_all, redraw_range, redraw_totals
 # Save a backup version of files
@@ -35,11 +39,12 @@ import csv
 import os
 import copy
 from wx import Button
+from wx.core import AcceleratorEntry, DIRCTRL_SELECT_FIRST, PRINT_MODE_NONE
 from Asset import Asset
 from AssetList import AssetList
 from BillList import BillList
 from AssetGrid import AssetGrid
-from PropertiesForm import FrameWithForms
+from PropertiesForm import PropertyFrameWithForm
 from Date import Date
 from TransactionFrame import TransactionFrame
 from Transaction import Transaction
@@ -51,29 +56,49 @@ class AssetFrame(wx.Frame):
     def __init__(self, parent, title="PyAsset:Asset", cfgFile="", assetFile=""):
         self.parent = parent
         self.frame = self
-        self.assets = AssetList()
+        self.assets = AssetList(self)
         self.bills = BillList()
         self.cur_asset = None
         self.edited = False
         self.payType = ""
-        self.ref_date = ""
+        self.ref_date = None
         self.netpay = ""
         self.payDepositAcct = ""
-        self.cfgFile = copy.deepcopy(cfgFile)
-#        self.dateFormat = "%m/%d/%Y"      # TODO: Put this in cfgFile and add selections to PropertiesForm
-        self.dateFormat = "%Y/%m/%d"
 
         super(AssetFrame, self).__init__(parent, title=title)
 
-        self.readConfigFile(cfgFile)
+        if self.readConfigFile(cfgFile):
+            valid_date_seps = [ '/', '-']
+            for j in range(len(valid_date_seps)):
+                date_sep = valid_date_seps[j]
+                date_fields = self.dateFormat.split(valid_date_seps[j])
+                if len(date_fields) == 3:
+                    break
+            if len(date_fields) == 3:
+                Date.set_global_date_format(self,self.dateFormat)
+                Date.set_global_date_sep(self,date_sep)
 
-        self.make_widgets()
+                self.curr_date = Date.set_curr_date(self)
+                self.proj_date = Date.set_proj_date(self, "")
+                Date.set_global_curr_date(self, self.curr_date)
+                Date.set_global_proj_date(self, self.proj_date)
+                Date.set_curr_paydate(self)
+                Date.set_next_paydate(self)
 
-        if assetFile:
-            self.cur_asset.read_qif(assetFile)
-            self.redraw_all(-1)
-            if self.cur_asset.get_name() != None:
-                self.SetTitle("PyAsset: Asset %s" % self.cur_asset.get_name())
+                self.make_widgets()
+                if assetFile:
+                    self.cur_asset.read_qif(assetFile)
+                    self.redraw_all()
+                    if self.cur_asset.get_name() != None:
+                        self.SetTitle("PyAsset: Asset %s" % self.cur_asset.get_name())
+                else:
+                    pass                # No assetFile or can't open it for reading but just ignore for now and go on!
+            else:
+                error = 'Badly formatted date format sting: %s - Aborting!\n'
+                self.DisplayMsg(error)
+        else:
+            error = cfgFile + ' does not exist / cannot be opened!! - Aborting\n'
+            self.DisplayMsg(error)
 
     def readConfigFile(self, cfgFile):
         if cfgFile == "":
@@ -89,14 +114,17 @@ class AssetFrame(wx.Frame):
             file = open(self.cfgFile, 'r')
             lines = file.readlines()
             self.dateFormat = lines.pop(0).replace('\n','')
+            Date.set_global_date_format(self, self.dateFormat)
             self.payType = lines.pop(0).replace('\n','')
-            self.ref_date = lines.pop(0).replace('\n','')
+            in_ref_date = lines.pop(0).replace('\n','')
+            ref_date = Date.parse_date(self, in_ref_date, self.dateFormat)
+            self.ref_date = ref_date["dt"]
             self.netpay = lines.pop(0).replace('\n','')
             self.payDepositAcct = lines.pop(0).replace('\n','')
             file.close()
+            return True
         except:
-            error = self.cfgFile + ' does not exist / cannot be opened !!\n'
-            self.DisplayMsg(error)
+            return False
 
     def writeConfigFile(self):
         if self.cfgFile == "":
@@ -129,9 +157,9 @@ class AssetFrame(wx.Frame):
 
     def make_filemenu(self):
         self.filemenu = wx.Menu()
-#        ID_EXPORT_TEXT = wx.NewId()
-#        ID_ARCHIVE = wx.NewId()
-#        ID_IMPORT_CSV = wx.NewId()
+        ID_EXPORT_TEXT = wx.NewId()
+        ID_ARCHIVE = wx.NewId()
+        ID_IMPORT_CSV = wx.NewId()
         ID_IMPORT_XLSM = wx.NewId()
         ID_UPDATE_FROM_NET = wx.NewId()
         ID_PROPERTIES = wx.NewId()
@@ -143,16 +171,16 @@ class AssetFrame(wx.Frame):
                              "Save the current transactions under a different name", wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_CLOSE, "Close\tCtrl-w",
                              "Close the current file", wx.ITEM_NORMAL)
-#        self.filemenu.Append(ID_EXPORT_TEXT, "Export Text",
-#                             "Export the current transaction register as a text file",
-#                             wx.ITEM_NORMAL)
-#        self.filemenu.Append(ID_ARCHIVE, "Archive",
-#                             "Archive transactions older than a specified date",
-#                             wx.ITEM_NORMAL)
+        self.filemenu.Append(ID_EXPORT_TEXT, "Export Text",
+                             "Export the current transaction register as a text file",
+                             wx.ITEM_NORMAL)
+        self.filemenu.Append(ID_ARCHIVE, "Archive",
+                             "Archive transactions older than a specified date",
+                             wx.ITEM_NORMAL)
         self.filemenu.AppendSeparator()
-#        self.filemenu.Append(ID_IMPORT_CSV, "Import CSV\tCtrl-c",
-#                             "Import transactions from a CSV file",
-#                             wx.ITEM_NORMAL)
+        self.filemenu.Append(ID_IMPORT_CSV, "Import CSV\tCtrl-c",
+                             "Import transactions from a CSV file",
+                             wx.ITEM_NORMAL)
         self.filemenu.Append(ID_IMPORT_XLSM, "Import XLSM file\tCtrl-i",
                              "Import transactions from an EXCEL file with Macros",
                              wx.ITEM_NORMAL)
@@ -168,13 +196,12 @@ class AssetFrame(wx.Frame):
                              "Exit PyAsset", wx.ITEM_NORMAL)
         self.menubar.Append(self.filemenu, "&File")
         self.Bind(wx.EVT_MENU, self.load_file, None, wx.ID_OPEN)
-#       wx.EVT_MENU(self, wx.ID_OPEN, self.load_file)
         self.Bind(wx.EVT_MENU, self.save_file, None, wx.ID_SAVE)
         self.Bind(wx.EVT_MENU, self.save_as_file, None, wx.ID_SAVEAS)
         self.Bind(wx.EVT_MENU, self.close, None, wx.ID_CLOSE)
-#        self.Bind(wx.EVT_MENU, self.export_text, None, ID_EXPORT_TEXT)
-#        self.Bind(wx.EVT_MENU, self.archive, None, ID_ARCHIVE)
-#        self.Bind(wx.EVT_MENU, self.import_CSV_file, None, ID_IMPORT_CSV)
+        self.Bind(wx.EVT_MENU, self.export_text, None, ID_EXPORT_TEXT)
+        self.Bind(wx.EVT_MENU, self.archive, None, ID_ARCHIVE)
+        self.Bind(wx.EVT_MENU, self.import_CSV_file, None, ID_IMPORT_CSV)
         self.Bind(wx.EVT_MENU, self.import_XLSM_file, None, ID_IMPORT_XLSM)
         self.Bind(wx.EVT_MENU, self.update_from_net, None, ID_UPDATE_FROM_NET)
         self.Bind(wx.EVT_MENU, self.properties, None, ID_PROPERTIES)
@@ -219,7 +246,7 @@ class AssetFrame(wx.Frame):
         self.currDateLabel = wx.StaticText(panel, label="Curr Date")
         dates = Date(self, self.dateFormat, self.payType, self.ref_date)
         self.curr_date = dates.get_curr_date()
-        self.currDate = wx.StaticText(panel, label=str(self.curr_date))
+        self.currDate = wx.StaticText(panel, label=self.curr_date["str"])
         self.projDateLabel = wx.StaticText(panel, label="Proj Date")
         displayDateFormat = self.dateFormat.replace("%m", "mm").replace("%d", "dd").replace("%y","yy").replace("%Y", "yyyy")
         self.projDateInput = wx.TextCtrl(panel, style=wx.TE_PROCESS_ENTER, value= displayDateFormat)
@@ -233,12 +260,13 @@ class AssetFrame(wx.Frame):
         self.projDateInput.Bind(wx.EVT_TEXT_ENTER,self.onProjDateEntered)
 
     def update_date_grid_dates(self, oldDateFormat, newDateFormat):
-#        print("Update_date_grid_dates called: %s %s" % (oldDateFormat, newDateFormat))
-        self.curr_date = Date.convertDateFormat(self, self.curr_date, oldDateFormat, newDateFormat)
-        self.currDate.LabelText = self.curr_date
+        if oldDateFormat != newDateFormat:
+            self.curr_date = Date.convertDateFormat(self, self.curr_date, oldDateFormat, newDateFormat)
+        self.currDate.LabelText = self.curr_date["str"]
         self.currDate.Refresh()
         try:
-            self.proj_date = Date.convertDateFormat(self, self.proj_date, oldDateFormat, newDateFormat)
+            if oldDateFormat != newDateFormat:
+                self.proj_date = Date.convertDateFormat(self, self.proj_date, oldDateFormat, newDateFormat)
             if self.proj_date == None:
                 self.projDateInput.LabelText = newDateFormat.replace("%m", "mm").replace("%d", "dd").replace("%y","yy").replace("%Y", "yyyy")
             else:
@@ -246,24 +274,39 @@ class AssetFrame(wx.Frame):
         except:
             self.projDateInput.LabelText = newDateFormat.replace("%m", "mm").replace("%d", "dd").replace("%y","yy").replace("%Y", "yyyy")
         self.projDateInput.Refresh()
-        self.currPayDate = Date.convertDateFormat(self, self.currPayDate, oldDateFormat, newDateFormat)
-        self.currPayDateOutput.LabelText = self.currPayDate
+        if oldDateFormat != newDateFormat:
+            self.currPayDate = Date.convertDateFormat(self, self.currPayDate, oldDateFormat, newDateFormat)
+        self.currPayDateOutput.LabelText = Date.get_curr_paydate(self)
         self.currPayDateOutput.Refresh()
-        self.nextPayDate = Date.convertDateFormat(self, self.nextPayDate, oldDateFormat, newDateFormat)
-        self.nextPayDateOutput.LabelText = self.nextPayDate
+        if oldDateFormat != newDateFormat:
+            self.nextPayDate = Date.convertDateFormat(self, self.nextPayDate, oldDateFormat, newDateFormat)
+        self.nextPayDateOutput.LabelText = Date.get_next_paydate(self)
         self.nextPayDateOutput.Refresh()
 
     def onProjDateEntered(self, evt):
         in_date = evt.String
-        returned_date = Date.parse_datestring(self, in_date)
+        date_format = Date.get_global_date_format(self)
+        returned_date = Date.parse_date(self, in_date, date_format)
         if returned_date != None:
-            self.proj_date = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"] - 1, returned_date["year"])
-            self.proj_year = returned_date["year"]
-            self.proj_month = returned_date["month"]
-            self.proj_day = returned_date["day"]
-            print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
-                  (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
-            Date.set_proj_date(self, in_date)
+            self.proj_date = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"]-1, returned_date["year"])
+            curr_date = Date.parse_date(self, Date.get_global_curr_date(self), date_format)
+            curr_date = wx.DateTime.FromDMY(curr_date["day"], curr_date["month"]-1, curr_date["year"])
+            if self.proj_date < curr_date:
+                self.proj_date = None
+                self.DisplayMsg("Projected date (%s) can't be less than current date (%s) - try again" % 
+                                 (in_date, curr_date.Format(self.dateFormat)))
+            else:
+                self.proj_year = returned_date["year"]
+                self.proj_month = returned_date["month"]
+                self.proj_day = returned_date["day"]
+                print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
+                      (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
+                Date.set_proj_date(self, in_date)
+                # Update projected values on all assets and refresh the displays
+                for i in range(0, len(self.assets)):
+                    value_proj = self.assets[i].transactions.update_current_and_projected_values()
+                    self.assets[i].set_value_proj(value_proj)
+                self.redraw_all()
         else:
             self.proj_date = None
             self.DisplayMsg("Bad projected date ignored: %s" % (in_date))
@@ -275,7 +318,10 @@ class AssetFrame(wx.Frame):
     def add_transaction_frame(self, row, col):
         name = self.assets[row].name
         transactions = self.assets[row].transactions
-        TransactionFrame(None, self, -1, row, transactions, name)
+        self.trans_frame = TransactionFrame(None, self, -1, row, transactions, name)
+
+    def get_transaction_frame(self):
+        return self.trans_frame
 
     def setup_layout(self):
         self.panel = wx.Panel(self)
@@ -311,11 +357,12 @@ class AssetFrame(wx.Frame):
         self.Layout()
         self.Show()
 
-    def redraw_all(self, index=None):
+    def redraw_all(self, index=-1):
+        self.edited = True
         nassets = len(self.assets)
         if index == -1:
-            nrows = self.assetGrid.GetNumberRows()
-            if nrows > 0 and (index == None or index == -1) and (nrows > self.assetGrid.getMinNumRows()):
+            nrows = nassets + 1
+            if nrows > 0 and (index == None or index == -1):
                 self.assetGrid.DeleteRows(0, nrows)
                 nrows = 0
             start_range = 0
@@ -341,8 +388,7 @@ class AssetFrame(wx.Frame):
                 self.assetGrid.setColZeroSuppress(row, col, True)
                 if (asset_type == "store card" or asset_type == "credit card") and ("Curr" in col_name or "Proj" in col_name or "Amt" in col_name or "Cash" in col_name):
                     self.assetGrid.setColZeroSuppress(row, col, False)
-
-#                cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
+                cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
                 cellType = self.assetGrid.getColType(col)
                 if cellType == self.assetGrid.DOLLAR_TYPE:
                     self.assetGrid.GridCellDollarRenderer(row, col)
@@ -357,8 +403,8 @@ class AssetFrame(wx.Frame):
                 else:
                     self.assetGrid.GridCellErrorRenderer(row, col)
         if index == -1:
-            self.assetGrid.SetGridCursor(nassets-1, 0)
-            self.assetGrid.MakeCellVisible(nassets-1, True)
+            self.assetGrid.SetGridCursor(0, 0)              # was (nassets-1, 0)
+            self.assetGrid.MakeCellVisible(0, True)         # was (nassets-1, 0)
         elif index > 0:
             self.assetGrid.SetGridCursor(index, 0)
             self.assetGrid.MakeCellVisible(index, True)
@@ -367,11 +413,12 @@ class AssetFrame(wx.Frame):
         row = evt.GetRow()
         col = evt.GetCol()
         val = evt.String
+        modified = True
         colName = self.assetGrid.getColName(col)
         if colName == "Acct name":
             self.assets[row].set_name(val)
         elif colName == "Curr val":
-            self.assets[row].set_total(val)
+            self.assets[row].set_value(val)
         elif colName == "Last pulled":
             self.assets[row].set_last_pull_date(val)
         elif colName == "Limit":
@@ -385,7 +432,7 @@ class AssetFrame(wx.Frame):
         elif colName == "Due date":
             self.assets[row].set_due_date(val)
         elif colName == "Sched date":
-            self.assets[row].set_sched(val)
+            self.assets[row].set_sched_date(val)
         elif colName == "Min Pmt":
             self.assets[row].set_min_pay(val)
         elif colName == "Stmt Bal":
@@ -400,14 +447,19 @@ class AssetFrame(wx.Frame):
             self.assets[row].set_cash_avail(val)
         else:
             print("assetchange: Warning: modifying incorrect cell! row, ", row, " col ", col)
+            modified = False
+
+        if modified == True:
+            self.edited = True
 
     def update_all_Date_Formats(self, oldDateFormat, newDateFormat):
+        self.edited = True
         self.update_date_grid_dates(oldDateFormat, newDateFormat)
-        #TODO:  Add code to update assdt_grids and transaction grids   JJG 06/10/2020
+        #TODO:  Add code to update asset_grids and transaction grids   JJG 06/10/2020
 
     def load_file(self, *args):
         self.close()
-        self.cur_asset = Asset()
+        self.cur_asset = Asset(self.parent)
         self.edited = False
         d = wx.FileDialog(self, "Open", "", "", "*.qif", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
@@ -440,14 +492,14 @@ class AssetFrame(wx.Frame):
                                  wx.YES_NO)
             if d.ShowModal() == wx.ID_YES:
                 self.save_file()
-        self.assets = AssetList()
-        self.cur_asset = None
-        nrows = self.assetGrid.GetNumberRows()
-        if (nrows > 0) and (nrows > self.assetGrid.getMinNumRows()):
-            self.assetGrid.DeleteRows(0, nrows)
-            self.redraw_all(-1)
-        self.edited = False
-        self.SetTitle("PyAsset: Asset")
+        #self.cur_asset = None
+        #del self.assets
+        #del self.bills
+        #self.assets = AssetList(self)
+        #self.bills = BillList()
+        #self.redraw_all()
+        #self.edited = False
+        #self.SetTitle("PyAsset: Asset")
 
     def quit(self, *args):
         self.close()
@@ -531,7 +583,7 @@ class AssetFrame(wx.Frame):
 
     def import_CSV_file(self, *args):
         # Appends the records from a .csv file to the current Asset
-        d = wx.FileDialog(self, "Import", "", "", "*.csv", wx.OPEN)
+        d = wx.FileDialog(self, "Import", "", "", "*.csv", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
             self.edited = True
             fname = d.GetFilename()
@@ -552,7 +604,7 @@ class AssetFrame(wx.Frame):
 
             if total_name_qif != "":
                 try:
-                    tofile = open(total_name_qif, 'a')
+                    tofile = open(totoal_name_qif, 'a')
                 except:
                     error = total_name_qif + ' cannot be created !!\n'
 
@@ -569,26 +621,26 @@ class AssetFrame(wx.Frame):
                 fromfile.close()
                 deffile.close()
                 self.redraw_all(-1)
+                if self.cur_asset.name:
+                    self.SetTitle("PyAsset: %s" % self.cur_asset.name)
             else:
                 self.Display(error)
                 return
-        if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
 
     def process_asset_list(self, assetList):
         for i in range(len(assetList)):
-            xlsm_asset = assetList.__getitem__(i)
-            self.cur_asset = copy.deepcopy(xlsm_asset)
+            self.cur_asset = assetList.assets[i]
             cur_name = self.cur_asset.get_name()
             found = False
             for j in range(len(self.assets)):
                 if self.assets[j].get_name() == cur_name:
-                    self.assets[j] = copy.deepcopy(xlsm_asset)
+                    self.assets[j] = self.cur_asset
                     found = True
                     break
             if not found:
                 self.assets.append(self.cur_asset.get_name())
-                self.assets[-1] = copy.deepcopy(xlsm_asset)
-        self.redraw_all(-1)
+                self.assets[len(self.assets)-1] = self.cur_asset
+        self.redraw_all()
 
     def import_XLSM_file(self, *args):
         # Appends or Merges as appropriate the records from a .xlsm file to the current Asset
@@ -607,22 +659,25 @@ class AssetFrame(wx.Frame):
 
             if error == "":
                 self.cur_assets = None
-                xlsm = ExcelToAsset(ignore_sheets=['Assets', 'Bills', 'Shop Your Way transactions', 'Slate transactions'])
+                xlsm = ExcelToAsset(ignore_sheets=['Assets', 'Bills', 'Shop Your Way transactions', 'Slate transactions', 'Slate old transactions'])
                 xlsm.OpenXLSMFile(total_name_in)
-                latest_assets = xlsm.ProcessAssetsSheet()
-#                print(latest_assets)
+                latest_assets = xlsm.ProcessAssetsSheet(self)
                 self.process_asset_list(latest_assets)
                 transaction_sheet_names = xlsm.GetTransactionSheetNames()
-#                print('process transaction sheets ' + str(transaction_sheet_names) + ' here')
                 for sheet in transaction_sheet_names:
                     sheet_index = self.assets.index(sheet)
                     if sheet_index != -1:
-                        self.assets[sheet_index].transactions = xlsm.ProcessTransactionSheet(sheet)
+                        self.assets[sheet_index].transactions = xlsm.ProcessTransactionSheet(self.assets[sheet_index], sheet)
+                        if self.assets[sheet_index].transactions:
+                             proj_value = self.assets[sheet_index].transactions.update_current_and_projected_values()
+                             self.assets[sheet_index].set_value_proj(proj_value)
                     else:
                         print(sheet + " not found in  asset list")
-#TODO: Process latest_bills
-#                latest_bills = xlsm.PmportocessBillsSheet(self.bills)
-#                print(latest_bills)
+
+                #TODO: Process latest_bills here (False since not written yet!)
+                if False:
+                    self.latest_bills = xlsm.ProcessBillsSheet(self.bills)
+                    print(self.latest_bills)
             else:
                 self.DisplayMsg(error)
 
@@ -631,17 +686,17 @@ class AssetFrame(wx.Frame):
         w.Init()
         net_asset_codes = [
                            ("HFCU",1,[False,False,False,True]),
-                           ("BOA",-1,[False,True]),
-#                           ("AMEX",-1,[True,True]),
-#                           ("CITI",-1,[True]),
-#                           ("MACYS",-1,[True]),
-#                           ("SYW",-1,[True]),
-#                           ("TSP",-1,[False,False,False,True]),
-#                           ("MET",1,[False])
+                           #("BOA",-1,[False,True]),
+                           #("AMEX",-1,[True,True]),
+                           #("CITI",-1,[True]),
+                           #("MACYS",-1,[True]),
+                           #("SYW",-1,[True]),
+                           #("TSP",-1,[False,False,False,True]),
+                           #("MET",1,[False])
                            ]
         for net_asset_code in net_asset_codes:
             latest_assets = w.GetNetInfo(net_asset_code)
-#            print latest_assets
+            #print latest_assets
             for i in range(len(latest_assets)):
                 net_asset = latest_assets.__getitem__(i)
                 if net_asset != None:
@@ -659,7 +714,7 @@ class AssetFrame(wx.Frame):
                         self.assets.append(latest_name)
                         net_index = -1
                     # Always update Value (Curr) column and type ... others check if non-zero value before update is done!
-                    self.assets[net_index].set_total(net_asset.get_total())
+                    self.assets[net_index].set_value(net_asset.get_value())
                     self.assets[net_index].set_type(net_asset.get_type())
                     if net_asset.get_value_proj() != 0.0:
                         self.assets[net_index].set_value_proj(net_asset.get_value_proj())
@@ -675,10 +730,10 @@ class AssetFrame(wx.Frame):
                         self.assets[net_index].set_rate(net_asset.get_rate())
                     if net_asset.get_payment() != 0.0:
                         self.assets[net_index].set_payment(net_asset.get_payment())
-                    if net_asset.get_due_date() != 0.0:
+                    if net_asset.get_due_date() != None:
                         self.assets[net_index].set_due_date(net_asset.get_due_date())
-                    if net_asset.get_sched() != 0.0:
-                        self.assets[net_index].set_sched(net_asset.get_sched())
+                    if net_asset.get_sched_date() != None:
+                        self.assets[net_index].set_sched_date(net_asset.get_sched_date())
                     if net_asset.get_min_pay() != 0.0:
                         self.assets[net_index].set_min_pay(net_asset.get_min_pay())
                     if net_asset.get_stmt_bal() != 0.0:
@@ -692,10 +747,17 @@ class AssetFrame(wx.Frame):
                     if net_asset.get_cash_avail() != 0.0:
                         self.assets[net_index].set_cash_avail(net_asset.get_cash_avail())
         w.Finish()
-        self.redraw_all(-1)
+        self.redraw_all()
 
     def properties(self, *args):
-        frame = FrameWithForms(self, self.dateFormat, self.payType, self.ref_date, self.netpay, self.payDepositAcct)
+        dateFormat = Date.get_global_date_format(self)
+        ref_date_parsed = Date.parse_date(self, self.ref_date, dateFormat)
+        if ref_date_parsed != None:
+            ref_date_dt = ref_date_parsed["dt"]
+            ref_date = wx.DateTime.FromDMY(ref_date_dt.day, ref_date_dt.month, ref_date_dt.year).Format(dateFormat)
+        else:
+            ref_date = ""                       # For now to test!  JJG 08/06/2021
+        frame = PropertyFrameWithForm(self, self.dateFormat, self.payType, ref_date, self.netpay, self.payDepositAcct)
         frame.Show()
 
     def setDateFormat(self, new_DateFormat):
@@ -751,7 +813,7 @@ class AssetFrame(wx.Frame):
         newcb_starttransaction.amount = 0
         newcb_starttransaction.payee = "Starting Balance"
         newcb_starttransaction.memo = "Archived by PyAsset"
-        newcb_starttransaction.cleared = 1
+        newcb_starttransaction.state = "cleared"
         newcb_starttransaction.date = date
 
         newcb = Asset()
@@ -761,7 +823,7 @@ class AssetFrame(wx.Frame):
         archtot = 0
 
         for transaction in self.cur_asset:
-            if transaction.date < date and transaction.cleared:
+            if transaction.date < date and transaction.state == "cleared":
                 archive.append(transaction)
                 archtot += transaction.amount
             else:
@@ -781,16 +843,17 @@ class AssetFrame(wx.Frame):
 
     def newentry(self, *args):
         self.edited = True
-        self.cur_asset.append(Asset())
+        self.assets.append("New Asset")
         self.assetGrid.AppendRows()
         nassets = self.assetGrid.GetNumberRows()
         self.assetGrid.SetGridCursor(nassets - 1, 0)
         self.assetGrid.MakeCellVisible(nassets - 1, 1)
+        self.redraw_all()
 
     def sort(self, *args):
         self.edited = True
-        self.cur_asset.sort()
-        self.redraw_all(-1)
+        self.assets.sort()
+        self.redraw_all()
 
     def deleteentry(self, *args):
         index = self.assetGrid.GetGridCursorRow()
@@ -800,13 +863,13 @@ class AssetFrame(wx.Frame):
                                  "Really delete this asset?",
                                  "Really delete?", wx.YES_NO)
             if d.ShowModal() == wx.ID_YES:
-                del self.cur_asset[index]
-            self.redraw_all(index - 1)  # only redraw cells [index-1:]
+                del self.assets[index]
+            self.redraw_all()  # TODO: Can we make a self.redraw(index-1)  so that only the assets[index-1:] get updated?  JJG 07/09/2021
 
     def about(self, *args):
         d = wx.MessageDialog(self,
                              "Python Asset Manager\n"
-                             "Copyright (c) 2016,2017,2018,2019,2020 Joseph J. Gorak\n"
+                             "Copyright (c) 2016-2021 Joseph J. Gorak\n"
                              "Released under the Gnu GPL\n",
                              "About PyAsset",
                              wx.OK | wx.ICON_INFORMATION)
@@ -816,4 +879,9 @@ class AssetFrame(wx.Frame):
     def gethelp(self, *args):
         d = HelpDialog(self, -1, "Help", __doc__)
         val = d.ShowModal()
+        d.Destroy()
+
+    def MsgBox(self, message):
+        d = wx.MessageDialog(self.parent, message, "error", wx.OK | wx.ICON_INFORMATION)
+        d.ShowModal()
         d.Destroy()

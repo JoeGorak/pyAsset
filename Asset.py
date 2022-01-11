@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2021 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -21,7 +21,14 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+#  Version information
+#  06/11/2016     Initial version v0.1
+#  08/07/2021     Version v0.2
+
 import os
+import wx
+from Date import Date
+from Transaction import Transaction
 
 # Asset Types
 CHECKING = 0
@@ -38,10 +45,14 @@ OTHER = 9
 from TransactionList import TransactionList
 
 class Asset:
-    def __init__(self, name = "", type = "OTHER", last_pull_date = 0, total = 0.0, value_proj = 0.0, est_method = "", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
-                 payment = 0.0, due_date = 0, sched = 0, min_pay = 0.0, stmt_bal = 0.0, amt_over = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
+    def __init__(self, parent, name = "", type = "OTHER", last_pull_date = 0, value = 0.0, value_proj = 0.0, est_method = "", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
+                 payment = 0.0, due_date = None, sched_date = None, min_pay = 0.0, stmt_bal = 0.0, amt_over = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
+        self.parent = parent
+        self.dateFormat = Date.get_global_date_format(self.parent)
+        self.dateSep = Date.get_global_date_sep(self.parent)
         self.name = name
-        self.filename = self.name + ".qif"
+        if name != "":
+            self.filename = self.name + ".qif"
         self.type = self.set_type(type)
         self.last_pull_date = last_pull_date
         self.limit = limit
@@ -50,9 +61,9 @@ class Asset:
         self.rate = rate
         self.payment = payment
         self.due_date = due_date
-        self.sched = sched
+        self.sched_date = sched_date
         self.min_pay = min_pay
-        self.total = total
+        self.value = value
         self.value_proj = value_proj
         self.est_method = est_method
         self.amt_over = amt_over
@@ -60,7 +71,7 @@ class Asset:
         self.cash_limit = cash_limit
         self.cash_used = cash_used
         self.cash_avail = cash_avail
-        self.transactions = TransactionList(limit)
+        self.transactions = TransactionList(self, limit)
         return
 
     def __len__(self):
@@ -73,7 +84,23 @@ class Asset:
         self.transactions[i] = val
 
     def __str__(self):
-        return " %-10s $%8.2f\n" % (self.name, self.total)
+        return " %-10s $%8.2f\n" % (self.name, self.value)
+
+    def __gt__(self, other):
+        if self.due_date != None and other.due_date != None:
+            return self.due_date > other.due_date
+        elif self.due_date != None:
+            return False
+        else:
+            return True
+
+    def __lt__(self, other):
+        if self.due_date != None and other.due_date != None:
+            return self.due_date < other.due_date
+        elif self.due_date != None:
+            return False
+        else:
+            return True
 
     def read_qif(self, filename, readmode='normal'):
         if readmode == 'normal':  # things not to do on 'import':
@@ -83,40 +110,41 @@ class Asset:
         mffile = open(filename, 'r')
         lines = mffile.readlines()
         mffile.close()
-        transaction = Transaction()
+        transaction = Transaction(self.parent)
+        blank_transaction = True
         input_type = lines.pop(0)
         for line in lines:
             input_type, rest = line[0], line[1:].strip()
             if input_type == "D":
-                transaction.setdate(rest)
+                transaction.set_due_date(rest)
                 blank_transaction = False
             elif input_type == "T":
-                transaction.setamount(rest)
+                transaction.set_amount(rest)
                 blank_transaction = False
             elif input_type == "P":
-                transaction.setpayee(rest)
+                transaction.set_payee(rest)
                 blank_transaction = False
             elif input_type == "C":
-                transaction.setcleared(rest)
+                transaction.set_state(rest)
                 blank_transaction = False
             elif input_type == "N":
-                transaction.setnumber(rest)
+                transaction.set_check_num(rest)
                 blank_transaction = False
             elif input_type == "L":
-                transaction.setcomment(rest)
+                transaction.set_comment(rest)
                 blank_transaction = False
             elif input_type == "M":
-                transaction.setmemo(rest)
+                transaction.set_memo(rest)
                 blank_transaction = False
             elif input_type == "A":
-                total_payee = transaction.getpayee() + " " + rest
-                transaction.setpayee(total_payee)
+                total_payee = transaction.get_payee() + " " + rest
+                transaction.set_payee(total_payee)
                 blank_transaction = False
             elif input_type == "^":
                 if not blank_transaction:
-                    self.transactions.append(transaction)
-                    self.total = self.total + transaction.getamount()
-                    transaction = Transaction()
+                    self.transactions.append(transaction)                   # JJG 08/22/2021 Not sure what this is doing????
+                    #self.value = self.value + transaction.get_amount()
+                    #transaction = Transaction(self.parent)
                 blank_transaction = True
             else:
                 print("Unparsable line: ", line[:-1])
@@ -128,7 +156,7 @@ class Asset:
 
     def write_qif(self, filename=None):
         if not filename:
-            if not self.filename: raise "No Asset filename defined"
+            if not self.filename: raise Exception("No Asset filename defined")
             filename = self.filename
         self.filename = filename
         file = open(filename, 'w')
@@ -159,14 +187,14 @@ class Asset:
     def set_name(self,name):
         self.name = name
 
-    def get_total(self):
-        return self.total
+    def get_value(self):
+        return self.value
 
-    def set_total(self, total):
+    def set_value(self, value):
         try:
-            self.total = round(float(total), 2)
+            self.value = round(float(value), 2)
         except:
-            self.total = 0.0
+            self.value = 0.0
 
     def get_last_pull_date(self):
         return self.last_pull_date
@@ -222,7 +250,7 @@ class Asset:
 
     def set_rate(self, rate):
         try:
-            self.rate = float(rate)
+            self.rate = round(float(rate), 3)
         except:
             self.rate = 0.0
 
@@ -238,16 +266,30 @@ class Asset:
     def get_due_date(self):
         return self.due_date
 
-    def set_due_date(self, due_date):
-        if due_date != 0:
-            self.due_date = str(due_date).split(" ")[0]
+    def set_due_date(self, rest):
+        if rest != None:
+            if type(rest) is str:
+                if len(rest) != 0:
+                    [year, month, day] = Date.get_date_fields(self.parent,rest)
+                    self.due_date = wx.DateTime.FromDMY(day, month-1, year).Format(self.dateFormat)
+                else:
+                    self.due_date = None
+            else:
+                self.due_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(self.dateFormat)
 
-    def get_sched(self):
-        return self.sched
+    def get_sched_date(self):
+        return self.sched_date
 
-    def set_sched(self, sched):
-        if sched != 0:
-            self.sched = str(sched).split(" ")[0]
+    def set_sched_date(self, rest):
+        if rest != None:
+            if type(rest) is str:
+                if len(rest) != 0:
+                    [year, month, day] = Date.get_date_fields(self.parent, rest)
+                    self.sched_date = wx.DateTime.FromDMY(day, month-1, year).Format(self.dateFormat)
+                else:
+                    self.sched_date = None
+            else:
+                self.sched_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(self.dateFormat)
 
     def get_min_pay(self):
         return self.min_pay
@@ -352,6 +394,6 @@ class Asset:
             self.cash_avail = 0.0
 
 def getNumAssetColumns():
-    tempAsset = Asset()
+    tempAsset = Asset(None)
     return tempAsset.__sizeof__()
 

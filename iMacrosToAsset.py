@@ -111,16 +111,16 @@ class iMacrosToAsset:
                 asset.set_type(self.get_asset_type(assetName))
                 # if account_negative_flag is set for current index, store the negative of the returned balance. In other words, if balance is negative and flag is set, store positive.  If balance is positive and flag is set, store negative.
                 # if account_negatve flag is not set, store balance retrieved
-                account_total = round(float(self.iim.iimGetExtract(extract_index).replace("$", "").replace(",", "").replace("(","").replace(")","").replace("- ","-")),2)
+                account_value = round(float(self.iim.iimGetExtract(extract_index).replace("$", "").replace(",", "").replace("(","").replace(")","").replace("- ","-")),2)
                 if account_negative_flag[account_index] == True:
-                    if account_total < 0:
-                        asset.set_total(str(-account_total))
-                    elif account_total > 0:
-                        asset.set_total("-" + str(account_total))
+                    if account_value < 0:
+                        asset.set_value(str(-account_value))
+                    elif account_value > 0:
+                        asset.set_value("-" + str(account_value))
                     else:
-                        asset.set_total("0.0")
+                        asset.set_value("0.0")
                 else:
-                    asset.set_total(str(account_total))
+                    asset.set_value(str(account_value))
                 account_index += 1
                 extract_index += 1
                 asset.set_last_pull_date(NewDate)

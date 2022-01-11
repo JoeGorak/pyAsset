@@ -4,7 +4,7 @@ INSTALLATION/REQUIREMENTS
 PyAsset requires Python (>=3.7) and wxPython.
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2021 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -22,6 +22,9 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
+#  Version information
+#  06/11/2016     Initial version v0.1
+#  08/07/2021     Version v0.2
 
 # TO-DOs
 #
@@ -42,8 +45,9 @@ class ExcelToAsset:
     def OpenXLSMFile(self, FileName):
         self.wb = load_workbook(FileName, read_only=True, data_only=True)
 
-    def ProcessAssetsSheet(self) -> object:
-        AssetsFound = AssetList()
+    def ProcessAssetsSheet(self, parent) -> object:
+        self.parent = parent
+        AssetsFound = AssetList(parent)
 
         ws = self.wb.get_sheet_by_name("Assets")
 
@@ -104,7 +108,7 @@ class ExcelToAsset:
                         heading = ColumnHeaders.get(col_num, "None")
                         if heading != "None":
                             if "Value (Curr)" in heading:
-                                new_asset.set_total(cv)
+                                new_asset.set_value(cv)
                             elif "Value (Proj)" in heading:
                                 new_asset.set_value_proj(cv)
                             elif heading == "last pulled":
@@ -124,7 +128,7 @@ class ExcelToAsset:
                             elif heading == "Due Date":
                                 new_asset.set_due_date(cv)
                             elif heading == "Sched":
-                                new_asset.set_sched(cv)
+                                new_asset.set_sched_date(cv)
                             elif heading == "Min Pmt":
                                 new_asset.set_min_pay(cv)
                             elif "Stmt Bal" in heading:
@@ -156,8 +160,8 @@ class ExcelToAsset:
                     return_sheets.append(sheet)
         return return_sheets
 
-    def ProcessTransactionSheet(self, SheetName) -> object:
-        TransactionsFound = TransactionList()
+    def ProcessTransactionSheet(self, whichAsset, SheetName) -> object:
+        TransactionsFound = TransactionList(whichAsset)
 
         ws = self.wb.get_sheet_by_name(SheetName)
         SheetName = str(SheetName).upper()
@@ -177,12 +181,12 @@ class ExcelToAsset:
                 continue
             actionValue = row[actionIndex].value
             if actionValue == None:
-                break
+                continue
             cv = row[0].value
             if cv == None:
                 continue
             else:
-                new_transaction = Transaction()
+                new_transaction = Transaction(self)
                 col_num = 0
                 for cell in row:
                     cv = cell.value
@@ -191,32 +195,34 @@ class ExcelToAsset:
                         if "PMT METHOD" in heading:
                             new_transaction.set_pmt_method(cv)
                         elif "CHK #" in heading:
-                            if (new_transaction.get_pmt_method().upper() == "CHECK"):
+                            pmt_method = new_transaction.get_pmt_method().upper()
+                            if pmt_method != None:
                                 new_transaction.set_check_num(cv)
                         elif "PAYEE" in heading:
                             new_transaction.set_payee(cv)
                         elif "AMOUNT" in heading:
                             new_transaction.set_amount(cv)
                         elif "ACTION" in heading:
-                            action = cv
-                            if action != "":
-                                new_transaction.set_action(action)
+                            if cv != "":
+                                new_transaction.set_action(cv)
                         elif "SCHED DATE" in heading:
-                            new_transaction.set_sched_date(cv)
+                            if cv != "":
+                                new_transaction.set_sched_date(cv)
                         elif "DUE DATE" in heading:
-                            new_transaction.set_due_date(cv)
+                            if cv != "":
+                                new_transaction.set_due_date(cv)
                         else:
                             print("Unknown field " + str(ColumnHeaders[col_num]) + " ignored!")
                             pass
 
                     col_num += 1
                     if col_num >= len(ColumnHeaders):
+                        new_transaction.parent = self.parent                # make sure transaction gets arrached to frame and not EXCEL object!  JJG 07/18/2021
                         TransactionsFound.insert(new_transaction)
                         break
-
         return TransactionsFound
 
-#TODO: Rewrite ProcessBillsSheet to use correct fields  -- NOT CURRENTLY CALLED FROM AssetFrame.py TO AVOID GENERATING ERRORS!  01/14/2017  JJG
+    #TODO: Rewrite ProcessBillsSheet to use correct fields  -- NOT CURRENTLY CALLED FROM AssetFrame.py TO AVOID GENERATING ERRORS!  01/14/2017  JJG
     def ProcessBillsSheet(self, bills):
         bills = BillsFound = BillList()
         BillPlaces = dict()
@@ -262,7 +268,7 @@ class ExcelToAsset:
                                 for i in range(len(BillsFound)):
                                     asset = BillsFound[i]
                                     if asset.name == BillPlaces[row_num]:
-                                        asset.set_total(cv)
+                                        asset.set_value(cv)
                                         break
                             elif heading == "last pulled":
                                 for i in range(len(BillsFound)):
@@ -304,7 +310,7 @@ class ExcelToAsset:
                                 for i in range(len(BillsFound)):
                                     asset = BillsFound[i]
                                     if asset.name == BillPlaces[row_num]:
-                                        asset.set_sched(cv)
+                                        asset.set_sched_date(cv)
                                         break
                             elif heading == "Min Pmt":
                                 for i in range(len(BillsFound)):

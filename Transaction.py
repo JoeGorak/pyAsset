@@ -1,9 +1,8 @@
 #!/usr/bin/env /usr/local/bin/pythonw
-
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016,2017,2019,2020,2021 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2021 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -22,22 +21,39 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+#  Version information
+#  06/11/2016     Initial version v0.1
+#  08/07/2021     Version v0.2
+
+import wx
+from Date import Date
+
+# Transaction States
+UNKNOWN = 0
+OUTSTANDING = 1
+CLEARED = 2
+VOID = 3
+
 def string_limit(mystr, limit):
     if mystr and len(mystr) > limit:
         mystr = mystr[:limit]
     return mystr
 
 class Transaction:
-    def __init__(self):
+    def __init__(self, parent):
+        self.parent = parent
+        self.dateFormat = Date.get_global_date_format(self)
+        self.dateSep = Date.get_global_date_sep(self)
         self.pmt_method = None
         self.check_num = None
         self.payee = None
         self.amount = None
         self.action = None
-        self.balance = None
+        self.current_value = None
         self.sched_date = None
         self.due_date = None
-        self.cleared = 0
+        self.state = OUTSTANDING
+        self.prev_state = UNKNOWN
         self.comment = None
         self.memo = None
 
@@ -54,33 +70,46 @@ class Transaction:
         lines.append("Amount: %4.2f " % self.amount)
         if self.action:
             lines.append("Action: %s " % self.action)
-            lines.append("Balance: %4.2f " % self.balance)
-        lines.append("Cleared: ")
-        if self.cleared:
-            lines.append("x ")
+            if self.current_value:
+                lines.append("Curr Value: %4.2f " % self.current_value)
+        if self.state == UNKNOWN:
+            lines.append("State: Unknown ")
+        elif self.state == OUTSTANDING:
+            lines.append("State: Outstanding ")
+        elif self.state == CLEARED:
+            lines.append("State: Cleared ")
+        elif self.state == VOID:
+             lines.append("State: Void ")
         else:
-            lines.append("  ")
+            lines.append("State: ??  ")
         if self.comment:
             lines.append("Comment: %1s " % string_limit(self.comment, 10))
         if self.memo:
             lines.append("Memo: %1s " % string_limit(self.memo, 10))
-        return ''.join(lines)
+        return " ".join(lines)
 
     def __gt__(self, other):
-        return self.sched_date > other.sched_date
+        if self.sched_date != None and other.sched_date != None:
+            return self.sched_date > other.sched_date
+        elif self.sched_date != None:
+            return False
+        else:
+            return True
 
     def __lt__(self, other):
-        return self.sched_date < other.sched_date
+        if self.sched_date != None and other.sched_date != None:
+            return self.sched_date < other.sched_date
+        elif self.sched_date != None:
+            return False
+        else:
+            return True
 
     def qif_repr(self):
         lines = []
-        lines.append("D%s" % self.sched_date.formatUS())
+        lines.append("S%s" % self.sched_date.formatUS())
         lines.append("D%s" % self.due_date.formatUS())
         lines.append("T%.2f" % self.amount)
-        if self.cleared:
-            lines.append("Cx")
-        else:
-            lines.append("C*")
+        lines.append("A%s" % self.state)
         if self.check_num:
             lines.append("N%d" % self.check_num)
         lines.append("P%s" % self.payee)
@@ -103,28 +132,59 @@ class Transaction:
     def set_action(self, rest):
         self.action = rest
 
-    def set_balance(self, rest):
-        try:
-            self.balance = round(float(rest), 2)
-        except:
-            self.balance = 0.0
+    def set_current_value(self, rest):
+        if rest == None:
+            self.current_value = None
+        else:
+            try:
+                self.current_value = round(float(rest), 2)
+            except:
+                self.current_value = 0.0
 
     def set_sched_date(self, rest):
-        if rest != 0:
-            self.sched_date = str(rest).split(" ")[0]
+        if rest != None:
+            if type(rest) is str:
+                if len(rest) != 0 and rest != "":
+                    try:
+                        [year, month, day] = Date.get_date_fields(self, rest)
+                        self.sched_date = wx.DateTime.FromDMY(day, month-1, year).Format(self.dateFormat)
+                    except:
+                        error = "Invalid sched_date entered: %s - try again!" % (rest)
+                        Date.MsgBox(self.parent, error)
+                else:
+                    self.sched_date = None
+            else:
+                self.sched_date = wx.DateTime.FromDMY(rest.day, rest.month - 1, rest.year).Format(self.dateFormat)
 
     def set_due_date(self, rest):
-        if rest != 0:
-            self.due_date = str(rest).split(" ")[0]
+        if rest != None:
+            if type(rest) is str:
+                if len(rest) != 0 and rest != "":
+                    try:
+                        [year, month, day] = Date.get_date_fields(self, rest)
+                        self.due_date = wx.DateTime.FromDMY(day, month-1, year).Format(self.dateFormat)
+                    except:
+                        error = "Invalid due_date entered: %s - try again!" % (rest)
+                        Date.MsgBox(self.parent.get_transaction_frame(), error)
+                else:
+                    self.due_date = None
+            else:
+                self.due_date = wx.DateTime.FromDMY(rest.day, rest.month - 1, rest.year).Format(self.dateFormat)
 
     def set_payee(self, rest):
         self.payee = rest
 
     def set_comment(self, rest):
-        self.comment = rest
+        if rest == None or rest == "None":
+            self.comment = None
+        else:
+            self.comment = rest
 
     def set_memo(self, rest):
-        self.memo = rest
+        if rest == None or rest == "None":
+            self.memo = None
+        else:
+            self.memo = rest
 
     def set_check_num(self, rest):
         self.check_num = None
@@ -132,11 +192,28 @@ class Transaction:
             self.check_num = rest
         return
 
-    def set_cleared(self, rest):
-        if rest[0] == "x":
-            self.cleared = 1
-        else:
-            self.cleared = 0
+    def set_state(self, rest):
+        rest = str(rest).upper()
+        if rest == "UNKNOWN":
+            self.state = UNKNOWN
+        elif rest == "OUTSTANDING":
+            self.state = OUTSTANDING
+        elif rest == "CLEARED":
+            self.state = CLEARED
+        elif rest == "VOID":
+            self.state = VOID
+        return
+
+    def set_prev_state(self, rest):
+        rest = str(rest).upper()
+        if rest == "UNKNOWN":
+            self.prev_state = UNKNOWN
+        elif rest == "OUTSTANDING":
+            self.prev_state = OUTSTANDING
+        elif rest == "CLEARED":
+            self.prev_state = CLEARED
+        elif rest == "VOID":
+            self.prev_state = VOID
         return
 
     def get_pmt_method(self):
@@ -157,8 +234,11 @@ class Transaction:
     def get_action(self):
         return self.action
 
-    def get_balance(self):
-        return self.balance
+    def get_current_value(self):
+        if self.current_value:
+            return self.current_value
+        else:
+            return 0.0
 
     def get_comment(self):
         return self.comment
@@ -168,3 +248,30 @@ class Transaction:
 
     def get_check_num(self):
         return self.check_num
+
+    def get_state(self):
+        return_value = "??"
+        if self.state == UNKNOWN:
+            return_value = "unknown"
+        elif self.state == OUTSTANDING:
+            return_value = "outstanding"
+        elif self.state == CLEARED:
+            return_value = "cleared"
+        elif self.state == VOID:
+            return_value = "void"
+        return return_value
+
+    def get_prev_state(self):
+        return_value = "??"
+        if self.prev_state == UNKNOWN:
+            return_value = "unknown"
+        elif self.prev_state == OUTSTANDING:
+            return_value = "outstanding"
+        elif self.prev_state == CLEARED:
+            return_value = "cleared"
+        elif self.prev_state == VOID:
+            return_value = "void"
+        return return_value
+
+    def assetchange(self, which_column, new_value):
+        print("Transaction: ", self.get_payee(), "Recieved notification that column", which_column, "changed", ", new_value", new_value)
