@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2021 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2020 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -43,6 +43,7 @@ MORTGAGE = 8
 OTHER = 9
 
 from TransactionList import TransactionList
+from Transaction import Transaction
 
 class Asset:
     def __init__(self, parent, name = "", type = "OTHER", last_pull_date = 0, value = 0.0, value_proj = 0.0, est_method = "", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,

@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2021 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -58,12 +58,15 @@ class AssetFrame(wx.Frame):
         self.frame = self
         self.assets = AssetList(self)
         self.bills = BillList()
-        self.cur_asset = None
+        self.cur_asset = Asset(parent, name=assetFile)
         self.edited = False
         self.payType = ""
         self.ref_date = None
         self.netpay = ""
         self.payDepositAcct = ""
+        self.cfgFile = copy.deepcopy(cfgFile)
+#        self.dateFormat = "%m/%d/%Y"      # TODO: Put this in cfgFile and add selections to PropertiesForm
+        self.dateFormat = "%Y/%m/%d"
 
         super(AssetFrame, self).__init__(parent, title=title)
 
@@ -288,25 +291,13 @@ class AssetFrame(wx.Frame):
         date_format = Date.get_global_date_format(self)
         returned_date = Date.parse_date(self, in_date, date_format)
         if returned_date != None:
-            self.proj_date = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"]-1, returned_date["year"])
-            curr_date = Date.parse_date(self, Date.get_global_curr_date(self), date_format)
-            curr_date = wx.DateTime.FromDMY(curr_date["day"], curr_date["month"]-1, curr_date["year"])
-            if self.proj_date < curr_date:
-                self.proj_date = None
-                self.DisplayMsg("Projected date (%s) can't be less than current date (%s) - try again" % 
-                                 (in_date, curr_date.Format(self.dateFormat)))
-            else:
-                self.proj_year = returned_date["year"]
-                self.proj_month = returned_date["month"]
-                self.proj_day = returned_date["day"]
-                print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
-                      (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
-                Date.set_proj_date(self, in_date)
-                # Update projected values on all assets and refresh the displays
-                for i in range(0, len(self.assets)):
-                    value_proj = self.assets[i].transactions.update_current_and_projected_values()
-                    self.assets[i].set_value_proj(value_proj)
-                self.redraw_all()
+            self.proj_date = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"] - 1, returned_date["year"])
+            self.proj_year = returned_date["year"]
+            self.proj_month = returned_date["month"]
+            self.proj_day = returned_date["day"]
+            print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
+                  (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
+            Date.set_proj_date(self, in_date)
         else:
             self.proj_date = None
             self.DisplayMsg("Bad projected date ignored: %s" % (in_date))
@@ -382,11 +373,11 @@ class AssetFrame(wx.Frame):
                 if ret_val != wx.OK:
                     continue
 
-                # Logic to always display Value (Curr), Value (Proj), Avail(Proj), Amt Over, Cash Limit, Cash Used and Cash Avail for credit cards and store cards
+                # Logic to always display Value (Curr), Value (Proj), Avail(Proj), Amt Over, Cash Limit, Cash Used and Cash Avail for credit cards,store cards, and overdraft
                 asset_type = self.assets[row].get_type()
                 col_name = self.assetGrid.getColName(col)
                 self.assetGrid.setColZeroSuppress(row, col, True)
-                if (asset_type == "store card" or asset_type == "credit card") and ("Curr" in col_name or "Proj" in col_name or "Amt" in col_name or "Cash" in col_name):
+                if (asset_type == "store card" or asset_type == "credit card" or asset_type == "overdraft") and ("Curr" in col_name or "Proj" in col_name or "Amt" in col_name or "Cash" in col_name):
                     self.assetGrid.setColZeroSuppress(row, col, False)
                 cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
                 cellType = self.assetGrid.getColType(col)
@@ -784,7 +775,7 @@ class AssetFrame(wx.Frame):
     def getRefDate(self):
         return self.ref_date
 
-    def getNetPay(aelf):
+    def getNetPay(self):
         return self.netpay
 
     def getPayDepositAcct(self):

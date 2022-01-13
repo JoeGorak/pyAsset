@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -25,7 +25,6 @@ from Bill import Bill
 
 class BillList:
     def __init__(self):
-        # type: () -> object
         self.bills = []
 
     def __len__(self):

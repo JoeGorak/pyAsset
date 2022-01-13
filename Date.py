@@ -59,14 +59,64 @@ class Date:
         Date.set_global_proj_date(self, self.get_proj_date())
         Date.set_global_date_format(self, self.dateFormat)
 
-    def __cmp__(self, other):
-        val = cmp(self.year, other.year)
+    def __lt__(self, other):
+        val = __lt__(self.year, other.year)
         if val:
             return val
-        val = cmp(self.month, other.month)
+        val = __lt__(self.month, other.month)
         if val:
             return val
-        val = cmp(self.day, other.day)
+        val = __lt__(self.day, other.day)
+        return val
+
+    def __gt__(self, other):
+        val = __gt__(self.year, other.year)
+        if val:
+            return val
+        val = __gt__(self.month, other.month)
+        if val:
+            return val
+        val = __gt__(self.day, other.day)
+        return val
+
+    def __le__(self, other):
+        val = __le__(self.year, other.year)
+        if val:
+            return val
+        val = __le__(self.month, other.month)
+        if val:
+            return val
+        val = __le__(self.day, other.day)
+        return val
+
+    def __ge__(self, other):
+        val = __ge__(self.year, other.year)
+        if val:
+            return val
+        val = __ge__(self.month, other.month)
+        if val:
+            return val
+        val = __ge__(self.day, other.day)
+        return val
+
+    def __eq__(self, other):
+        val = __eq__(self.year, other.year)
+        if val:
+            return val
+        val = __eq__(self.month, other.month)
+        if val:
+            return val
+        val = __eq__(self.day, other.day)
+        return val
+
+    def __ne__(self, other):
+        val = __ne__(self.year, other.year)
+        if val:
+            return val
+        val = __ne__(self.month, other.month)
+        if val:
+            return val
+        val = __ne__(self.day, other.day)
         return val
 
     def get_date_fields(self, in_date):
@@ -74,9 +124,8 @@ class Date:
         day = 0
         year = 0
         date_sep = Date.get_global_date_sep(self)
-        in_date = in_date.replace("'",date_sep).replace(" ","0")        # JJG 1/9/2022 replace ' with date_sep and " " with 0 to handle Quicken QIF export files
         date_fields = self.dateFormat.split(date_sep)
-        m = re.match("^[\d]+([/-])[\d]+([/-])[\d]+$", in_date)
+        m = re.match("^[\d]{2,4}([/-])[\d]{1,2}([/-\'])[\d]{2,4}$", in_date)        # JJG 1/9/2022 Added ' to second date separator to handle Quicken .QIF files!
         if m:
             sep = m.groups()
             pos1 = in_date.index(sep[0])

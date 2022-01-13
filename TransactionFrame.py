@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2021 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -38,7 +38,9 @@ import wx
 import wx.grid
 import csv
 import os
+from Asset import Asset
 from Date import Date
+from HelpDialog import HelpDialog
 from Transaction import Transaction
 from TransactionGrid import TransactionGrid
 

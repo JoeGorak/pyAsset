@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2021 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -88,6 +88,7 @@ class TransactionList:
         if after == len(self.transactions):
             self.transactions.append(new_transaction)
         else:
+#            self.transactions.append(Transaction())
             self.transactions[after+1:] = self.transactions[after:len(self.transactions)]
             self.transactions[after] = new_transaction
         value_proj = self.update_current_and_projected_values()

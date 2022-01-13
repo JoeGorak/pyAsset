@@ -5,7 +5,7 @@ OVERVIEW
 PyAsset.py  A personal finance manager in Python that can read
 and write Quicken Interchange Format (qif) files.
 
-Usage: PyAsset.py [filename]
+Usage: PyAsset.py [[cfg file] [filename]]
 
 Start the PyAsset program and optionally load the transactions
 stored in filename, which is assumed to be in QIF format.

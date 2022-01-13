@@ -4,7 +4,7 @@ INSTALLATION/REQUIREMENTS
 PyAsset requires Python (>=3.7) and wxPython.
 
 COPYRIGHT/LICENSING
-Copyright (c) 2017-2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2017-2022 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -70,7 +70,7 @@ class iMacrosToAsset:
 
     def GetNetInfo(self, net_asset_code):
         from datetime import datetime
-        AssetsFound = AssetList()
+        AssetsFound = AssetList(self)
         net_asset_macro_name = "Retrieve_" + net_asset_code[0] + "_balances"
         print("Running " + net_asset_macro_name)
         iret = self.iim.iimPlay(net_asset_macro_name)
