@@ -119,7 +119,7 @@ class Asset:
             if input_type == "D":
                 transaction.set_due_date(rest)
                 blank_transaction = False
-            elif input_type == "T":
+            elif input_type == "T" or input_type == "U":
                 transaction.set_amount(rest)
                 blank_transaction = False
             elif input_type == "P":
