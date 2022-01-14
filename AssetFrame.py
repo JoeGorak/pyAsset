@@ -65,8 +65,6 @@ class AssetFrame(wx.Frame):
         self.netpay = ""
         self.payDepositAcct = ""
         self.cfgFile = copy.deepcopy(cfgFile)
-#        self.dateFormat = "%m/%d/%Y"      # TODO: Put this in cfgFile and add selections to PropertiesForm
-        self.dateFormat = "%Y/%m/%d"
 
         super(AssetFrame, self).__init__(parent, title=title)
 
@@ -860,7 +858,7 @@ class AssetFrame(wx.Frame):
     def about(self, *args):
         d = wx.MessageDialog(self,
                              "Python Asset Manager\n"
-                             "Copyright (c) 2016-2021 Joseph J. Gorak\n"
+                             "Copyright (c) 2016-2022 Joseph J. Gorak\n"
                              "Released under the Gnu GPL\n",
                              "About PyAsset",
                              wx.OK | wx.ICON_INFORMATION)
