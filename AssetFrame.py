@@ -64,6 +64,10 @@ class AssetFrame(wx.Frame):
         self.ref_date = None
         self.netpay = ""
         self.payDepositAcct = ""
+        self.cfgFile = copy.deepcopy(cfgFile)
+#        self.dateFormat = "%m/%d/%Y"      # TODO: Put this in cfgFile and add selections to PropertiesForm
+        self.dateFormat = "%Y/%m/%d"
+
         super(AssetFrame, self).__init__(parent, title=title)
 
         if self.readConfigFile(cfgFile):
@@ -287,25 +291,13 @@ class AssetFrame(wx.Frame):
         date_format = Date.get_global_date_format(self)
         returned_date = Date.parse_date(self, in_date, date_format)
         if returned_date != None:
-            self.proj_date = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"]-1, returned_date["year"])
-            curr_date = Date.parse_date(self, Date.get_global_curr_date(self),  Date.get_global_date_format(self))
-            curr_date = wx.DateTime.FromDMY(curr_date["day"], curr_date["month"]-1, curr_date["year"])
-            if self.proj_date < curr_date:
-                self.proj_date = None
-                self.DisplayMsg("Projected date (%s) can't be less than current date (%s) - try again" % 
-                                 (in_date, curr_date.Format(self.dateFormat)))
-            else:
-                self.proj_year = returned_date["year"]
-                self.proj_month = returned_date["month"]
-                self.proj_day = returned_date["day"]
-                print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
-                      (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
-                Date.set_proj_date(self, in_date)
-                # Update projected values on all assets and refresh the displays
-                for i in range(0, len(self.assets)):
-                    value_proj = self.assets[i].transactions.update_current_and_projected_values()
-                    self.assets[i].set_value_proj(value_proj)
-                self.redraw_all()
+            self.proj_date = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"] - 1, returned_date["year"])
+            self.proj_year = returned_date["year"]
+            self.proj_month = returned_date["month"]
+            self.proj_day = returned_date["day"]
+            print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
+                  (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
+            Date.set_proj_date(self, in_date)
         else:
             self.proj_date = None
             self.DisplayMsg("Bad projected date ignored: %s" % (in_date))
