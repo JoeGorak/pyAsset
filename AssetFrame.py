@@ -446,6 +446,55 @@ class AssetFrame(wx.Frame):
         self.update_date_grid_dates(oldDateFormat, newDateFormat)
         #TODO:  Add code to update asset_grids and transaction grids   JJG 06/10/2020
 
+    def read_qif(self, filename, readmode='normal'):                        # TODO: Fix read_qif in AssetFrame.py JJG 1/13/2022
+        if readmode == 'normal':  # things not to do on 'import':
+            self.filename = filename
+            name = filename.replace('.qif', '')
+            self.name = os.path.split(name)[1]
+        mffile = open(filename, 'r')
+        lines = mffile.readlines()
+        mffile.close()
+        transaction = self.cur_asset.transactions;
+        blank_transaction = True
+        input_type = lines.pop(0)
+        for line in lines:
+            input_type, rest = line[0], line[1:].strip()
+            if input_type == "D":
+                transaction.set_due_date(rest)
+                blank_transaction = False
+            elif input_type == "T" or input_type == "U":
+                transaction.set_amount(rest)
+                blank_transaction = False
+            elif input_type == "P":
+                transaction.set_payee(rest)
+                blank_transaction = False
+            elif input_type == "C":
+                transaction.set_state(rest)
+                blank_transaction = False
+            elif input_type == "N":
+                transaction.set_check_num(rest)
+                blank_transaction = False
+            elif input_type == "L":
+                transaction.set_comment(rest)
+                blank_transaction = False
+            elif input_type == "M":
+                transaction.set_memo(rest)
+                blank_transaction = False
+            elif input_type == "A":
+                total_payee = transaction.get_payee() + " " + rest
+                transaction.set_payee(total_payee)
+                blank_transaction = False
+            elif input_type == "^":
+                if not blank_transaction:
+                    self.transactions.append(transaction)                   # JJG 08/22/2021 Not sure what this is doing????
+                    #self.value = self.value + transaction.get_amount()
+                    #transaction = Transaction(self.parent)
+                blank_transaction = True
+            else:
+                print("Unparsable line: ", line[:-1])
+        self.sort()
+        return
+
     def load_file(self, *args):
         self.close()
         self.cur_asset = Asset(self.parent)
@@ -454,9 +503,9 @@ class AssetFrame(wx.Frame):
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
-            self.cur_asset.read_qif(os.path.join(dir, fname))
+            self.read_qif(os.path.join(dir, fname))
             self.redraw_all(-1)
-        if self.cur_asset.name: self.SetTitle("PyAsset: %s" % self.cur_asset.name)
+            self.SetTitle("PyAsset: %s" % fname)
 
     def save_file(self, *args):
         for cur_asset in self.assets:

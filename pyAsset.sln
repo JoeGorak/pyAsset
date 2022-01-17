@@ -1,0 +1,23 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.0.32014.148
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{888888A0-9F3D-457C-B088-3A5042F75D52}") = "pyAsset", "pyAsset.pyproj", "{7ADB8F5E-51B9-48DD-9A77-5198D0764287}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Release|Any CPU = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{7ADB8F5E-51B9-48DD-9A77-5198D0764287}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7ADB8F5E-51B9-48DD-9A77-5198D0764287}.Release|Any CPU.ActiveCfg = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {29ECF1DA-4AA0-4F29-BAA8-C2476BD869FB}
+	EndGlobalSection
+EndGlobal

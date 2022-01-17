@@ -1,0 +1,61 @@
+<Project DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003" ToolsVersion="4.0">
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <SchemaVersion>2.0</SchemaVersion>
+    <ProjectGuid>7adb8f5e-51b9-48dd-9a77-5198d0764287</ProjectGuid>
+    <ProjectHome>
+    </ProjectHome>
+    <StartupFile>pyAsset.py</StartupFile>
+    <SearchPath>
+    </SearchPath>
+    <WorkingDirectory>.</WorkingDirectory>
+    <OutputPath>.</OutputPath>
+    <Name>pyAsset</Name>
+    <RootNamespace>pyAsset2.0</RootNamespace>
+    <LaunchProvider>Standard Python launcher</LaunchProvider>
+    <CommandLineArguments>"e:\users\Joego\source\repos\JoeGorak\pyAsset\pyAsset.cfg" "e:\users\joego\desktop\Joego's Quicken Data.qif"</CommandLineArguments>
+    <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
+    <IsWindowsApplication>False</IsWindowsApplication>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)' == 'Release' ">
+    <DebugSymbols>true</DebugSymbols>
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
+  </PropertyGroup>
+  <ItemGroup>
+    <Compile Include="Asset.py" />
+    <Compile Include="AssetFrame.py" />
+    <Compile Include="AssetGrid.py" />
+    <Compile Include="AssetList.py" />
+    <Compile Include="Bill.py" />
+    <Compile Include="BillList.py" />
+    <Compile Include="Date.py" />
+    <Compile Include="ExcelToAsset.py" />
+    <Compile Include="HelpDialog.py" />
+    <Compile Include="iMacrosToAsset.py" />
+    <Compile Include="PropertiesForm.py" />
+    <Compile Include="pyAsset.py">
+      <Publish>True</Publish>
+    </Compile>
+    <Compile Include="Transaction.py" />
+    <Compile Include="TransactionFrame.py" />
+    <Compile Include="TransactionGrid.py" />
+    <Compile Include="TransactionList.py" />
+  </ItemGroup>
+  <ItemGroup>
+    <Content Include="LICENSE" />
+    <Content Include="README.md" />
+  </ItemGroup>
+  <Import Project="$(MSBuildExtensionsPath32)\Microsoft\VisualStudio\v$(VisualStudioVersion)\Python Tools\Microsoft.PythonTools.targets" />
+  <!-- Uncomment the CoreCompile target to enable the Build command in
+       Visual Studio and specify your pre- and post-build commands in
+       the BeforeBuild and AfterBuild targets below. -->
+  <!--<Target Name="CoreCompile" />-->
+  <Target Name="BeforeBuild">
+  </Target>
+  <Target Name="AfterBuild">
+  </Target>
+</Project>
