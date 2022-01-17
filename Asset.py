@@ -47,7 +47,7 @@ from Transaction import Transaction
 
 class Asset:
     def __init__(self, parent, name = "", type = "OTHER", last_pull_date = 0, value = 0.0, value_proj = 0.0, est_method = "", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
-                 payment = 0.0, due_date = None, sched_date = None, min_pay = 0.0, stmt_bal = 0.0, amt_over = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
+                payment = 0.0, due_date = None, sched_date = None, min_pay = 0.0, stmt_bal = 0.0, amt_over = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
         self.parent = parent
         self.dateFormat = Date.get_global_date_format(self.parent)
         self.dateSep = Date.get_global_date_sep(self.parent)
@@ -102,55 +102,6 @@ class Asset:
             return False
         else:
             return True
-
-    def read_qif(self, filename, readmode='normal'):
-        if readmode == 'normal':  # things not to do on 'import':
-            self.filename = filename
-            name = filename.replace('.qif', '')
-            self.name = os.path.split(name)[1]
-        mffile = open(filename, 'r')
-        lines = mffile.readlines()
-        mffile.close()
-        transaction = Transaction(self.parent)
-        blank_transaction = True
-        input_type = lines.pop(0)
-        for line in lines:
-            input_type, rest = line[0], line[1:].strip()
-            if input_type == "D":
-                transaction.set_due_date(rest)
-                blank_transaction = False
-            elif input_type == "T" or input_type == "U":
-                transaction.set_amount(rest)
-                blank_transaction = False
-            elif input_type == "P":
-                transaction.set_payee(rest)
-                blank_transaction = False
-            elif input_type == "C":
-                transaction.set_state(rest)
-                blank_transaction = False
-            elif input_type == "N":
-                transaction.set_check_num(rest)
-                blank_transaction = False
-            elif input_type == "L":
-                transaction.set_comment(rest)
-                blank_transaction = False
-            elif input_type == "M":
-                transaction.set_memo(rest)
-                blank_transaction = False
-            elif input_type == "A":
-                total_payee = transaction.get_payee() + " " + rest
-                transaction.set_payee(total_payee)
-                blank_transaction = False
-            elif input_type == "^":
-                if not blank_transaction:
-                    self.transactions.append(transaction)                   # JJG 08/22/2021 Not sure what this is doing????
-                    #self.value = self.value + transaction.get_amount()
-                    #transaction = Transaction(self.parent)
-                blank_transaction = True
-            else:
-                print("Unparsable line: ", line[:-1])
-        self.sort()
-        return
 
     def sort(self):
         self.transactions.sort()

@@ -13,7 +13,7 @@
     <Name>pyAsset</Name>
     <RootNamespace>pyAsset2.0</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>"e:\users\Joego\source\repos\JoeGorak\pyAsset\pyAsset.cfg" "e:\users\joego\desktop\Joego's Quicken Data.qif"</CommandLineArguments>
+    <CommandLineArguments>"e:\joego\source\repos\JoeGorak\pyAsset\pyAsset.cfg" "e:\Users\joego\Desktop\Joego's Quicken Data.qif"</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <IsWindowsApplication>False</IsWindowsApplication>
   </PropertyGroup>
