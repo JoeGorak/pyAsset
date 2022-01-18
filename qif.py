@@ -28,11 +28,16 @@ import os
 import wx
 
 from Date import Date
-from Asset import Asset
+from Asset import SAVINGS, Asset
 from AssetList import AssetList
 from Date import Date
 from Transaction import Transaction
 from TransactionList import TransactionList
+
+# Section types
+UNKNOWN = -1
+ACCOUNT = 0
+DETAIL = 1
 
 class qif(object):
     def __init__(self, parent, assetFile="", readmode="normal"):
@@ -54,9 +59,49 @@ class qif(object):
             name = filename.replace('.qif', '')
             self.filename = os.path.split(name)[1]
         Found_assets = AssetList(self)
-        error = name + ' will be read and processed here!\n'
-        self.DisplayMsg(error)
-        # Read and process Assets and Transactions here!   JJG 1/17/2022
+        mffile = open(filename, 'r')
+        lines = mffile.readlines()
+        mffile.close()
+        section = UNKNOWN
+        for line in lines:
+            input_type, rest = line[0], line[1:].strip()
+            if input_type == "!":
+                if rest == "Account":
+                    section = ACCOUNT
+                    cur_asset = Found_assets.append(name)
+                else:
+                    section = DETAIL
+                    cur_transaction = Transaction(self)
+            elif input_type == "^":
+                if section == ACCOUNT:
+                    print(cur_asset)
+                    print(Found_assets)
+                elif section == DETAIL:
+                    cur_asset.transactions.append(cur_transaction)
+                    cur_transaction = Transaction(self)
+            elif input_type == "N":
+                if section == ACCOUNT:
+                    cur_asset.set_name(rest)
+                elif section == DETAIL:
+                    cur_transaction.set_check_num(rest)
+            elif input_type == "T":
+                kind = line[1:].strip()
+                if section == ACCOUNT:
+                    if kind == "Bank":
+                        if cur_asset.get_name().upper().find("SAVINGS") != -1:
+                            cur_asset.set_type("Savings")
+                        elif cur_asset.get_name().upper().find("CHECKING") != -1:
+                            cur_asset.set_type("Checking")
+                    elif kind == "CCard":
+                        cur_asset.set_type("Credit card")
+                elif section == DETAIL:
+                    cur_transaction.set_amount(rest)
+            elif input_type == "U":
+                if section == DETAIL:
+                    cur_transaction.set_amount(rest)
+            else:
+                print("Unparsable line: ", line[:-1])
+            pass
         return Found_assets
 
     def write_qif(self, filename):

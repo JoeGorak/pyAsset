@@ -96,7 +96,8 @@ class AssetFrame(wx.Frame):
                         dir = d.GetDirectory()
                         self.filename = os.path.join(dir, fname)
                 if self.filename:
-                    qif.load_file(self, self.filename)
+                    latest_assets = qif.load_file(self, self.filename)
+                    self.process_asset_list(latest_assets)
             else:
                 error = 'Badly formatted date format sting: %s - Aborting!\n'
                 self.DisplayMsg(error)
@@ -450,7 +451,8 @@ class AssetFrame(wx.Frame):
         #TODO:  Add code to update asset_grids and transaction grids   JJG 06/10/2020
 
     def load_file(self, assetFile):
-        self.assets = qif.load_file(self, "")
+        latest_assets = qif.load_file(self, "")
+        self.process_asset_list(latest_assets)
 
     def save_file(self, *args):
         for cur_asset in self.assets:
