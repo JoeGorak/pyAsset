@@ -88,14 +88,15 @@ class AssetFrame(wx.Frame):
                 Date.set_next_paydate(self)
 
                 self.make_widgets()
-                if assetFile == "":
+                self.filename = assetFile
+                if self.filename == "":
                     d = wx.FileDialog(self, "Open", "", "", "*.qif", wx.FD_OPEN)
                     if d.ShowModal() == wx.ID_OK:
                         fname = d.GetFilename()
                         dir = d.GetDirectory()
-                        assetFile = os.path.join(dir, fname)
-                if assetFile:
-                    self.load_file(assetFile)
+                        self.filename = os.path.join(dir, fname)
+                if self.filename:
+                    qif.load_file(self, self.filename)
             else:
                 error = 'Badly formatted date format sting: %s - Aborting!\n'
                 self.DisplayMsg(error)
@@ -449,12 +450,7 @@ class AssetFrame(wx.Frame):
         #TODO:  Add code to update asset_grids and transaction grids   JJG 06/10/2020
 
     def load_file(self, assetFile):
-        self.close()
-        self.cur_asset = Asset(self.parent)
-        self.edited = False
-        self.assets = qif(self, assetFile).load_file(assetFile)
-        self.redraw_all(-1)
-        self.SetTitle("PyAsset: %s" % assetFile)
+        self.assets = qif.load_file(self, "")
 
     def save_file(self, *args):
         for cur_asset in self.assets:
@@ -474,11 +470,7 @@ class AssetFrame(wx.Frame):
             self.SetTitle("PyAsset: %s" % self.cur_asset.name)
 
     def close(self, *args):
-        if self.edited:
-            d = wx.MessageDialog(self, 'Save file before closing?', 'Question',
-                                 wx.YES_NO)
-            if d.ShowModal() == wx.ID_YES:
-                self.save_file()
+        pass                                            # Not sure what to do here yet!  JJG 1/17/2022
         #self.cur_asset = None
         #del self.assets
         #del self.bills

@@ -35,25 +35,36 @@ from Transaction import Transaction
 from TransactionList import TransactionList
 
 class qif(object):
-    def __init__(self, parent, assetFile=""):
+    def __init__(self, parent, assetFile="", readmode="normal"):
         self.parent = parent
         self.assets = AssetList(self)
-        self.cur_asset = Asset(parent, name=assetFile)
+        self.filename = assetFile
         self.edited = False
 
         DateFormat = Date.get_global_date_format(self)
 
         if assetFile:
-            self.read_qif(assetFile)
+            self.read_qif(assetFile, readmode)
         else:
             error = assetFile + ' does not exist / cannot be opened!! - Aborting\n'
             self.DisplayMsg(error)
 
-    def read_qif(self, filename, readmode='normal'):                        # TODO: Fix read_qif in qif.py JJG 1/17/2022
+    def read_qif(self, filename, readmode="normal"):
         if readmode == 'normal':  # things not to do on 'import':
-            self.filename = filename
             name = filename.replace('.qif', '')
-            self.name = os.path.split(name)[1]
+            self.filename = os.path.split(name)[1]
+        Found_assets = AssetList(self)
+        error = name + ' will be read and processed here!\n'
+        self.DisplayMsg(error)
+        # Read and process Assets and Transactions here!   JJG 1/17/2022
+        return Found_assets
+
+    def write_qif(self, filename):
+        Found_assets = AssetList(self)
+        # Write and process Assets and Transactions here!   JJG 1/17/2022
+        return Found_assets
+
+    def read_transaction_qif(self, filename):
         mffile = open(filename, 'r')
         lines = mffile.readlines()
         mffile.close()
@@ -97,12 +108,33 @@ class qif(object):
         self.sort()
         return self.assets
 
-    def load_file(self, assetFile):
-        self.close()
-        self.cur_asset = Asset(self.parent)
-        self.edited = False
-        if assetFile:
-            return self.read_qif(assetFile)
-        else:
-            return None
+    def save_as_file(self):
+        self.filename = None
+        d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.FD_SAVE)
+        if d.ShowModal() == wx.ID_OK:
+            fname = d.GetFilename()
+            dir = d.GetDirectory()
+            self.filename = os.path.join(dir, fname)
+            self.write_qif(self.filename)
+        if self.filename:
+            self.SetTitle("PyAsset: %s" % self.filename)
 
+    def load_file(self, assetFile):
+        if self.edited:
+            d = wx.MessageDialog(self, 'Save file before loading new file?', 'Question',
+                                 wx.YES_NO)
+            if d.ShowModal() == wx.ID_YES:
+                qif.write_qif(self)
+        if assetFile != "":
+            self.SetTitle("PyAsset: %s" % self.filename)
+            return qif.read_qif(self, self.filename)
+        else:
+            d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.FD_SAVE)
+            if d.ShowModal() == wx.ID_OK:
+                fname = d.GetFilename()
+                dir = d.GetDirectory()
+                self.filename = os.path.join(dir, fname)
+                self.SetTitle("PyAsset: %s" % self.filename)
+                return qif.read_qif(self, self.filename)
+            else:
+                return None
