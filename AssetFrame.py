@@ -54,12 +54,12 @@ from ExcelToAsset import ExcelToAsset
 from iMacrosToAsset import iMacrosToAsset
 
 class AssetFrame(wx.Frame):
-    def __init__(self, parent, title="PyAsset:Asset", cfgFile="", assetFile=""):
+    def __init__(self, parent, title="PyAsset", cfgFile="", assetFile=""):
         self.parent = parent
         self.frame = self
         self.assets = AssetList(self)
         self.bills = BillList()
-        self.cur_asset = Asset(parent, name=assetFile)
+        self.cur_asset = Asset(name=assetFile)
         self.edited = False
         self.payType = ""
         self.ref_date = None
@@ -609,19 +609,16 @@ class AssetFrame(wx.Frame):
                 return
 
     def process_asset_list(self, assetList):
-        for i in range(len(assetList)):
-            self.cur_asset = assetList.assets[i]
-            cur_name = self.cur_asset.get_name()
-            found = False
-            for j in range(len(self.assets)):
-                if self.assets[j].get_name() == cur_name:
-                    self.assets[j] = self.cur_asset
-                    found = True
-                    break
-            if not found:
-                self.assets.append(self.cur_asset.get_name())
-                self.assets[len(self.assets)-1] = self.cur_asset
-        self.redraw_all()
+        for i in range(len(assetList.assets)):
+            cur_asset = assetList.assets[i]
+            cur_name = cur_asset.get_name()
+            j = self.assets.index(cur_name)
+            if  j != -1:
+                self.assets.assets[j] = cur_asset
+            else:            
+                self.assets.append(cur_name)
+                self.assets.assets[len(self.assets.assets)-1] = cur_asset
+        self.redraw_all()                           # For debug!   JJG 1/22/2022
 
     def import_XLSM_file(self, *args):
         # Appends or Merges as appropriate the records from a .xlsm file to the current Asset
@@ -653,7 +650,7 @@ class AssetFrame(wx.Frame):
                              proj_value = self.assets[sheet_index].transactions.update_current_and_projected_values()
                              self.assets[sheet_index].set_value_proj(proj_value)
                     else:
-                        print(sheet + " not found in  asset list")
+                        print(sheet + " not found in asset list")
 
                 #TODO: Process latest_bills here (False since not written yet!)
                 if False:
@@ -863,6 +860,6 @@ class AssetFrame(wx.Frame):
         d.Destroy()
 
     def MsgBox(self, message):
-        d = wx.MessageDialog(self.parent, message, "error", wx.OK | wx.ICON_INFORMATION)
+        d = wx.MessageDialog(self, message, "error", wx.OK | wx.ICON_INFORMATION)
         d.ShowModal()
         d.Destroy()

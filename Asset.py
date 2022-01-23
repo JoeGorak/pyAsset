@@ -45,12 +45,11 @@ OTHER = 9
 from TransactionList import TransactionList
 from Transaction import Transaction
 
-class Asset:
-    def __init__(self, parent, name = "", type = "OTHER", last_pull_date = 0, value = 0.0, value_proj = 0.0, est_method = "", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
+class Asset(object):
+    def __init__(self,name = "", type = "OTHER", last_pull_date = 0, value = 0.0, value_proj = 0.0, est_method = "", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
                 payment = 0.0, due_date = None, sched_date = None, min_pay = 0.0, stmt_bal = 0.0, amt_over = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
-        self.parent = parent
-        self.dateFormat = Date.get_global_date_format(self.parent)
-        self.dateSep = Date.get_global_date_sep(self.parent)
+        self.dateFormat = Date.get_global_date_format(self)
+        self.dateSep = Date.get_global_date_sep(self)
         self.name = name
         if name != "":
             self.filename = self.name + ".qif"
@@ -222,7 +221,7 @@ class Asset:
         if rest != None:
             if type(rest) is str:
                 if len(rest) != 0:
-                    [year, month, day] = Date.get_date_fields(self.parent,rest)
+                    [year, month, day] = Date.get_date_fields(self,rest)
                     self.due_date = wx.DateTime.FromDMY(day, month-1, year).Format(self.dateFormat)
                 else:
                     self.due_date = None
@@ -236,7 +235,7 @@ class Asset:
         if rest != None:
             if type(rest) is str:
                 if len(rest) != 0:
-                    [year, month, day] = Date.get_date_fields(self.parent, rest)
+                    [year, month, day] = Date.get_date_fields(self, rest)
                     self.sched_date = wx.DateTime.FromDMY(day, month-1, year).Format(self.dateFormat)
                 else:
                     self.sched_date = None

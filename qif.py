@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 import os
 import wx
+import copy
 
 from Date import Date
 from Asset import SAVINGS, Asset
@@ -64,24 +65,23 @@ class qif(object):
         mffile.close()
         section = UNKNOWN
         for line in lines:
-            input_type, rest = line[0], line[1:].strip()
+            input_type, rest = line[0], line[1:].strip().replace(",","")
             if input_type == "!":
                 if rest == "Account":
                     section = ACCOUNT
-                    cur_asset = Found_assets.append(name)
                 else:
                     section = DETAIL
                     cur_transaction = Transaction(self)
             elif input_type == "^":
-                if section == ACCOUNT:
-                    print(cur_asset)
-                    print(Found_assets)
-                elif section == DETAIL:
+                if section == DETAIL:
                     cur_asset.transactions.append(cur_transaction)
                     cur_transaction = Transaction(self)
+            elif input_type == "L":
+                if section == ACCOUNT:
+                    cur_asset.set_limit(rest)
             elif input_type == "N":
                 if section == ACCOUNT:
-                    cur_asset.set_name(rest)
+                    cur_asset = Found_assets.append(rest)
                 elif section == DETAIL:
                     cur_transaction.set_check_num(rest)
             elif input_type == "T":
@@ -107,51 +107,8 @@ class qif(object):
     def write_qif(self, filename):
         Found_assets = AssetList(self)
         # Write and process Assets and Transactions here!   JJG 1/17/2022
-        return Found_assets
-
-    def read_transaction_qif(self, filename):
-        mffile = open(filename, 'r')
-        lines = mffile.readlines()
-        mffile.close()
-        transaction = self.cur_asset.transactions;
-        blank_transaction = True
-        input_type = lines.pop(0)
-        for line in lines:
-            input_type, rest = line[0], line[1:].strip()
-            if input_type == "D":
-                transaction.set_due_date(rest)
-                blank_transaction = False
-            elif input_type == "T" or input_type == "U":
-                transaction.set_amount(rest)
-                blank_transaction = False
-            elif input_type == "P":
-                transaction.set_payee(rest)
-                blank_transaction = False
-            elif input_type == "C":
-                transaction.set_state(rest)
-                blank_transaction = False
-            elif input_type == "N":
-                transaction.set_check_num(rest)
-                blank_transaction = False
-            elif input_type == "L":
-                transaction.set_comment(rest)
-                blank_transaction = False
-            elif input_type == "M":
-                transaction.set_memo(rest)
-                blank_transaction = False
-            elif input_type == "A":
-                total_payee = transaction.get_payee() + " " + rest
-                transaction.set_payee(total_payee)
-                blank_transaction = False
-            elif input_type == "^":
-                if not blank_transaction:
-                    self.transactions.append(transaction)                   # JJG 08/22/2021 Not sure what this is doing????
-                    #self.value = self.value + transaction.get_amount()
-                    #transaction = Transaction(self.parent)
-            else:
-                print("Unparsable line: ", line[:-1])
-        self.sort()
-        return self.assets
+        print("In writing ", filename, " as .qif file. Found_assets = ", Found_assets)
+        return True
 
     def save_as_file(self):
         self.filename = None
@@ -169,7 +126,7 @@ class qif(object):
             d = wx.MessageDialog(self, 'Save file before loading new file?', 'Question',
                                  wx.YES_NO)
             if d.ShowModal() == wx.ID_YES:
-                qif.write_qif(self)
+                qif.write_qif(self, self.filename)
         if assetFile != "":
             self.SetTitle("PyAsset: %s" % self.filename)
             return qif.read_qif(self, self.filename)

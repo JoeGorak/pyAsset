@@ -98,7 +98,7 @@ class AssetList():
         return ret_index
 
     def append(self, name):
-        account = Asset(self, name)
+        account = Asset(name)
         self.assets.append(account)
         return account
 
