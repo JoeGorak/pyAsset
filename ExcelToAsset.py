@@ -81,7 +81,7 @@ class ExcelToAsset:
 
                         # First column means this is a new asset... save name and pointer to the new asset location for later
                         # Also set type of asset using clues from the account name
-                        new_asset = AssetsFound.append_by_name(cv)
+                        new_asset = AssetsFound.get_asset_by_name(cv)
                         asset_name = new_asset.get_name()
                         if "Checking" in asset_name:
                             new_asset.set_type("Checking")

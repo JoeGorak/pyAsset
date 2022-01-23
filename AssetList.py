@@ -105,6 +105,14 @@ class AssetList():
         self.assets.append(asset_in)
         return self.assets[len(self.assets)-1]
 
+    def get_asset_by_name(self, name):
+        asset_index = self.index(name)
+        if asset_index == -1:
+            new_asset = self.append_by_name(name)
+            return new_asset
+        else:
+            return self.assets[asset_index]
+
     def sort(self):
         return self.assets.sort()
 

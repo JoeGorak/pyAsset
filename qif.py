@@ -81,7 +81,7 @@ class qif(object):
                     cur_asset.set_limit(rest)
             elif input_type == "N":
                 if section == ACCOUNT:
-                    cur_asset = Found_assets.append_by_name(rest)
+                    cur_asset = Found_assets.get_asset_by_name(rest)
                 elif section == DETAIL:
                     cur_transaction.set_check_num(rest)
             elif input_type == "T":
