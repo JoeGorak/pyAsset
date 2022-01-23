@@ -105,6 +105,10 @@ class AssetFrame(wx.Frame):
             error = cfgFile + ' does not exist / cannot be opened!! - Aborting\n'
             self.DisplayMsg(error)
 
+    def clear_all_assets(self):
+        self.assets = AssetList(self)
+        self.redraw_all(-1)
+
     def readConfigFile(self, cfgFile):
         if cfgFile == "":
             d = wx.FileDialog(self, "", "", "", "*.cfg", wx.FD_OPEN)
@@ -452,7 +456,8 @@ class AssetFrame(wx.Frame):
 
     def load_file(self, assetFile):
         latest_assets = qif.load_file(self, "")
-        self.process_asset_list(latest_assets)
+        if latest_assets != None:
+            self.process_asset_list(latest_assets)
 
     def save_file(self, *args):
         for cur_asset in self.assets:
@@ -614,11 +619,10 @@ class AssetFrame(wx.Frame):
             cur_name = cur_asset.get_name()
             j = self.assets.index(cur_name)
             if  j != -1:
-                self.assets.assets[j] = cur_asset
+                self.assets.assets[j] = cur_asset           # For now, just replace, when dates are working, save later date JJG 1/22/2022
             else:            
-                self.assets.append(cur_name)
-                self.assets.assets[len(self.assets.assets)-1] = cur_asset
-        self.redraw_all()                           # For debug!   JJG 1/22/2022
+                self.assets.append_by_object(cur_asset)
+        self.redraw_all()
 
     def import_XLSM_file(self, *args):
         # Appends or Merges as appropriate the records from a .xlsm file to the current Asset

@@ -97,10 +97,13 @@ class AssetList():
                 break
         return ret_index
 
-    def append(self, name):
-        account = Asset(name)
-        self.assets.append(account)
-        return account
+    def append_by_name(self, name):
+        self.assets.append(Asset(name))
+        return self.assets[len(self.assets)-1]
+ 
+    def append_by_object(self, asset_in):
+        self.assets.append(asset_in)
+        return self.assets[len(self.assets)-1]
 
     def sort(self):
         return self.assets.sort()

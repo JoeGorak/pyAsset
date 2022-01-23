@@ -81,7 +81,7 @@ class qif(object):
                     cur_asset.set_limit(rest)
             elif input_type == "N":
                 if section == ACCOUNT:
-                    cur_asset = Found_assets.append(rest)
+                    cur_asset = Found_assets.append_by_name(rest)
                 elif section == DETAIL:
                     cur_transaction.set_check_num(rest)
             elif input_type == "T":
@@ -127,6 +127,8 @@ class qif(object):
                                  wx.YES_NO)
             if d.ShowModal() == wx.ID_YES:
                 qif.write_qif(self, self.filename)
+                assetFile = ""
+        self.clear_all_assets()
         if assetFile != "":
             self.SetTitle("PyAsset: %s" % self.filename)
             return qif.read_qif(self, self.filename)
