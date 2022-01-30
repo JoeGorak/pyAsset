@@ -145,7 +145,7 @@ class Date:
                         year = int(in_fields[i])
                     elif date_fields[i] == "%y":
                         # assume all 2 digit years are in the range 2000 <= year < 2099.  Don't expect this software to be used in the year 2100!! JJG 07/08/2021
-                        year = 2000 + int(in_field[i])
+                        year = 2000 + int(in_fields[i])
                 returnVal = [ year, month, day ]
             else:
                 returnVal = None                  # Shouldn't happen if properties correct but be defensive! Trust but verify!!        
@@ -160,8 +160,9 @@ class Date:
             if in_date == "":
                 dt = wx.DateTime.Today()
             else:
+                inp_date = in_date.replace("'","/").replace(" ","0")           # JJG 1/22/2022 replace ' with / and " " with 0 to handle Quicken .QIF files!
                 dt = wx.DateTime()  # Uninitialized datetime
-                in_date = in_date + " 12:00:00 PM"           # append a valid time so parse will succeed if we have a valid date! JJG 08/04/2021
+                in_date = inp_date + " 12:00:00 PM"                            # append a valid time so parse will succeed if we have a valid date! JJG 08/04/2021
                 if dt.ParseFormat(in_date, in_date_format) == -1:
                     error = True
         elif type(in_date) is DateTime:
@@ -174,7 +175,7 @@ class Date:
             pass                                # Leave error message display to the caller!  We just return None!
             #self.MsgBox("Bad input date (%s) in Date.parse_date - ignored!" % (str(in_date)))
         else:
-            self.retVal = { "year": dt.year, "month": dt.month + 1, "day": dt.day, "dt": dt }
+            self.retVal = { "year" : dt.year, "month" : dt.month + 1, "day" : dt.day, "dt" : dt }
         return self.retVal
 
     def set_curr_date(self):

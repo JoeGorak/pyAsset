@@ -47,8 +47,6 @@ class qif(object):
         self.filename = assetFile
         self.edited = False
 
-        DateFormat = Date.get_global_date_format(self)
-
         if assetFile:
             self.read_qif(assetFile, readmode)
         else:
@@ -69,13 +67,35 @@ class qif(object):
             if input_type == "!":
                 if rest == "Account":
                     section = ACCOUNT
-                else:
+                elif rest.__contains__("Type"):
                     section = DETAIL
                     cur_transaction = Transaction(self)
+                else:
+                    if section == ACCOUNT:
+                        section = "account"
+                    elif section == DETAIL:
+                        section = "detail"
+                    else:
+                        section = "unknown"
+                    print("in", section, "section got unknown ! line: ", line[:-1])
+                   
             elif input_type == "^":
                 if section == DETAIL:
                     cur_asset.transactions.append(cur_transaction)
                     cur_transaction = Transaction(self)
+            elif input_type == "C":
+                if section == DETAIL:
+                    if rest == "*" or rest == "C":
+                        cur_transaction.set_state("cleared")
+                    elif rest == "X" or rest == "R":
+                        cur_transaction.set_state("reconciled")
+                    else:
+                        cur_transaction.set_state("unknown")
+            elif input_type == "D":
+                if section == DETAIL:
+                    formatted_date = Date.parse_date(self, rest, "%m/%d/%y")
+                    formatted_date['month'] = formatted_date['month'] - 1
+                    cur_transaction.set_due_date(formatted_date)
             elif input_type == "L":
                 if section == ACCOUNT:
                     cur_asset.set_limit(rest)
@@ -84,6 +104,9 @@ class qif(object):
                     cur_asset = Found_assets.get_asset_by_name(rest)
                 elif section == DETAIL:
                     cur_transaction.set_check_num(rest)
+            elif input_type == "P" or input_type == "M":                    # JJG 1/22/2022  Seems some use M lines incorrectly!
+                if section == DETAIL:
+                    cur_transaction.set_payee(rest)
             elif input_type == "T":
                 kind = line[1:].strip()
                 if section == ACCOUNT:
@@ -100,7 +123,13 @@ class qif(object):
                 if section == DETAIL:
                     cur_transaction.set_amount(rest)
             else:
-                print("Unparsable line: ", line[:-1])
+                if section == ACCOUNT:
+                    section = "account"
+                elif section == DETAIL:
+                    section = "detail"
+                else:
+                    section = "unknown"
+                print("in", section, "section got unparsable line: ", line[:-1])
             pass
         return Found_assets
 

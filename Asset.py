@@ -53,7 +53,7 @@ class Asset(object):
         self.name = name
         if name != "":
             self.filename = self.name + ".qif"
-        self.type = self.set_type(type)
+        self.set_type(type)
         self.last_pull_date = last_pull_date
         self.limit = limit
         self.avail = avail

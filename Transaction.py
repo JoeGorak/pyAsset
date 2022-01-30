@@ -33,6 +33,7 @@ UNKNOWN = 0
 OUTSTANDING = 1
 CLEARED = 2
 VOID = 3
+RECONCILED = 4
 
 def string_limit(mystr, limit):
     if mystr and len(mystr) > limit:
@@ -151,10 +152,12 @@ class Transaction:
                     except:
                         error = "Invalid sched_date entered: %s - try again!" % (rest)
                         Date.MsgBox(self.parent, error)
-                else:
-                    self.sched_date = None
+            elif type(rest) is dict:
+                self.sched_date = wx.DateTime.FromDMY(rest['day'], rest['month'], rest['year']).Format(self.dateFormat)
             else:
-                self.sched_date = wx.DateTime.FromDMY(rest.day, rest.month - 1, rest.year).Format(self.dateFormat)
+                self.sched_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(self.dateFormat)
+        else:
+            self.sched_date = None
 
     def set_due_date(self, rest):
         if rest != None:
@@ -168,8 +171,10 @@ class Transaction:
                         Date.MsgBox(self.parent.get_transaction_frame(), error)
                 else:
                     self.due_date = None
+            elif type(rest) is dict:
+               self.due_date = wx.DateTime.FromDMY(rest['day'], rest['month'], rest['year']).Format(self.dateFormat)
             else:
-                self.due_date = wx.DateTime.FromDMY(rest.day, rest.month - 1, rest.year).Format(self.dateFormat)
+                self.due_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(self.dateFormat)
 
     def set_payee(self, rest):
         self.payee = rest
@@ -202,6 +207,8 @@ class Transaction:
             self.state = CLEARED
         elif rest == "VOID":
             self.state = VOID
+        elif rest == "RECONCILED":
+            self.state = RECONCILED
         return
 
     def set_prev_state(self, rest):
@@ -214,6 +221,8 @@ class Transaction:
             self.prev_state = CLEARED
         elif rest == "VOID":
             self.prev_state = VOID
+        elif rest == "RECONCILED":
+            self.prev_state = RECONCILED
         return
 
     def get_pmt_method(self):
@@ -259,6 +268,8 @@ class Transaction:
             return_value = "cleared"
         elif self.state == VOID:
             return_value = "void"
+        elif self.state == RECONCILED:
+            return_value = "reconciled"
         return return_value
 
     def get_prev_state(self):
@@ -271,6 +282,8 @@ class Transaction:
             return_value = "cleared"
         elif self.prev_state == VOID:
             return_value = "void"
+        elif self.prev_state == RECONCILED:
+            return_value = "reconciled"
         return return_value
 
     def assetchange(self, which_column, new_value):
