@@ -1,7 +1,7 @@
 .gitattributes
 .vs
+env
 __pycache__
 /venv/
 .idea
 pyAsset.cfg
-env

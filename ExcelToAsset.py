@@ -239,7 +239,7 @@ class ExcelToAsset:
                 cv = cell.value
                 if cv != None:
                     # Next 2 lines are debug to print out values for checking   10/26/2022  JJG
-                    print(cell, cell.value)
+                    print(cell, cv)
                     continue
                     if col_num == 1:
                         if "TOTALS" in cv: break
