@@ -332,7 +332,7 @@ class TransactionGrid(grd.Grid):
         row = evt.GetRow()
         col = evt.GetCol()
         ret_val = wx.OK
-        new_value = evt.String
+        new_value = evt.String.strip()
         if row < 0 or row >= len(self.frame.transactions):
             str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
             ret_val =  self.DisplayMsg(str)

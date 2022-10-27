@@ -222,21 +222,25 @@ class ExcelToAsset:
                         break
         return TransactionsFound
 
-    #TODO: Rewrite ProcessBillsSheet to use correct fields  -- NOT CURRENTLY CALLED FROM AssetFrame.py TO AVOID GENERATING ERRORS!  01/14/2017  JJG
+    #TODO: Rewrite ProcessBillsSheet to use correct fields   10/16/2022  JJG
     def ProcessBillsSheet(self, bills):
-        bills = BillsFound = BillList()
+        BillsFound = BillList()
         BillPlaces = dict()
 
         ws = self.wb.get_sheet_by_name("Bills")
 
-        col_num = 1
-        for col in ws.columns:
-            print("Processing col", col)
-            row_num = 1
+        row_num = 0
+        for row in ws.rows:
+            row_num += 1
+            print("Processing row",row_num)
+            col_num = 1
             heading = ""
-            for cell in col:
+            for cell in row:
                 cv = cell.value
                 if cv != None:
+                    # Next 2 lines are debug to print out values for checking   10/26/2022  JJG
+                    print(cell, cell.value)
+                    continue
                     if col_num == 1:
                         if "TOTALS" in cv: break
                         if "Assets" in cv or "Payee" in cv or "Checking Account" in cv or "Credit Card" in cv or "Other Source" in cv \
@@ -324,7 +328,6 @@ class ExcelToAsset:
                         else:
                             if str(cv)[0] not in ['0','1','2','3','4','5','6','7','8','9','-']:
                                 heading = cv
-                row_num += 1
             col_num += 1
         print(BillsFound)
         return BillsFound

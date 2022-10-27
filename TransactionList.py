@@ -130,9 +130,11 @@ class TransactionList:
                     if trans_sched_date <= proj_date:
                         new_proj_value = proj_value
                 self.transactions[trans_number].set_current_value(str(new_current_value))
+                self.transactions[trans_number].set_projected_value(str(new_proj_value))
             else:
                 self.transactions[trans_number].set_current_value(None)
             current_value = new_current_value
             proj_value = new_proj_value
+            self.parent.set_value_proj(proj_value)
             trans_number = trans_number + 1
         return proj_value

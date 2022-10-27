@@ -304,6 +304,7 @@ class AssetFrame(wx.Frame):
             print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
                   (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
             Date.set_proj_date(self, in_date)
+            self.assets.update_proj_values(in_date)
         else:
             self.proj_date = None
             self.DisplayMsg("Bad projected date ignored: %s" % (in_date))
@@ -656,10 +657,8 @@ class AssetFrame(wx.Frame):
                     else:
                         print(sheet + " not found in asset list")
 
-                #TODO: Process latest_bills here (False since not written yet!)
-                if False:
-                    self.latest_bills = xlsm.ProcessBillsSheet(self.bills)
-                    print(self.latest_bills)
+                self.latest_bills = xlsm.ProcessBillsSheet(self.bills)
+                print(self.latest_bills)
             else:
                 self.DisplayMsg(error)
 

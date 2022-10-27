@@ -51,6 +51,7 @@ class Transaction:
         self.amount = None
         self.action = None
         self.current_value = None
+        self.projected_value = None
         self.sched_date = None
         self.due_date = None
         self.state = OUTSTANDING
@@ -141,6 +142,15 @@ class Transaction:
                 self.current_value = round(float(rest), 2)
             except:
                 self.current_value = 0.0
+
+    def set_projected_value(self, rest):
+        if rest == None:
+            self.projected_value = None
+        else:
+            try:
+                self.projected_value = round(float(rest), 2)
+            except:
+                self.projected_value = 0.0
 
     def set_sched_date(self, rest):
         if rest != None:
@@ -246,6 +256,12 @@ class Transaction:
     def get_current_value(self):
         if self.current_value:
             return self.current_value
+        else:
+            return 0.0
+
+    def get_projected_value(self):
+        if self.projected_value:
+            return self.projected_value
         else:
             return 0.0
 

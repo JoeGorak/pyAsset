@@ -28,7 +28,8 @@ SCHED_HICKAM = 3
 CHECK = 4
 AUTOPAY = 5
 CASH = 6
-OTHER = 7
+TBD = 7
+OTHER = 8
 
 # Payment_Frequency
 MONTHLY = 1
@@ -39,7 +40,7 @@ MANUAL = -1
 
 class Bill:
     def __init__(self, name = None, amount = 0.0, min_due = 0.0, due_date = None, sched_date = None,
-                 pmt_acct = "Other", pmt_method = "Other", check_number = 0, pmt_freq = "Manual" ):
+                 pmt_acct = "Other", pmt_method = "TBD", check_number = 0, pmt_freq = "Manual" ):
         self.name = name
         self.amount = amount
         self.min_due = min_due
@@ -112,6 +113,8 @@ class Bill:
             return "AutoPay"
         elif spm == CASH:
             return "Cash"
+        elif spm == TBD:
+            return "TBD"
         elif spm == OTHER:
             return "Other"
         else:
@@ -131,11 +134,13 @@ class Bill:
             self.pmt_method = AUTOPAY
         elif pmu == "CASH":
             self.pmt_method = CASH
+        elif pmu == "TBD":
+            self.pmt_method = TBD
         elif pmu == "OTHER":
             self.pmt_method = OTHER
         else:
-            print("Unknown payment method - " + pmt_method + "! Defaulting to SCHED_ONLINE")
-            self.pmt_method = SCHED_ONLINE
+            print("Unknown payment method - " + pmt_method + "! Defaulting to TBD")
+            self.pmt_method = TBD
 
     def get_pmt_frequency(self):
         spf = self.payment_frequency
