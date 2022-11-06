@@ -45,7 +45,7 @@ class ExcelToAsset:
     def OpenXLSMFile(self, FileName):
         self.wb = load_workbook(FileName, read_only=True, data_only=True)
 
-    def ProcessAssetsSheet(self, parent) -> object:
+    def ProcessAssetsSheet(self, parent):
         self.parent = parent
         AssetsFound = AssetList(parent)
 
@@ -160,7 +160,7 @@ class ExcelToAsset:
                     return_sheets.append(sheet)
         return return_sheets
 
-    def ProcessTransactionSheet(self, whichAsset, SheetName) -> object:
+    def ProcessTransactionSheet(self, whichAsset, SheetName):
         TransactionsFound = TransactionList(whichAsset)
 
         ws = self.wb.get_sheet_by_name(SheetName)

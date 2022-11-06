@@ -39,9 +39,9 @@ YEARLY = 12
 MANUAL = -1
 
 class Bill:
-    def __init__(self, name = None, amount = 0.0, min_due = 0.0, due_date = None, sched_date = None,
+    def __init__(self, payee = None, amount = 0.0, min_due = 0.0, due_date = None, sched_date = None,
                  pmt_acct = "Other", pmt_method = "TBD", check_number = 0, pmt_freq = "Manual" ):
-        self.name = 
+        self.payee = payee
         self.amount = amount
         self.min_due = min_due
         self.due_date = due_date
@@ -54,7 +54,7 @@ class Bill:
 
     def __str__(self):
         return " %-10s $%8.2f $%8.2f %10s %10s %s %s %s\n" %\
-               (self.name, self.amount, self.min_due, self.due_date, self.sched_date, self.pmt_acct, self.pmt_method, self.pmt_frequency)
+               (self.payee, self.amount, self.min_due, self.due_date, self.sched_date, self.pmt_acct, self.pmt_method, self.pmt_frequency)
 
     def get_check_number(self):
         return self.check_number
@@ -62,11 +62,11 @@ class Bill:
     def set_check_number(self, check_number):
         self.check_number = check_number
 
-    def get_name(self):
-        return self.name
+    def get_payee(self):
+        return self.payee
 
-    def set_name(self,name):
-        self.name = name
+    def set_payee(self,payee):
+        self.payee = payee
 
     def get_amount(self):
         return self.amount

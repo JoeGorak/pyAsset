@@ -105,36 +105,42 @@ class TransactionList:
             current_value = self.transactions[trans_number].get_current_value()
         proj_value = current_value
         while trans_number < len(self.transactions):
-            new_current_value = current_value
-            new_proj_value = proj_value
-            # Check to make sure transaction hasn't been voided before updaing current value   JJG 07/17/2021
-            trans_state = self.transactions[trans_number].get_state()
-            trans_sched_date = self.transactions[trans_number].get_sched_date()
-            trans_action = self.transactions[trans_number].get_action()
-            if trans_sched_date and trans_action:
-                if trans_state != "void":
-                    trans_amount = self.transactions[trans_number].get_amount()
-                else:
-                    trans_amount = 0.00
-                if trans_action == '-':
-                    new_current_value = current_value - trans_amount
+            trans_pmt_method = self.transactions[trans_number].get_pmt_method()
+            if trans_pmt_method != "posted":
+                new_current_value = current_value
+                new_proj_value = proj_value
+                trans_state = self.transactions[trans_number].get_state()
+                trans_sched_date = self.transactions[trans_number].get_sched_date()
+                if trans_sched_date != None:
+                    trans_action = self.transactions[trans_number].get_action()
+                    if trans_sched_date and trans_action:
+
+#                       Check to make sure transaction hasn't been voided before updaing current value   JJG 07/17/2021
+
+                        if trans_state != "void":
+                            trans_amount = self.transactions[trans_number].get_amount()
+                        else:
+                            trans_amount = 0.00
+                        if trans_action == '-':
+                            new_current_value = current_value - trans_amount
+                            if trans_sched_date <= proj_date:
+                                new_proj_value = proj_value - trans_amount
+                        elif trans_action == '+':
+                            new_current_value = current_value + trans_amount
+                            if trans_sched_date <= proj_date:
+                                new_proj_value = proj_value + trans_amount
+                        else:
+                            print("Unknown action " + trans_action + " ignored")
+                            new_current_value = current_value
+                            if trans_sched_date <= proj_date:
+                                new_proj_value = proj_value
+                        self.transactions[trans_number].set_current_value(str(new_current_value))
+                        self.transactions[trans_number].set_projected_value(str(new_proj_value))
+                    else:
+                        self.transactions[trans_number].set_current_value(None)
+                    current_value = new_current_value
+                    proj_value = new_proj_value
                     if trans_sched_date <= proj_date:
-                        new_proj_value = proj_value - trans_amount
-                elif trans_action == '+':
-                    new_current_value = current_value + trans_amount
-                    if trans_sched_date <= proj_date:
-                        new_proj_value = proj_value + trans_amount
-                else:
-                    print("Unknown action " + trans_action + " ignored")
-                    new_current_value = current_value
-                    if trans_sched_date <= proj_date:
-                        new_proj_value = proj_value
-                self.transactions[trans_number].set_current_value(str(new_current_value))
-                self.transactions[trans_number].set_projected_value(str(new_proj_value))
-            else:
-                self.transactions[trans_number].set_current_value(None)
-            current_value = new_current_value
-            proj_value = new_proj_value
-            self.parent.set_value_proj(proj_value)
+                        self.parent.set_value_proj(proj_value)
             trans_number = trans_number + 1
         return proj_value

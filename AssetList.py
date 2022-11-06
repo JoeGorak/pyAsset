@@ -117,11 +117,12 @@ class AssetList():
     def update_proj_values(self, proj_date):
         print("update_proj_values called with proj_date ", proj_date)
         sep = Date.get_global_date_sep(self)
-        Date.set_global_proj_date(proj_date, sep)
+        Date.set_global_proj_date(self, proj_date)
         for i in range(len(self.assets)):
             cur_transactions = self.assets[i].transactions
             new_proj_value = cur_transactions.update_current_and_projected_values()
             self.assets[i].set_value_proj(new_proj_value)
+            
 
     def sort(self):
         return self.assets.sort()

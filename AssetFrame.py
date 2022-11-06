@@ -305,6 +305,7 @@ class AssetFrame(wx.Frame):
                   (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
             Date.set_proj_date(self, in_date)
             self.assets.update_proj_values(in_date)
+            self.redraw_all()
         else:
             self.proj_date = None
             self.DisplayMsg("Bad projected date ignored: %s" % (in_date))

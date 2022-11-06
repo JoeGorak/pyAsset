@@ -39,7 +39,7 @@ class AssetGrid(grd.Grid):
         self.columnNames = ["Account", "Value (Curr)", "Value (Proj)", "last pulled",
                             "Limit", "Avail (Online)", "Avail (Proj)", "Rate",
                             "Payment", "Due Date", "Sched", "Min Pmt", "Stmt Bal",
-                            "Amt Over", "Cash Limit", "Cash used", "Cash avail"];
+                            "Amt Over", "Cash Limit", "Cash used", "Cash avail"]
         self.grid = grd.Grid.__init__(self, frame, **keywrds)
         self.minNumRows = frame.BestSize.Height
         self.CreateGrid(self.minNumRows, len(self.columnNames))
@@ -70,23 +70,24 @@ class AssetGrid(grd.Grid):
         self.Bind(grd.EVT_GRID_EDITOR_CREATED, self.OnEditorCreated)
 
         # Define the layout of the grid in the frame
-        self.ACCT_NAME_COL = 0
-        self.ACCT_CURR_VAL_COL = 1
-        self.ACCT_PROJ_VAL_COL = 2
-        self.ACCT_LAST_PULL_COL = 3
-        self.ACCT_LIMIT_COL = 4
-        self.ACCT_AVAIL_ONLINE_COL = 5
-        self.ACCT_AVAIL_PROJ_COL = 6
-        self.ACCT_RATE_COL = 7
-        self.ACCT_PAYMENT_COL = 8
-        self.ACCT_DUE_DATE_COL = 9
-        self.ACCT_SCHED_DATE_COL = 10
-        self.ACCT_MIN_PMT_COL = 11
-        self.ACCT_STMT_BAL_COL = 12
-        self.ACCT_AMT_OVER_COL = 13
-        self.ACCT_CASH_LIMIT_COL = 14
-        self.ACCT_CASH_USED_COL = 15
-        self.ACCT_CASH_AVAIL_COL = 16
+        Headers = self.columnNames
+        self.ACCT_NAME_COL = Headers.index("Account")
+        self.ACCT_CURR_VAL_COL = Headers.index("Value (Curr)")
+        self.ACCT_PROJ_VAL_COL = Headers.index("Value (Proj)")
+        self.ACCT_LAST_PULL_COL = Headers.index("last pulled")
+        self.ACCT_LIMIT_COL = Headers.index("Limit")
+        self.ACCT_AVAIL_ONLINE_COL = Headers.index("Avail (Online)")
+        self.ACCT_AVAIL_PROJ_COL = Headers.index("Avail (Proj)")
+        self.ACCT_RATE_COL = Headers.index("Rate")
+        self.ACCT_PAYMENT_COL = Headers.index("Payment")
+        self.ACCT_DUE_DATE_COL = Headers.index("Due Date")
+        self.ACCT_SCHED_DATE_COL = Headers.index("Sched")
+        self.ACCT_MIN_PMT_COL = Headers.index("Min Pmt")
+        self.ACCT_STMT_BAL_COL = Headers.index("Stmt Bal")
+        self.ACCT_AMT_OVER_COL = Headers.index("Amt Over")
+        self.ACCT_CASH_LIMIT_COL = Headers.index("Cash Limit")
+        self.ACCT_CASH_USED_COL = Headers.index("Cash used")
+        self.ACCT_CASH_AVAIL_COL = Headers.index("Cash avail")
 
         # Define the widths of the columns in the grid
         ACCT_NAME_COL_WIDTH = 150

@@ -42,7 +42,7 @@ class BillList:
         for i in range(len(self.bills)):
             cur_bill = self.bills[i]
             cd = cur_bill.details
-            ret_str += "%-10s $%8.2f %s %s" % (cur_bill.name, cd.get_value(), cd.get_last_pull_date(), cd.get_type())
+            ret_str += "%-10s $%8.2f %s %s" % (cur_bill.payee, cd.get_value(), cd.get_last_pull_date(), cd.get_type())
             limit = cd.get_limit()
             if limit != 0:
                 ret_str += " $%8.2f $%8.2f" % (limit, cd.get_avail())
@@ -67,7 +67,7 @@ class BillList:
     def __delitem__(self, i):
         del self.bills[i]
 
-    def append(self, name):
-        bill = Bill(name)
+    def append(self, payee):
+        bill = Bill(payee)
         self.bills.append(bill)
         return bill
