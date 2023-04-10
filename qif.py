@@ -49,15 +49,12 @@ class qif(object):
 
         if assetFile:
             self.read_qif(assetFile, readmode)
-        else:
-            error = assetFile + ' does not exist / cannot be opened!! - Aborting\n'
-            self.DisplayMsg(error)
 
     def read_qif(self, filename, readmode="normal"):
         if readmode == 'normal':  # things not to do on 'import':
             name = filename.replace('.qif', '')
             self.filename = os.path.split(name)[1]
-        Found_assets = AssetList(self)
+#        Found_assets = AssetList(self)
         mffile = open(filename, 'r')
         lines = mffile.readlines()
         mffile.close()
@@ -77,9 +74,9 @@ class qif(object):
                         section = "detail"
                     else:
                         section = "unknown"
-                    print("in", section, "section got unknown ! line: ", line[:-1])
-                   
+                    print("in", section, "section got unknown ! line: ", line[:-1])                   
             elif input_type == "^":
+                cur_asset = Asset()
                 if section == DETAIL:
                     cur_asset.transactions.append(cur_transaction)
                     cur_transaction = Transaction(self)
@@ -130,8 +127,8 @@ class qif(object):
                 else:
                     section = "unknown"
                 print("in", section, "section got unparsable line: ", line[:-1])
-            pass
-        return Found_assets
+#        return Found_assets
+        return cur_asset
 
     def write_qif(self, filename):
         Found_assets = AssetList(self)

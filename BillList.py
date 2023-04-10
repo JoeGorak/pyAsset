@@ -36,31 +36,23 @@ class BillList:
     def __setitem__(self, i, val):
         self.bills[i] = val
 
-#TODO:  Modify str to use fields from Bill vice field from Asset
     def __str__(self):
         ret_str = ""
         for i in range(len(self.bills)):
-            cur_bill = self.bills[i]
-            cd = cur_bill.details
-            ret_str += "%-10s $%8.2f %s %s" % (cur_bill.payee, cd.get_value(), cd.get_last_pull_date(), cd.get_type())
-            limit = cd.get_limit()
-            if limit != 0:
-                ret_str += " $%8.2f $%8.2f" % (limit, cd.get_avail())
-            rate = cd.get_rate()
-            if rate != 0:
-                ret_str += " %8.3f%%" % (rate*100)
-            payment = cd.get_payment()
-            if payment != 0:
-                ret_str += " $%8.2f" % (payment)
-            due_date = cd.get_due_date()
+            cb = self.bills[i]
+            ret_str += "Payee: %-30s Type: %-20s, Amount: $%8.2f" % (cb.get_payee(), cb.get_type(), cb.get_amount())
+            min_due = cb.get_min_due()
+            if min_due != None:
+                ret_str += " Min Due: $%8.2f" % (min_due)
+            due_date = cb.get_due_date()
             if due_date != None:
-                ret_str += " %s" % (due_date)
-            sched_date = cd.get_sched_date()
+                ret_str += " Due Date: %10s" % (due_date)
+            sched_date = cb.get_sched_date()
             if sched_date != None:
-                ret_str += " %s" % (sched_date)
-            min_pay = cd.get_min_pay()
-            if min_pay != 0:
-                ret_str += " $%8.2f" % (min_pay)
+                ret_str += " Sched Date: %10s" % (sched_date)
+            pmt_acct = cb.get_pmt_acct()
+            if pmt_acct != None:
+                ret_str += " Pmt Acct: %s Pmt Method: %s Pmt Freq: %s" % (pmt_acct, cb.get_pmt_method(), cb.get_pmt_frequency())
             ret_str += "\n"
         return ret_str
 

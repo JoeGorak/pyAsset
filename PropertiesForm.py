@@ -104,15 +104,14 @@ class PropertyForm(wx.Panel):
         self.payment_accounts = self.Parent.Parent.assets.getPaymentAccounts()
         self.payAcctCtrl = wx.Choice(self,
                                      choices=self.payment_accounts)
-        self.refPayDatePicker = wx.adv.DatePickerCtrl(self,
-                                                      #pos=(0,30),
+        self.refPayDatePicker = wx.adv.DatePickerCtrl(self,        
+                                                      pos=(0,0),
                                                       size=(180,30),
                                                       style=wx.adv.DP_DROPDOWN)
         self.refPayDateTextCtrl = wx.TextCtrl(self,
-                                              #pos=(0,30),
+                                              pos=(0,0),
                                               size=(150,30),
-                                              style=wx.TE_PROCESS_ENTER,
-                                              value=self.dateFormat)
+                                              style=wx.TE_PROCESS_ENTER)
         self.payTypeRadioBox = wx.RadioBox(self,
                                          label="How often are you paid?",
                                          choices=self.payTypes,
@@ -278,7 +277,7 @@ class PropertyForm(wx.Panel):
     def __log(self, message):
         ''' Private method to print a string to the console
             control. (Only used for debugging and turned off for now! JJG 7/25/2021)'''
-        if (True):                         # Change this to True to print out debug messages
+        if True:                         # Change this to True to print out debug messages
             print('%s' % message)
 
     def doLayout(self):

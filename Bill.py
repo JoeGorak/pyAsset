@@ -21,6 +21,16 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+from Date import Date
+from datetime import date
+
+# Bill types
+CHECKINGANDSAVINGS = 0
+CREDITCARD = 1
+LOAN = 2
+EXPENSE = 3
+UNKNOWN = 4
+
 # Payment Methods
 MYCHECKFREE = 1
 SCHED_ONLINE = 2
@@ -39,9 +49,10 @@ YEARLY = 12
 MANUAL = -1
 
 class Bill:
-    def __init__(self, payee = None, amount = 0.0, min_due = 0.0, due_date = None, sched_date = None,
+    def __init__(self, payee = None, type = "Unknown", amount = 0.0, min_due = 0.0, due_date = None, sched_date = None,
                  pmt_acct = "Other", pmt_method = "TBD", check_number = 0, pmt_freq = "Manual" ):
         self.payee = payee
+        self.type = self.set_type(type)
         self.amount = amount
         self.min_due = min_due
         self.due_date = due_date
@@ -53,8 +64,8 @@ class Bill:
         return
 
     def __str__(self):
-        return " %-10s $%8.2f $%8.2f %10s %10s %s %s %s\n" %\
-               (self.payee, self.amount, self.min_due, self.due_date, self.sched_date, self.pmt_acct, self.pmt_method, self.pmt_frequency)
+        return " %-10s %-20s $%8.2f $%8.2f %10s %10s %s %s %s\n" %\
+               (self.payee, self.type, self.amount, self.min_due, self.due_date, self.sched_date, self.pmt_acct, self.pmt_method, self.pmt_frequency)
 
     def get_check_number(self):
         return self.check_number
@@ -64,6 +75,36 @@ class Bill:
 
     def get_payee(self):
         return self.payee
+
+    def get_type(selt):
+        st = selt.type
+        if st == CHECKINGANDSAVINGS:
+            return "Checking and saving"
+        elif st == CREDITCARD:
+            return "Credit Card"
+        elif st == LOAN:
+            return "Loan"
+        elif st == EXPENSE:
+            return "Expense"
+        elif st == UNKNOWN:
+            return "Unknown"
+        else:
+            return "Unknown bill type"
+
+    def set_type(self,type):
+        tu = type.upper()
+        if tu == "CHECKING AND SAVINGS ACCOUNTS":
+            self.type = CHECKINGANDSAVINGS
+        elif tu == "CREDIT CARDS":
+            self.type = CREDITCARD
+        elif tu == "LOANS":
+            self.type = LOAN
+        elif tu == "EXPENSES":
+            self.type = EXPENSE
+        elif tu == "UNKNOWN":
+            self.type = UNKNOWN
+        else:
+            print("Unknown type", type, "ignored")
 
     def set_payee(self,payee):
         self.payee = payee
@@ -81,16 +122,52 @@ class Bill:
         self.min_due = min_due
 
     def get_due_date(self):
-        return self.due_date
+       return self.due_date
 
     def set_due_date(self, due_date):
-        self.due_date = due_date
+        temp_due_date = date(due_date.year,due_date.month,due_date.day)
+        date_fields = Date.get_global_date_format(self).split(Date.get_global_date_sep(self))
+        date_str = ""
+        for i in range(3):
+            if date_fields[i] == "%m":
+                month = int(due_date.month)
+                date_str += "%02d" % (due_date.month)
+            elif date_fields[i] == "%d":
+                day = int(due_date.day)
+                date_str += "%02d" % (due_date.day)
+            elif date_fields[i] == "%Y":
+                year = int(due_date.year)
+                date_str += "%04d" % (due_date.year)
+            elif date_fields[i] == "%y":
+                year = int(due_date.year)
+                date_str += "%02d" % (due_date.year)
+            if i < 2:
+                date_str += Date.get_global_date_sep(self)
+        self.due_date = date_str
 
     def get_sched_date(self):
         return self.sched_date
 
     def set_sched_date(self, sched_date):
-        self.sched_date = sched_date
+        temp_sched_date = date(sched_date.year,sched_date.month,sched_date.day)
+        date_fields = Date.get_global_date_format(self).split(Date.get_global_date_sep(self))
+        date_str = ""
+        for i in range(3):
+            if date_fields[i] == "%m":
+                month = int(sched_date.month)
+                date_str += "%02d" % (sched_date.month)
+            elif date_fields[i] == "%d":
+                day = int(sched_date.day)
+                date_str += "%02d" % (sched_date.day)
+            elif date_fields[i] == "%Y":
+                year = int(sched_date.year)
+                date_str += "%04d" % (sched_date.year)
+            elif date_fields[i] == "%y":
+                year = int(sched_date.year)
+                date_str += "%02d" % (sched_date.year)
+            if i < 2:
+                date_str += Date.get_global_date_sep(self)
+        self.sched_date = date_str
 
 #TODO: Modify get_pmt_acct and set_pmt_acct to use AssetList and Asset!  For now just put in and return whatever is typed!
     def get_pmt_acct(self):
@@ -100,7 +177,7 @@ class Bill:
         self.pmt_acct = pmt_acct
 
     def get_pmt_method(self):
-        spm = self.payment_method
+        spm = self.pmt_method
         if spm == MYCHECKFREE:
             return "Mycheckfree"
         elif spm == SCHED_ONLINE:

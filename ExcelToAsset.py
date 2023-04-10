@@ -25,10 +25,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  Version information
 #  06/11/2016     Initial version v0.1
 #  08/07/2021     Version v0.2
+#  04/02/2023     Version v1.0
 
 # TO-DOs
 #
-#TODO: Finish ProcessBillsSheet
+
 
 from openpyxl.reader.excel import load_workbook
 
@@ -217,117 +218,67 @@ class ExcelToAsset:
 
                     col_num += 1
                     if col_num >= len(ColumnHeaders):
-                        new_transaction.parent = self.parent                # make sure transaction gets arrached to frame and not EXCEL object!  JJG 07/18/2021
+                        new_transaction.parent = self.parent                # make sure transaction gets attached to asset and not EXCEL object!  JJG 1/15/2023
                         TransactionsFound.insert(new_transaction)
                         break
         return TransactionsFound
 
-    #TODO: Rewrite ProcessBillsSheet to use correct fields   10/16/2022  JJG
     def ProcessBillsSheet(self, bills):
+        MAX_COLS_TO_PROCESS = 8             # Only these columns have data we want! JJG 4/1/2023
         BillsFound = BillList()
         BillPlaces = dict()
 
         ws = self.wb.get_sheet_by_name("Bills")
 
         row_num = 0
+        Finished = False
+        cur_type = "Unknown"
         for row in ws.rows:
             row_num += 1
-            print("Processing row",row_num)
-            col_num = 1
-            heading = ""
+            if row_num == 1:
+                continue
+            col_num = 0
             for cell in row:
                 cv = cell.value
-                if cv != None:
-                    # Next 2 lines are debug to print out values for checking   10/26/2022  JJG
-                    print(cell, cv)
-                    continue
+                col_num += 1
+                if col_num > MAX_COLS_TO_PROCESS:
+                    break
+                if cv == None: continue
+                if col_num == 1 and ("Checking and Savings" in cv or "Credit Card" in cv or "Loans" in cv or "Expenses" in cv):
+                    cur_type = cv
+                    break
+                else:
+                    cv = cell.value
                     if col_num == 1:
-                        if "TOTALS" in cv: break
-                        if "Assets" in cv or "Payee" in cv or "Checking Account" in cv or "Credit Card" in cv or "Other Source" in cv \
-                                or "Loan" in cv or "Expenses" in cv:
-                            continue
-                        new_bill = BillsFound.append(cv)
-                        BillPlaces[row_num] = cv
-                        if new_bill != None:
-                            bill_name = new_bill.name
-                            if "Checking" in bill_name:
-                                new_bill.set_type("Checking")
-                            elif "Savings" in bill_name:
-                                new_bill.set_type("Savings")
-                            elif "Money Market" in bill_name:
-                                new_bill.set_type("Money Market")
-                            elif "Overdraft" in bill_name:
-                                new_bill.set_type("Overdraft")
-                            elif "TSP" in bill_name or "Annuity" in bill_name:
-                                new_bill.set_type("Retirement")
-                            elif "Visa" in bill_name or "MC" in bill_name:
-                                new_bill.set_type("Credit Card")
-                            elif "Store Card" in bill_name:
-                                new_bill.set_type("Store Card")
-                            else:
-                                new_bill.set_type("Other")
+                        if "TOTALS" in cv: 
+                            Finished = True
+                            break
+                    if row_num == 2:
+                        BillPlaces[col_num] = cv
                     else:
-                        if BillPlaces.get(row_num, "None") != "None":
-                            if "Value (Curr)" in heading or "Estimated Value" in heading:
-                                for i in range(len(BillsFound)):
-                                    asset = BillsFound[i]
-                                    if asset.name == BillPlaces[row_num]:
-                                        asset.set_value(cv)
-                                        break
-                            elif heading == "last pulled":
-                                for i in range(len(BillsFound)):
-                                    asset = BillsFound[i]
-                                    if asset.name == BillPlaces[row_num]:
-                                        asset.set_last_pull_date(cv)
-                                        break
-                            elif heading == "Limit" and cv != 0:
-                                for i in range(len(BillsFound)):
-                                    asset = BillsFound[i]
-                                    if asset.name == BillPlaces[row_num]:
-                                        asset.set_limit(cv)
-                                        break
-                            elif heading == "Avail (Online)" and cv != 0:
-                                for i in range(len(BillsFound)):
-                                    asset = BillsFound[i]
-                                    if asset.name == BillPlaces[row_num]:
-                                        asset.set_avail(cv)
-                                        break
-                            elif heading == "Rate":
-                                for i in range(len(BillsFound)):
-                                    asset = BillsFound[i]
-                                    if asset.name == BillPlaces[row_num]:
-                                        asset.set_rate(cv)
-                                        break
-                            elif heading == "Payment":
-                                for i in range(len(BillsFound)):
-                                    asset = BillsFound[i]
-                                    if asset.name == BillPlaces[row_num]:
-                                        asset.set_payment(cv)
-                                        break
-                            elif heading == "Due Date":
-                                for i in range(len(BillsFound)):
-                                    asset = BillsFound[i]
-                                    if asset.name == BillPlaces[row_num]:
-                                        asset.set_due_date(cv)
-                                        break
-                            elif heading == "Sched":
-                                for i in range(len(BillsFound)):
-                                    asset = BillsFound[i]
-                                    if asset.name == BillPlaces[row_num]:
-                                        asset.set_sched_date(cv)
-                                        break
-                            elif heading == "Min Pmt":
-                                for i in range(len(BillsFound)):
-                                    asset = BillsFound[i]
-                                    if asset.name == BillPlaces[row_num]:
-                                        asset.set_rate(cv)
-                                        break
-                            else:
-                                pass
-        #                        print cv, row_num, heading, BillPlaces[row_num]
-                        else:
-                            if str(cv)[0] not in ['0','1','2','3','4','5','6','7','8','9','-']:
-                                heading = cv
-            col_num += 1
-        print(BillsFound)
+                        if col_num == 1:
+                            new_bill = BillsFound.append(cv)
+                        if new_bill != None:
+                            heading = BillPlaces.get(col_num, "None")
+                            new_bill.set_type(cur_type)
+                            if heading != None and cv != None:
+                                heading = heading.upper()
+                                if heading == "PAYEE":
+                                    new_bill.set_payee(cv)
+                                elif heading == "AMOUNT":
+                                    new_bill.set_amount(cv)
+                                elif heading == "MIN DUE":
+                                    new_bill.set_min_due(cv)
+                                elif heading == "DUE DATE":
+                                    new_bill.set_due_date(cv)
+                                elif heading == "SCHED DATE":
+                                    new_bill.set_sched_date(cv)
+                                elif heading == "PMT ACCT":
+                                    new_bill.set_pmt_acct(cv)
+                                elif heading == "PMT METHOD":
+                                    new_bill.set_pmt_method(cv)
+                                elif heading == "FREQUENCY":
+                                    new_bill.set_pmt_frequency(cv)
+            if Finished:
+                break
         return BillsFound

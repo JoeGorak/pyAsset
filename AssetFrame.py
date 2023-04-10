@@ -59,6 +59,7 @@ class AssetFrame(wx.Frame):
         self.frame = self
         self.assets = AssetList(self)
         self.bills = BillList()
+        self.qif = qif(self)
         self.cur_asset = Asset(name=assetFile)
         self.edited = False
         self.payType = ""
@@ -249,7 +250,10 @@ class AssetFrame(wx.Frame):
         self.billButton.Bind(wx.EVT_LEFT_DOWN, self.onBillButtonClick)
 
     def onBillButtonClick(self, evt):
-        self.DisplayMsg("Bill button clicked!")
+        try:
+            print(self.frame.latest_bills)
+        except:
+            self.DisplayMsg("No bills in the system yet")
 
     def make_date_grid(self, panel):
         self.currDateLabel = wx.StaticText(panel, label="Curr Date")
@@ -474,9 +478,11 @@ class AssetFrame(wx.Frame):
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
-            self.cur_asset.write_qif(os.path.join(dir, fname))
-        if self.cur_asset.name:
-            self.SetTitle("PyAsset: %s" % self.cur_asset.name)
+            for cur_asset in self.assets:
+                fname=cur_asset.filename
+                cur_asset.write_qif(os.path.join(dir, fname))
+#        if self.cur_asset.name:
+#            self.SetTitle("PyAsset: %s" % self.cur_asset.name)
 
     def close(self, *args):
         pass                                            # Not sure what to do here yet!  JJG 1/17/2022
@@ -548,15 +554,15 @@ class AssetFrame(wx.Frame):
 
     def read_csv(self, inf_, outf_, deff_):  # will need to receive input csv and def file
         csvdeff = csv.reader(deff_, delimiter=',')
-        next(csvdeff, None)
+#        next(csvdeff, None)
 
         for settings in csvdeff:
-            date_ = (settings[0])  # convert to
-            amount_ = (settings[2])  # How much was the transaction
-            memo_ = (settings[3])  # discription of the transaction
-            payee_ = (settings[4])  # Where the money is going
+            date_ = int(settings[0])  # convert to
+            amount_ = int(settings[2])  # How much was the transaction
+            memo_ = int(settings[3])  # description of the transaction
+            payee_ = int(settings[4])  # Where the money is going
             deli_ = settings[5]  # How the csv is separated
-            header_ = (settings[6])  # Set if there is a header to skip
+            header_ = int(settings[6])  # Set if there is a header to skip
 
         csvIn = csv.reader(inf_, delimiter=deli_)  # create csv object using the given separator
 
@@ -577,7 +583,7 @@ class AssetFrame(wx.Frame):
             fname = d.GetFilename()
             dir = d.GetDirectory()
             total_name_in = os.path.join(dir, fname)
-            total_name_extension_place = total_name_in.find(".csv")
+            total_name_extension_place = total_name_in.find(".")
             total_name_def = ""
             total_name_qif = ""
             if total_name_extension_place != -1:
@@ -592,7 +598,7 @@ class AssetFrame(wx.Frame):
 
             if total_name_qif != "":
                 try:
-                    tofile = open(totoal_name_qif, 'a')
+                    tofile = open(total_name_qif, 'a')
                 except:
                     error = total_name_qif + ' cannot be created !!\n'
 
@@ -605,14 +611,14 @@ class AssetFrame(wx.Frame):
             if error == "":
                 tofile = total_name_qif
                 self.read_csv(fromfile, tofile, deffile)
-                self.cur_asset.read_qif(total_name_qif)
+                self.cur_asset = self.qif.read_qif(total_name_qif)
                 fromfile.close()
                 deffile.close()
                 self.redraw_all(-1)
                 if self.cur_asset.name:
                     self.SetTitle("PyAsset: %s" % self.cur_asset.name)
             else:
-                self.Display(error)
+                self.MsgBox(error)
                 return
 
     def process_asset_list(self, assetList):
@@ -659,7 +665,6 @@ class AssetFrame(wx.Frame):
                         print(sheet + " not found in asset list")
 
                 self.latest_bills = xlsm.ProcessBillsSheet(self.bills)
-                print(self.latest_bills)
             else:
                 self.DisplayMsg(error)
 

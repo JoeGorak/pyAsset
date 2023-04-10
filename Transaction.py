@@ -108,8 +108,8 @@ class Transaction:
 
     def qif_repr(self):
         lines = []
-        lines.append("S%s" % self.sched_date.formatUS())
-        lines.append("D%s" % self.due_date.formatUS())
+        lines.append("S%s" % self.sched_date)
+        lines.append("D%s" % self.due_date)
         lines.append("T%.2f" % self.amount)
         lines.append("A%s" % self.state)
         if self.check_num:
@@ -126,8 +126,10 @@ class Transaction:
         self.pmt_method = rest
 
     def set_amount(self, rest):
+        if type(rest) == str:
+            rest = float(rest.replace('$',''))
         try:
-            self.amount = round(float(rest), 2)
+            self.amount = round(rest,2)
         except:
             self.amount = 0.0
 
