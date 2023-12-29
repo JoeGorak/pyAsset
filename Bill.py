@@ -39,7 +39,8 @@ CHECK = 4
 AUTOPAY = 5
 CASH = 6
 TBD = 7
-OTHER = 8
+MANUAL = 8
+OTHER = 9
 
 # Payment_Frequency
 MONTHLY = 1
@@ -125,48 +126,66 @@ class Bill:
        return self.due_date
 
     def set_due_date(self, due_date):
-        temp_due_date = date(due_date.year,due_date.month,due_date.day)
-        date_fields = Date.get_global_date_format(self).split(Date.get_global_date_sep(self))
-        date_str = ""
-        for i in range(3):
-            if date_fields[i] == "%m":
-                month = int(due_date.month)
-                date_str += "%02d" % (due_date.month)
-            elif date_fields[i] == "%d":
-                day = int(due_date.day)
-                date_str += "%02d" % (due_date.day)
-            elif date_fields[i] == "%Y":
-                year = int(due_date.year)
-                date_str += "%04d" % (due_date.year)
-            elif date_fields[i] == "%y":
-                year = int(due_date.year)
-                date_str += "%02d" % (due_date.year)
-            if i < 2:
-                date_str += Date.get_global_date_sep(self)
+        date_str = ''
+        finished = False
+        if type(due_date)==str:
+            if due_date == '':
+                finished = True
+            else:
+                temp_due_date = Date.parse_date(self,due_date,Date.get_global_date_format(self))
+                temp_due_date = date(temp_due_date['year'],temp_due_date['month'],temp_due_date['day'])
+        else:
+            temp_due_date = date(due_date.year,due_date.month,due_date.day)
+        if not finished:
+            date_fields = Date.get_global_date_format(self).split(Date.get_global_date_sep(self))
+            for i in range(3):
+                if date_fields[i] == "%m":
+                    month = int(temp_due_date.month)
+                    date_str += "%02d" % (temp_due_date.month)
+                elif date_fields[i] == "%d":
+                    day = int(temp_due_date.day)
+                    date_str += "%02d" % (temp_due_date.day)
+                elif date_fields[i] == "%Y":
+                    year = int(temp_due_date.year)
+                    date_str += "%04d" % (due_date.year)
+                elif date_fields[i] == "%y":
+                    year = int(due_date.year)
+                    date_str += "%02d" % (temp_due_date.year)
+                if i < 2:
+                    date_str += Date.get_global_date_sep(self)
         self.due_date = date_str
 
     def get_sched_date(self):
         return self.sched_date
 
     def set_sched_date(self, sched_date):
-        temp_sched_date = date(sched_date.year,sched_date.month,sched_date.day)
-        date_fields = Date.get_global_date_format(self).split(Date.get_global_date_sep(self))
         date_str = ""
-        for i in range(3):
-            if date_fields[i] == "%m":
-                month = int(sched_date.month)
-                date_str += "%02d" % (sched_date.month)
-            elif date_fields[i] == "%d":
-                day = int(sched_date.day)
-                date_str += "%02d" % (sched_date.day)
-            elif date_fields[i] == "%Y":
-                year = int(sched_date.year)
-                date_str += "%04d" % (sched_date.year)
-            elif date_fields[i] == "%y":
-                year = int(sched_date.year)
-                date_str += "%02d" % (sched_date.year)
-            if i < 2:
-                date_str += Date.get_global_date_sep(self)
+        finished = False
+        if type(sched_date)==str:
+            if sched_date == '':
+                finished = True
+            else:
+                temp_sched_date = Date.parse_date(self,sched_date,Date.get_global_date_format(self))
+                temp_sched_date = date(temp_sched_date['year'],temp_sched_date['month'],temp_sched_date['day'])
+        else:
+            temp_sched_date = date(sched_date.year,sched_date.month,sched_date.day)
+        if not finished:
+            date_fields = Date.get_global_date_format(self).split(Date.get_global_date_sep(self))
+            for i in range(3):
+                if date_fields[i] == "%m":
+                    month = int(temp_sched_date.month)
+                    date_str += "%02d" % (temp_sched_date.month)
+                elif date_fields[i] == "%d":
+                    day = int(temp_sched_date.day)
+                    date_str += "%02d" % (temp_sched_date.day)
+                elif date_fields[i] == "%Y":
+                    year = int(temp_sched_date.year)
+                    date_str += "%04d" % (temp_sched_date.year)
+                elif date_fields[i] == "%y":
+                    year = int(temp_sched_date.year)
+                    date_str += "%02d" % (temp_sched_date.year)
+                if i < 2:
+                    date_str += Date.get_global_date_sep(self)
         self.sched_date = date_str
 
 #TODO: Modify get_pmt_acct and set_pmt_acct to use AssetList and Asset!  For now just put in and return whatever is typed!
@@ -192,6 +211,8 @@ class Bill:
             return "Cash"
         elif spm == TBD:
             return "TBD"
+        elif spm == MANUAL:
+            return "Manual"
         elif spm == OTHER:
             return "Other"
         else:
@@ -213,6 +234,8 @@ class Bill:
             self.pmt_method = CASH
         elif pmu == "TBD":
             self.pmt_method = TBD
+        elif pmu == "MANUAL" or pmu == "":
+            self.pmt_method = MANUAL
         elif pmu == "OTHER":
             self.pmt_method = OTHER
         else:

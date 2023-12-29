@@ -380,6 +380,9 @@ class AssetGrid(grd.Grid):
         col = evt.GetCol()
         ret_val = wx.OK
         new_value = evt.String
+        if new_value == "":
+            col_type = self.col_info[col][self.TYPE_COL]
+            if col_type == self.DOLLAR_TYPE: new_value = "0.00"
         if row < 0 or row >= len(self.getFrame().assets):
             str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
             ret_val = self.DisplayMsg(str)

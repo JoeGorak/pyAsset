@@ -39,55 +39,69 @@ class PropertyForm(wx.Panel):
         and handlers for callbacks. Doing the layout of the controls is
         the responsibility of subclasses (by means of the doLayout() method).
     '''
-    def __init__(self, parent, in_dateFormat="", in_payType="", in_refDate="", in_netpay="", in_payDepositAcct="none"):
+
+    def __init__(self, parent, in_dateFormat, in_payType, in_refDate, in_netpay, in_payDepositAcct):
         self.parent = parent
         super(PropertyForm, self).__init__(parent)
         self.assetFrame = self.GetGrandParent()
-        self.dateFormats = ['%m/%d/%Y', "%Y/%m/%d"]
+        self.dateFormats = Date.getDateFormats(self)
+        self.dateSep = Date.get_global_date_sep(self)
         if in_dateFormat != "":
             try:
                 self.dateFormatChoice = self.dateFormats.index(in_dateFormat)
-                self.dateSep = "/"
             except:
                 self.dateFormatChoice = -1
             if self.dateFormatChoice == -1:
-                today = Date.get_global_curr_date(self)["str"]
-                if today.index("/") == 4:
-                    self.dateFormatChoice = 1
-                    self.dateSep = "/"
-                else:
-                    self.dateFormatChoice = 0
-                    self.dateSep = "/"
-                defaultDateFormat = self.dateFormats[self.dateFormatChoice].replace("%m", "mm").replace("%d", "dd").replace("%y", "yy").replace("%Y", "yyyy")
-                self.MsgBox("Unknown date format %s ignored - default to %s" % (in_dateFormat, defaultDateFormat))
+                self.dateFormatChoice = 0
+                self.MsgBox("Unknown date format %s ignored - default to %s" % (in_dateFormat, self.dateFormats[self.dateFormatChoice]))
         else:
             self.dateFormatChoice = 0
-        self.dateFormat = self.dateFormats[self.dateFormatChoice]
-        self.inDateFormat = self.dateFormats[self.dateFormatChoice]
-        self.payTypes = ['every week', 'every 2 weeks', 'monthly']
-        if in_payType != "":
-            try:
-                self.payType = self.payTypes.index(in_payType)
-            except:
-                self.payType = -1
-            if self.payType == -1:
-                self.payType = 1
-                self.MsgBox("Unknown pay frequency %s ignored - default to %s" % (in_payType, self.payTypes[self.payType]))
+        self.date_format = self.dateFormats[self.dateFormatChoice]
+        Date.set_global_date_format(self, self.date_format)
+        self.date_format = Date.get_global_date_format(self)
+        self.payTypes = self.assetFrame.get_pay_types()
+        self.payType = in_payType
+        if in_payType == "":
+           self.payType = self.assetFrane.get_default_pay_type()
         else:
-            self.payType = 1
-        self.ref_date = in_refDate
-        self.netpay = in_netpay
-        self.payDepositAcct = in_payDepositAcct
+           if type(in_payType) is not int:
+                try:
+                    self.payType = self.payTypes.index(in_payType)
+                except:
+                    self.payType = self.assetFrame.get_default_pay_type()
+        if type(self.payType) is str:
+            self.payType = self.payTypes.index(self.payType)
+        if in_refDate != "":
+            self.ref_date = in_refDate
+        else:
+            self.ref_date = "12/20/2023"                # JJG  12/23/2023   added default if none given
+        if in_netpay != "":
+            self.netpay = in_netpay
+        else:
+            self.netpay = "0.00"
+        if in_payDepositAcct != None:
+            self.payDepositAcct = in_payDepositAcct
+        else:
+            self.payDepositAcct = "none"
+        self.initNewValues()
         self.createControls()
         self.setControlInitValues()
         self.bindEvents()
         self.doLayout()
+        self.Show()
+ 
+    def initNewValues(self):
+        self.NewDateFormatChoice = self.dateFormatChoice
+        self.NewNetpay = self.netpay
+        self.NewPayType = self.payType
+        self.NewRefDate = self.ref_date
+        self.NewpayDepositAcct = self.payDepositAcct
 
     def createControls(self):
         self.saveButton = wx.Button(self, label="Save")
         self.abortButton = wx.Button(self, label="Abort")
         display_dateFormats = []
-        for next_format in self.dateFormats:
+        for next_format in Date.getDateFormats(self):
             next_format = next_format.replace("%m", "mm").replace("%d", "dd").replace("%y", "yy").replace("%Y", "yyyy")
             display_dateFormats.append(next_format)
         self.dateFormatRadioBox = wx.RadioBox(self,
@@ -104,10 +118,10 @@ class PropertyForm(wx.Panel):
         self.payment_accounts = self.Parent.Parent.assets.getPaymentAccounts()
         self.payAcctCtrl = wx.Choice(self,
                                      choices=self.payment_accounts)
-        self.refPayDatePicker = wx.adv.DatePickerCtrl(self,        
-                                                      pos=(0,0),
-                                                      size=(180,30),
-                                                      style=wx.adv.DP_DROPDOWN)
+#        self.refPayDatePicker = wx.adv.DatePickerCtrl(self,        
+#                                                      pos=(0,0),
+#                                                      size=(180,30),
+#                                                      style=wx.adv.DP_DROPDOWN)
         self.refPayDateTextCtrl = wx.TextCtrl(self,
                                               pos=(0,0),
                                               size=(150,30),
@@ -119,29 +133,33 @@ class PropertyForm(wx.Panel):
                                          style=wx.RA_SPECIFY_COLS)
 
     def setControlInitValues(self):
-        self.dateFormatRadioBox.SetSelection(self.dateFormatChoice)
+        self.dateFormatRadioBox.SetSelection(self.NewDateFormatChoice)
         self.dateFormatRadioBox.Refresh()
-        self.netPayTextCtrl.LabelText = self.netpay
+        self.netPayTextCtrl.LabelText = self.NewNetpay
+        self.netPayTextCtrl.SetValue(self.NewNetpay)
         self.netPayTextCtrl.Refresh()
         ref_date_type = type(self.ref_date)
         if ref_date_type is str or ref_date_type is DateTime:
-            ref_date_parsed = Date.parse_date(self, self.ref_date, Date.get_global_date_format(self))
-            ref_date = Date.convertDateFormat(self, ref_date_parsed, self.dateFormat, self.dateFormat)
-            self.ref_date = ref_date
-            self.refPayDatePicker.SetValue(ref_date["dt"])
-            self.refPayDatePicker.Refresh()
-            self.refPayDateTextCtrl.LabelText = ref_date["str"]
+            if self.NewDateFormatChoice != self.dateFormatChoice:
+                ref_date_parsed = Date.parse_date(self, self.ref_date, self.dateFormat)
+                ref_date = Date.convertDateFormat(self, ref_date_parsed, self.dateFormat, self.NewDateFormat)
+#            self.refPayDatePicker.SetValue(ref_date["dt"])
+#            self.refPayDatePicker.Refresh()
+            self.refPayDateTextCtrl.LabelText = self.NewRefDate
+            self.refPayDateTextCtrl.SetValue(self.NewRefDate)
             self.refPayDateTextCtrl.Refresh()
         else:
-            self.MsgBox("Unknown ref date type %s ignored - ref date intfo ignored" % (type(self.ref_date)))
+            self.MsgBox("Unknown ref date type %s ignored - ref date info ignored" % (type(self.ref_date)))
         try:
-            self.payDepositChoice = self.payment_accounts.index(self.payDepositAcct)
+            self.NewPayDepositChoice = self.payment_accounts.index(self.NewpayDepositAcct)
         except:
-            self.payDepositChoice = -1
-        if self.payDepositChoice == -1:
-            self.payDepositChoice = 0
-            self.MsgBox("Unknown payment account %s ignored - default to %s" % (self.payDepositAcct, self.payment_accounts[self.payDepositChoice]))
-        self.payAcctCtrl.SetSelection(self.payDepositChoice)
+            self.NewPayDepositChoice = -1
+        if self.NewPayDepositChoice == -1:
+            defaultAcct = "none"
+            self.NewPayDepositChoice = self.payment_accounts.index(defaultAcct)
+            if self.payDepositAcct != "":
+                self.MsgBox("Unknown payment account %s ignored - default to %s" % (self.payDepositAcct, defaultAcct))
+        self.payAcctCtrl.SetSelection(self.NewPayDepositChoice)
         self.payAcctCtrl.Refresh()
         self.payTypeRadioBox.SetSelection(self.payType)
         self.payTypeRadioBox.Refresh()
@@ -151,66 +169,91 @@ class PropertyForm(wx.Panel):
                 [(self.saveButton, wx.EVT_BUTTON, self.onSave),
                  (self.abortButton, wx.EVT_BUTTON, self.onAbort),
                  (self.netPayTextCtrl, wx.EVT_TEXT_ENTER, self.onNetPayEntered),
+                 (self.netPayTextCtrl, wx.EVT_KILL_FOCUS, self.onNetPayLostFocus),
                  (self.refPayDateTextCtrl, wx.EVT_TEXT_ENTER, self.onRefPayDateEntered),
-                 (self.refPayDatePicker, wx.adv.EVT_DATE_CHANGED, self.onRefPayDatePicked),
-                 (self.dateFormatRadioBox, wx.EVT_RADIOBOX, self.onDateFormatchanged),
-                 (self.payTypeRadioBox, wx.EVT_RADIOBOX, self.onPayTypechanged),
+                 (self.refPayDateTextCtrl, wx.EVT_KILL_FOCUS, self.onRefPayDateLostFocus),
+#                 (self.refPayDatePicker, wx.adv.EVT_DATE_CHANGED, self.onRefPayDatePicked),      # JJG 12/23/2023   Causes lockups!
+                 (self.dateFormatRadioBox, wx.EVT_RADIOBOX, self.onDateFormatChanged),
+                 (self.payTypeRadioBox, wx.EVT_RADIOBOX, self.onPayTypeChanged),
                  (self.payAcctCtrl, wx.EVT_CHOICE, self.onDepositAcctChanged)]:
             control.Bind(event, handler)
 
+
     # Callback methods:
 
-    def onDateFormatchanged(self, event):
-        self.inDateFormat = self.dateFormats[self.dateFormatChoice]
-        self.dateFormatChoice = event.GetInt()
+    def onDateFormatChanged(self, event):
         self.dateFormat = self.dateFormats[self.dateFormatChoice]
-        self.__log('Desired date format: %s' % self.dateFormat)
-        self.ref_date = Date.convertDateFormat(self, self.ref_date, self.inDateFormat, self.dateFormat)
-        #self.refPayDateTextCtrl.LabelText = self.ref_date{"str"}
-        #self.refPayDateTextCtrl.Refresh()
-        self.refPayDatePicker.SetValue(self.ref_date["dt"])
-        self.refPayDatePicker.Refresh()
+        self.dateFormatChoice = event.GetInt()
+        self.NewDateFormat = self.dateFormats[self.NewDateFormatChoice]
+        self.__log('Desired date format: %s' % self.NewDateFormat)
+        self.NewRefDate = Date.convertDateFormat(self, self.NewRefDate, self.dateFormat, self.NewDateFormat)
+        self.refPayDateTextCtrl.LabelText = self.NewRefDate["str"]
+        self.refPayDateTextCtrl.Refresh()
+#        self.refPayDatePicker.SetValue(self.ref_date["dt"])
+#        self.refPayDatePicker.Refresh()
 
-    def onPayTypechanged(self, event):
-        self.payType = event.GetInt()
-        self.__log('User is paid: %s' % self.payTypes[self.payType])
+    def onPayTypeChanged(self, event):
+        self.NewPayType = event.GetInt()
+        self.__log('User is paid: %s' % self.payTypes[self.NewPayType])
 
     def onDepositAcctChanged(self, event):
-        self.payDepositChoice = event.GetInt()
-        self.payDepositAcct = self.payment_accounts[self.payDepositChoice]
-        self.__log('Deposit into: %s' % self.payDepositAcct)
+        payDepositChoice = event.GetInt()
+        self.NewpayDepositAcct = self.payment_accounts[payDepositChoice]
+        self.__log('Deposit into: %s' % self.NewpayDepositAcct)
 
-    def onNetPayEntered(self, event):
+    def processNetPay(self, in_netpay):
         money_regex = "^[\\-]*[\$]*[0-9]{1,3}((\,*)[0-9]{3})*[\\.][0-9]{2}$"
-        in_netpay = event.GetString()
         match = re.search(money_regex, in_netpay)
         if match == None:
             self.MsgBox("Bad net pay entered: %s" % (in_netpay))
         else:
-            self.netpay = in_netpay.replace("$", "").replace(",", "")
-            self.__log('User entered net pay: %s' % self.netpay)
+            self.NewNetpay = in_netpay.replace("$", "").replace(",", "")
+            self.__log('User entered net pay: %s' % self.NewNetpay)
+            self.netPayTextCtrl.SetValue(self.NewNetpay)
+
+    def onNetPayEntered(self, event):
+        in_netpay = event.GetString()
+        self.processNetPay(in_netpay)
+
+    def onNetPayLostFocus(self, event):
+        in_netpay = self.netPayTextCtrl.GetValue()
+        self.processNetPay(in_netpay)
+        event.Skip()
 
     def updateRefPayDateControls(self, ref_date, how):
-        self.__log("User %s ref pay date: %s" % (how, ref_date["str"]))
-        self.refPayDatePicker.SetValue(ref_date["dt"])
-        self.refPayDatePicker.Refresh()
-        self.refPayDateTextCtrl.LabelText = ref_date["str"]
+        self.NewRefDate = ref_date["str"]
+        self.__log("User %s ref pay date: %s" % (how, self.NewRefDate))      
+#        self.refPayDatePicker.SetValue(ref_date["dt"])
+#        self.refPayDatePicker.Refresh
+        self.refPayDateTextCtrl.LabelText = self.NewRefDate
+        self.refPayDateTextCtrl.SetValue(self.NewRefDate)
         self.refPayDateTextCtrl.Refresh()
 
-    def onRefPayDateEntered(self, event):
-        ref_date = event.String
-        dateFormat = Date.get_date_format(self)
-        ref_date_parsed = Date.parse_date(self, ref_date, dateFormat)
+    def processRefDate(self, ref_date):
+        dateFormat = self.date_format
+        NewDateFormat = self.dateFormats[self.NewDateFormatChoice]
+        ref_date_parsed = Date.parse_date(self, ref_date, NewDateFormat)
         if ref_date_parsed != None:
-            ref_date = Date.convertDateFormat(self, ref_date_parsed, dateFormat, dateFormat)
+            ref_date = Date.convertDateFormat(self, ref_date_parsed, dateFormat, NewDateFormat)
             self.__log("Month: %02d, Day: %02d, Year: %04d" % (ref_date_parsed["month"], ref_date_parsed["day"], ref_date_parsed["year"]))
             self.updateRefPayDateControls(ref_date, "entered")
+            print(ref_date)
+            self.ref_date = ref_date
         else:
             dateFormat = dateFormat.replace("%y", "yy").replace("%m", "mm").replace("%d", "dd").replace("%Y", "yyyy")
             error = "Bad input reference date (%s) entered - format is %s - try again" % (ref_date, dateFormat)
             self.MsgBox(error)
 
-    def onRefPayDatePicked(self, event):
+    def onRefPayDateEntered(self, event):
+        ref_date = event.String
+        self.processRefDate(ref_date)
+
+    def onRefPayDateLostFocus(self, event):
+        ref_date = self.refPayDateTextCtrl.GetValue()
+        self.processRefDate(ref_date)
+        event.Skip()
+
+    def onRefPayDatePicked(self, event):                        # JJG 12/26/2023 Not sure this is still correct
         year = event.Date.year
         month = event.Date.month
         day = event.Date.day
@@ -220,7 +263,9 @@ class PropertyForm(wx.Panel):
         ref_date_parsed = Date.parse_date(self, ref_date, dateFormat)
         if ref_date_parsed != None:
             ref_date = Date.convertDateFormat(self, ref_date_parsed, dateFormat, dateFormat)
-            self.updateRefPayDateControls(ref_date, "picked")
+            self.updateRefPayDateControls(ref_date, "picked") 
+            print(ref_date)
+            self.ref_date = ref_date
         else:
             dateFormat = dateFormat.replace("%y", "yy").replace("%m", "mm").replace("%d", "dd").replace("%Y", "yyyy")
             error = "Bad input reference date (%s) picked - format is %s - try again" % (ref_date, dateFormat)
@@ -233,7 +278,7 @@ class PropertyForm(wx.Panel):
         if self.payType == -1:
             error = "Bad pay type"
         else:
-            self.payType = self.payTypes[self.payType]
+            self.payType = self.NewPayType
         if self.ref_date == None:
             if len(error) > 0:
                 error = "%s; " % (error)
@@ -245,40 +290,24 @@ class PropertyForm(wx.Panel):
         if error != "":
             self.MsgBox(error)
         else:
-            self.dateFormat = self.dateFormats[self.dateFormatChoice]
+            self.dateFormat = self.dateFormats[self.NewDateFormatChoice]
             Date.set_global_date_format(self, self.dateFormat)
             Date.set_global_date_sep(self, self.dateSep)
             payType = self.payType
-            ref_date = Date.convertDateFormat(self, self.ref_date, self.dateFormat, self.dateFormat)
-            self.ref_date = ref_date["str"]
-            print("%s, %s, %s, %s, %s" % (self.dateFormat, payType, self.ref_date, self.netpay, self.payDepositAcct))
-            Date.updatePayDates(self)
-            if self.assetFrame != None:
-                self.assetFrame.setDateFormat(self.dateFormat)
-                self.assetFrame.setPayType(payType)
-                self.assetFrame.setRefDate(self.ref_date)
-                self.assetFrame.setNetPay(self.netpay)
-                self.assetFrame.setPayDepositAcct(self.payDepositAcct)
-                self.assetFrame.writeConfigFile()
-                self.assetFrame.update_all_Date_Formats(self.inDateFormat, self.dateFormat)
-                self.assetFrame.update_date_grid_dates(self.dateFormat, self.dateFormat)
+            self.assetFrame.setPayType(payType)
+            ref_date = self.NewRefDate
+            self.assetFrame.setRefDate(ref_date)
+            netpay = self.NewNetpay
+            self.assetFrame.setNetPay(netpay)
+            payDepositAcct = self.NewpayDepositAcct
+            self.assetFrame.setPayDepositAcct(payDepositAcct)
+            print("%s, %s, %s, %s, %s" % (self.dateFormat, payType, ref_date, netpay, payDepositAcct))
             self.Parent.Destroy()
+            return True
 
     def onAbort(self, event):
         self.Parent.Destroy()
-
-    # Helper method(s):
-
-    def MsgBox(self, message):
-        d = wx.MessageDialog(self, message, "error", wx.OK | wx.ICON_INFORMATION)
-        d.ShowModal()
-        d.Destroy()
-
-    def __log(self, message):
-        ''' Private method to print a string to the console
-            control. (Only used for debugging and turned off for now! JJG 7/25/2021)'''
-        if True:                         # Change this to True to print out debug messages
-            print('%s' % message)
+        return False
 
     def doLayout(self):
         ''' Layout the controls by means of sizers. '''
@@ -307,7 +336,7 @@ class PropertyForm(wx.Panel):
                  # For testing, Have separete Text control and Date Picker.... if it works want to change so TextCtrl overlays text portion of Date Picker JJG 08/08/2021
                  (self.refPayDate, expandOption),
                  (self.refPayDateTextCtrl, noOptions),
-                 (self.refPayDatePicker, noOptions),
+#                 (self.refPayDatePicker, noOptions),
                  emptySpace,
                  (self.payAcct, expandOption),
                  (self.payAcctCtrl, expandOption),
@@ -339,7 +368,20 @@ class PropertyForm(wx.Panel):
 
         self.SetSizerAndFit(mainSizer)
 
-class PropertyFrameWithForm(wx.Frame):
+    # Helper method(s):
+
+    def MsgBox(self, message):
+        d = wx.MessageDialog(self, message, "error", wx.OK | wx.ICON_INFORMATION)
+        d.ShowModal()
+        d.Destroy()
+
+    def __log(self, message):
+        ''' Private method to print a string to the console
+            control. (Only used for debugging and turned off for now! JJG 7/25/2021)'''
+        if True:                         # Change this to True to print out debug messages
+            print('%s' % message)
+
+class PropertyFrameWithForm(wx.Dialog):
     def __init__(self, parent, in_dateFormat="", in_payType="", in_refDate="", in_netpay="", in_payDepositAcct=""):
         super(PropertyFrameWithForm, self).__init__(parent)
         self.SetTitle('Properties Form')

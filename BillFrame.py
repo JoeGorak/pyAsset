@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2023 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -22,8 +22,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
 #  Version information
-#  06/25/2016     Initial version v0.1
-#  08/07/2021     Version v0.2
+#  04/25/2023     Initial version v0.1
 
 # To Do list:
 # Speed redraw_all: break into redraw_all, redraw_range, redraw_totals
@@ -38,28 +37,26 @@ import wx
 import wx.grid
 import csv
 import os
-from qif import qif
 from Asset import Asset
 from Date import Date
 from HelpDialog import HelpDialog
-from Transaction import Transaction
-from TransactionGrid import TransactionGrid
+from Bill import Bill
+from BillGrid import BillGrid
 
-class TransactionFrame(wx.Frame):
-    def __init__(self, style, parent, my_id, asset_index, transactions, title="PyAsset:Transaction", myfile=None, **kwds):
-        self.asset_index = asset_index
-        self.transactions = transactions
+class BillFrame(wx.Frame):
+    def __init__(self, style, parent, my_id, bills, title="PyAsset:Bill", myfile=None, **kwds):
+        self.bills = bills
         self.parent = parent
         self.dateFormat = Date.get_global_date_format(self)
         self.dateSep = Date.get_global_date_sep(self)
 
-        if len(self.transactions) > 0:
-            self.cur_transaction = self.transactions[0]
+        if len(self.bills) > 0:
+            self.cur_bill = self.bills[0]
         else:
-            self.cur_transaction = None
+            self.cur_bill = None
 
         self.edited = False
-        self.rowSize = 25
+        self.rowSize = 10
         self.colSize = 20
 
         if style == None:
@@ -70,9 +67,9 @@ class TransactionFrame(wx.Frame):
         self.make_widgets()
 
         if myfile:
-            self.cur_transaction.read_qif(myfile)
+            self.cur_bill.read_qif(myfile)
 
-        self.SetTitle("PyAsset:Transactions for %s" % title)
+        self.SetTitle("PyAsset:Bills for %s" % title)
         self.redraw_all()
 
     def make_widgets(self):
@@ -82,33 +79,33 @@ class TransactionFrame(wx.Frame):
         self.make_filemenu()
         self.make_editmenu()
         self.make_helpmenu()
-        self.make_trans_grid()
+        self.make_bill_grid()
         self.set_properties()
         self.do_layout()
 
     def make_filemenu(self):
         self.filemenu = wx.Menu()
         ID_IMPORT_CSV = wx.NewId()
-        ID_IMPORT_XLSX = wx.NewId()
+        ID_IMPORT_XLSM = wx.NewId()
         ID_EXPORT_TEXT = wx.NewId()
         ID_ARCHIVE = wx.NewId()
         self.filemenu.Append(wx.ID_OPEN, "Open\tCtrl-o",
-                             "Open a new transction file", wx.ITEM_NORMAL)
+                             "Open a new bill file", wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_SAVE, "Save\tCtrl-s",
-                             "Save the current transactions in the same file", wx.ITEM_NORMAL)
+                             "Save the current bills in the same file", wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_SAVEAS, "Save As",
-                             "Save the current transactions under a different name", wx.ITEM_NORMAL)
+                             "Save the current bills under a different name", wx.ITEM_NORMAL)
         self.filemenu.Append(ID_IMPORT_CSV, "Import CSV\tCtrl-c",
-                             "Import transactions from a CSV file",
+                             "Import bills from a CSV file",
                              wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_IMPORT_XLSX, "Import XLSX\tCtrl-X",
-                             "Import transactions from an EXCEL file",
-                             wx.ITEM_NORMAL)
+#        self.filemenu.Append(ID_IMPORT_XLSM, "Import XLSM\tCtrl-X",
+#                             "Import bills from an EXCEL file with Macros",
+#                             wx.ITEM_NORMAL)
         self.filemenu.Append(ID_EXPORT_TEXT, "Export Text",
-                             "Export the current transaction register as a text file",
+                             "Export the current bill register as a text file",
                              wx.ITEM_NORMAL)
         self.filemenu.Append(ID_ARCHIVE, "Archive",
-                             "Archive transactions older than a specified date",
+                             "Archive bills older than a specified date",
                              wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_CLOSE, "Close\tCtrl-w",
                              "Close the current file", wx.ITEM_NORMAL)
@@ -132,17 +129,17 @@ class TransactionFrame(wx.Frame):
         ID_RECONCILE = wx.NewId()
         self.editmenu = wx.Menu()
         self.editmenu.Append(wx.ID_NEW, "New Entry\tCtrl-n",
-                             "Create a new transaction in the register",
+                             "Create a new bill in the register",
                              wx.ITEM_NORMAL)
         self.editmenu.Append(ID_SORT, "Sort Entries",
                              "Sort entries", wx.ITEM_NORMAL)
         self.editmenu.Append(ID_MARK_ENTRY, "Mark Cleared\tCtrl-m",
-                             "Mark the current transaction cleared",
+                             "Mark the current bill cleared",
                              wx.ITEM_NORMAL)
         self.editmenu.Append(ID_VOID_ENTRY, "Void Entry\tCtrl-v",
                              "", wx.ITEM_NORMAL)
         self.editmenu.Append(ID_DELETE_ENTRY, "Delete Entry",
-                             "Delete the current transaction", wx.ITEM_NORMAL)
+                             "Delete the current bill", wx.ITEM_NORMAL)
         self.editmenu.Append(ID_RECONCILE, "Reconcile\tCtrl-r",
                              "Reconcile your Asset", wx.ITEM_NORMAL)
         self.menubar.Append(self.editmenu, "&Edit")
@@ -166,15 +163,15 @@ class TransactionFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.about, None, wx.ID_ABOUT)
         self.Bind(wx.EVT_MENU, self.gethelp, None, ID_HELP)
 
-    def make_trans_grid(self):
-        self.trans_grid = TransactionGrid(self)
+    def make_bill_grid(self):
+        self.bill_grid = BillGrid(self)
 
     def set_properties(self):
-        self.total_width = self.trans_grid.set_properties(self)
+        self.total_width = self.bill_grid.set_properties(self)
 
     def do_layout(self):
         sizer_1 = wx.BoxSizer(wx.VERTICAL)
-        sizer_1.Add(self.trans_grid, 1, wx.EXPAND, 0)
+        sizer_1.Add(self.bill_grid, 1, wx.EXPAND, 0)
         self.SetAutoLayout(1)
         self.SetSizer(sizer_1)
         sizer_1.Fit(self)
@@ -191,64 +188,59 @@ class TransactionFrame(wx.Frame):
     def redraw_all(self, index=None):
         if index == None:
             index = -1
-        ntransactions = len(self.transactions)
+        nbills = len(self.bills)
         start_range = 0
-        end_range = ntransactions
+        end_range = nbills
         if index == -1:
-            nrows = self.trans_grid.GetNumberRows()
+            nrows = self.bill_grid.GetNumberRows()
             if nrows > 0 and (index == None or index == -1):
-                self.trans_grid.DeleteRows(0, nrows)
+                self.bill_grid.DeleteRows(0, nrows)
                 nrows = 0
-            if nrows < ntransactions:
-                rows_needed = ntransactions - nrows
-                self.trans_grid.AppendRows(rows_needed)
+            if nrows < nbills:
+                rows_needed = nbills - nrows
+                self.bill_grid.AppendRows(rows_needed)
         else:
             start_range = index
             end_range = start_range + 1
 
-        # Make sure current balances are corrent from the starting range for the rest of the transactions!
-        proj_value = self.transactions.update_current_and_projected_values(start_range)
-        self.transactions.parent.set_value_proj(proj_value)
-
-        # Display the transactions
+        # Display the bills
         for row in range(start_range, end_range):
-            for col in range(self.trans_grid.getNumLayoutCols()):
+            for col in range(self.bill_grid.getNumLayoutCols()):
                 ret_val = wx.OK
-                if row < 0 or row >= ntransactions:
+                if row < 0 or row >= nbills:
                     str = "Warning: skipping redraw on bad cell %d %d!" % (row, col)
                     ret_val = self.DisplayMsg(str)
                 if ret_val != wx.OK:
                     continue
 
-                cellType = self.trans_grid.getColType(col)
-                if cellType == self.trans_grid.DOLLAR_TYPE:
-                    self.trans_grid.GridCellDollarRenderer(row, col)
-                elif cellType == self.trans_grid.RATE_TYPE:
-                    self.trans_grid.GridCellPercentRenderer(row, col)
-                elif cellType == self.trans_grid.DATE_TYPE:
-                    self.trans_grid.GridCellDateRenderer(row, col)
-                elif cellType == self.trans_grid.DATE_TIME_TYPE:
-                    self.trans_grid.GridCellDateTimeRenderer(row, col)
-                elif cellType == self.trans_grid.STRING_TYPE:
-                    self.trans_grid.GridCellStringRenderer(row, col)
+                cellType = self.bill_grid.getColType(col)
+                if cellType == self.bill_grid.DOLLAR_TYPE:
+                    self.bill_grid.GridCellDollarRenderer(row, col)
+                elif cellType == self.bill_grid.RATE_TYPE:
+                    self.bill_grid.GridCellPercentRenderer(row, col)
+                elif cellType == self.bill_grid.DATE_TYPE:
+                    self.bill_grid.GridCellDateRenderer(row, col)
+                elif cellType == self.bill_grid.DATE_TIME_TYPE:
+                    self.bill_grid.GridCellDateTimeRenderer(row, col)
+                elif cellType == self.bill_grid.STRING_TYPE:
+                    self.bill_grid.GridCellStringRenderer(row, col)
                 else:
-                    self.trans_grid.GridCellErrorRenderer(row, col)
+                    self.bill_grid.GridCellErrorRenderer(row, col)
         cursorCell = index
         if index == -1:
-            if ntransactions > 0:
-                cursorCell = ntransactions - 1
+            if nbills > 0:
+                cursorCell = nbills - 1
             else:
                 cursorCell = 0
         else:
-            if index > ntransactions:
-                cursorCell = ntransactions - 1
+            if index > nbills:
+                cursorCell = nbills - 1
             else:
                 cursorCell = index
-        self.trans_grid.SetGridCursor(cursorCell, 0)
-        self.trans_grid.MakeCellVisible(cursorCell, True)
+        self.bill_grid.SetGridCursor(cursorCell, 0)
+        self.bill_grid.MakeCellVisible(cursorCell, True)
 
-#        win_height = len(self.transactions)*self.rowSize + 120
-        win_height = len(self.transactions)*self.rowSize
+        win_height = len(self.bills)*self.rowSize
         self.SetSize(size=(self.total_width, win_height))
         self.Show()
         self.parent.redraw_all(-1)      # Make sure balances get updated!
@@ -258,26 +250,26 @@ class TransactionFrame(wx.Frame):
         row = evt.GetRow()
         col = evt.GetCol()
         if row < 0: return
-        if row >= len(self.cur_transaction):
+        if row >= len(self.cur_bill):
             print("Warning: modifying incorrect cell!")
             return
         self.edited = True
-        transaction = self.cur_transaction[row]
+        bill = self.cur_bill[row]
         val = self.cbgrid.GetCellValue(row, col)
         if col == 0:
-            transaction.setdate(val)
+            bill.setdate(val)
         elif col == 1:
-            transaction.setnumber(val)
+            bill.setnumber(val)
         elif col == 2:
-            transaction.setpayee(val)
+            bill.setpayee(val)
         elif col == 3:
             if val:
-                transaction.set_state("cleared")
+                bill.set_state("cleared")
         elif col == 4:
-            transaction.setmemo(val)
+            bill.setmemo(val)
         elif col == 5:
             doredraw = 1
-            transaction.setamount(val)
+            bill.setamount(val)
         else:
             print("Warning: modifying incorrect cell!")
             return
@@ -286,24 +278,24 @@ class TransactionFrame(wx.Frame):
 
     def load_file(self, *args):
         self.close()
-        self.cur_transaction = Transaction()
+        self.cur_bill = bill()
         self.edited = False
         d = wx.FileDialog(self, "Open", "", "", "*.qif", wx.OPEN)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
-            self.cur_transaction.read_qif(os.path.join(dir, fname))
+            self.cur_bill.read_qif(os.path.join(dir, fname))
             self.redraw_all(-1)
-        if self.cur_transaction.name: self.SetTitle("PyAsset: %s" % self.cur_transaction.name)
+        if self.cur_bill.name: self.SetTitle("PyAsset: %s" % self.cur_bill.name)
         return
 
-    def save_file(self, *args): 
-        for cur_transaction in self.transactions:
-            if self.parent.filename != None and self.parent.filename != "":
+    def save_file(self, *args):
+        for cur_bill in self.bills:
+            if not cur_bill.filename:
                 self.save_as_file()
             else:
-                qif.write_qif(self, self.transactions.parent.filename)
-        self.edited = False
+                self.edited = False
+            self.cur_bill.write_qif()
         return
 
     def save_as_file(self, *args):
@@ -311,8 +303,8 @@ class TransactionFrame(wx.Frame):
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
-            qif.write_qif(self,os.path.join(dir, fname))
-        if self.cur_transaction.name: self.SetTitle("PyAsset: %s" % self.cur_transaction.name)
+            self.cur_bill.write_qif(os.path.join(dir, fname))
+        if self.cur_bill.name: self.SetTitle("PyAsset: %s" % self.cur_bill.name)
         return
 
     def close(self, *args):
@@ -330,13 +322,13 @@ class TransactionFrame(wx.Frame):
     #     @brief Receives data to be written to and its location
     #
     #     @params[in] date_
-    #     Data of transaction
+    #     Data of bill
     #     @params[in] amount_
-    #     Amount of money for transaction
+    #     Amount of money for bill
     #     @params[in] memo_
-    #     Description of transaction
+    #     Description of bill
     #     @params[in] payee_
-    #     Who transaction was paid to
+    #     Who bill was paid to
     #     @params[in] filelocation_
     #     Location of the Output file
     #
@@ -346,12 +338,12 @@ class TransactionFrame(wx.Frame):
 
     def write_file(self, date_, amount_, memo_, payee_, filelocation_):
         outFile = open(filelocation_, "a")  # Open file to be appended
-        outFile.write("!Type:Cash\n")  # Header of transaction, Currently all set to cash
+        outFile.write("!Type:Cash\n")  # Header of bill, Currently all set to cash
         outFile.write("D")  # Date line starts with the capital D
         outFile.write(date_)
         outFile.write("\n")
 
-        outFile.write("T")  # Transaction amount starts here
+        outFile.write("T")  # bill amount starts here
         outFile.write(amount_)
         outFile.write("\n")
 
@@ -364,7 +356,7 @@ class TransactionFrame(wx.Frame):
             outFile.write(payee_)
             outFile.write("\n")
 
-        outFile.write("^\n")  # The last line of each transaction starts with a Caret to mark the end
+        outFile.write("^\n")  # The last line of each bill starts with a Caret to mark the end
         outFile.close()
 
     #
@@ -386,8 +378,8 @@ class TransactionFrame(wx.Frame):
 
         for settings in csvdeff:
             date_ = int(settings[0])  # convert to int
-            amount_ = int(settings[2])  # How much was the transaction
-            memo_ = int(settings[3])  # discription of the transaction
+            amount_ = int(settings[2])  # How much was the bill
+            memo_ = int(settings[3])  # discription of the bill
             payee_ = int(settings[4])  # Where the money is going
             deli_ = settings[5]  # How the csv is separated
             header_ = int(settings[6])  # Set if there is a header to skip
@@ -439,13 +431,13 @@ class TransactionFrame(wx.Frame):
             if error == "":
                 tofile = total_name_qif
                 self.read_csv(fromfile, tofile, deffile)
-                self.cur_transaction.read_qif(total_name_qif)
+                self.cur_bill.read_qif(total_name_qif)
                 fromfile.close()
                 deffile.close()
                 self.redraw_all(-1)
 
-                if self.cur_transaction.name:
-                    title = "PyAsset: %s" % self.cur_transaction.name
+                if self.cur_bill.name:
+                    title = "PyAsset: %s" % self.cur_bill.name
                 else:
                     title = "Pyasset"
                 self.SetTitle(title)
@@ -460,12 +452,12 @@ class TransactionFrame(wx.Frame):
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
-            self.cur_transaction.write_txt(os.path.join(dir, fname))
+            self.cur_bill.write_txt(os.path.join(dir, fname))
         return
 
     def archive(self, *args):
         d = wx.TextEntryDialog(self,
-                               "Archive transactions before what date (mm/dd/yy)?",
+                               "Archive bills before what date (mm/dd/yy)?",
                                "Archive Date")
         if d.ShowModal() == wx.ID_OK:
             date = Date(d.GetValue())
@@ -474,27 +466,27 @@ class TransactionFrame(wx.Frame):
         d.Destroy()
         if not date: return
         archive = Asset()
-        newcb_starttransaction = Transaction()
-        newcb_starttransaction.amount = 0
-        newcb_starttransaction.payee = "Starting Balance"
-        newcb_starttransaction.memo = "Archived by PyAsset"
-        newcb_starttransaction.state = "cleared"
-        newcb_starttransaction.date = date
+        newcb_startbill = bill()
+        newcb_startbill.amount = 0
+        newcb_startbill.payee = "Starting Balance"
+        newcb_startbill.memo = "Archived by PyAsset"
+        newcb_startbill.state = "cleared"
+        newcb_startbill.date = date
 
         newcb = Asset()
-        newcb.filename = self.cur_transaction.filename
-        newcb.name = self.cur_transaction.name
-        newcb.append(newcb_starttransaction)
+        newcb.filename = self.cur_bill.filename
+        newcb.name = self.cur_bill.name
+        newcb.append(newcb_startbill)
         archtot = 0
 
-        for transaction in self.cur_transaction:
-            if transaction.date < date and transaction.state == "cleared":
-                archive.append(transaction)
-                archtot += transaction.amount
+        for bill in self.cur_bill:
+            if bill.date < date and bill.state == "cleared":
+                archive.append(bill)
+                archtot += bill.amount
             else:
-                newcb.append(transaction)
-        newcb_starttransaction.amount = archtot
-        self.cur_transaction = newcb
+                newcb.append(bill)
+        newcb_startbill.amount = archtot
+        self.cur_bill = newcb
         while 1:
             d = wx.FileDialog(self, "Save Archive As", "", "", "*.qif", wx.SAVE)
             if d.ShowModal() == wx.ID_OK:
@@ -509,30 +501,30 @@ class TransactionFrame(wx.Frame):
 
     def newentry(self, *args):
         self.edited = True
-        self.transactions.append()
-        self.trans_grid.AppendRows()
-        ntransactions = self.trans_grid.GetNumberRows()
-        self.trans_grid.SetGridCursor(ntransactions - 1, 0)
-        self.trans_grid.MakeCellVisible(ntransactions - 1, 1)
+        self.bills.append()
+        self.bill_grid.AppendRows()
+        nbills = self.bill_grid.GetNumberRows()
+        self.bill_grid.SetGridCursor(nbills - 1, 0)
+        self.bill_grid.MakeCellVisible(nbills - 1, 1)
 
     def sort(self, *args):
         self.edited = True
-        self.cur_transaction.sort()
+        self.cur_bill.sort()
         self.redraw_all(-1)
 
     def voidentry(self, *args):
-        index = self.trans_grid.GetGridCursorRow()
+        index = self.bill_grid.GetGridCursorRow()
         if index < 0:
             errorMsg = "index out of bounds in void - %d: ignored" % (index)
             self.DisplayMsg(errorMsg)
         else:
-            transaction = self.transactions[index]
-            if transaction.get_state() != "void":
-                msg = "Really void this transaction?"
+            bill = self.bills[index]
+            if bill.get_state() != "void":
+                msg = "Really void this bill?"
                 title = "Really void?"
                 void = True
             else:
-                msg = "Really unvoid this transaction?"
+                msg = "Really unvoid this bill?"
                 title = "Really unvoid?"
                 void = False
             d = wx.MessageDialog(self,
@@ -543,34 +535,34 @@ class TransactionFrame(wx.Frame):
                 today_date = Date.get_curr_date(self.parent)
                 # Toggle values so if it was void make it active and if active make it void
                 if void:
-                    transaction.set_payee("VOID: " + transaction.get_payee())
-                    transaction.set_memo("voided %s" % today_date)
-                    transaction.set_prev_state(transaction.get_state())
-                    transaction.set_state("void")
+                    bill.set_payee("VOID: " + bill.get_payee())
+                    bill.set_memo("voided %s" % today_date)
+                    bill.set_prev_state(bill.get_state())
+                    bill.set_state("void")
                 else:
-                    new_payee = transaction.get_payee()[5:]
-                    transaction.set_payee(new_payee)
+                    new_payee = bill.get_payee()[5:]
+                    bill.set_payee(new_payee)
                     unvoid_msg = "; unvoided %s" % today_date
-                    transaction.set_memo(transaction.get_memo() + unvoid_msg)
-                    new_state = transaction.get_prev_state()
-                    transaction.set_state(new_state)
-                proj_value = self.transactions.update_current_and_projected_values(0)
-                self.transactions.parent.set_value_proj(proj_value)
-                for i in range(index,len(self.transactions)):
-                    self.trans_grid.setValue(i, "Value", str(round(self.transactions[i].get_current_value(),2)))
+                    bill.set_memo(bill.get_memo() + unvoid_msg)
+                    new_state = bill.get_prev_state()
+                    bill.set_state(new_state)
+                proj_value = self.bills.update_current_and_projected_values(0)
+                self.bills.parent.set_value_proj(proj_value)
+                for i in range(index,len(self.bills)):
+                    self.bill_grid.setValue(i, "Value", str(round(self.bills[i].get_current_value(),2)))
                 self.redraw_all()  # redraw only [index:]
 
     def deleteentry(self, *args):
-        index = self.trans_grid.GetGridCursorRow()
+        index = self.bill_grid.GetGridCursorRow()
         if index < 0:
             errorMsg = "index out of bounds in deleteentry - %d: ignored" % (index)
             self.DisplayMsg(errorMsg)
         else:
             d = wx.MessageDialog(self,
-                                 "Really delete this transaction?",
+                                 "Really delete this bill?",
                                  "Really delete?", wx.YES_NO)
             if d.ShowModal() == wx.ID_YES:
-                del self.transactions[index]
+                del self.bills[index]
             self.redraw_all()  # only redraw cells [index-1:]
  
     def reconcile(self, *args):
@@ -603,26 +595,26 @@ class TransactionFrame(wx.Frame):
 
     def adjust_balance(self, diff):
         self.edited = True
-        #transaction = Transaction()
-        transactions = self.transactions.append()
-        transaction.payee = "Balance Adjustment"
-        transaction.amount = diff
-        transaction.state = "cleared"
-        transaction.memo = "Adjustment"
+        #bill = bill()
+        bills = self.bills.append()
+        bill.payee = "Balance Adjustment"
+        bill.amount = diff
+        bill.state = "cleared"
+        bill.memo = "Adjustment"
         self.redraw_all(-1)  # only redraw [-1]?
         return
 
     def get_cleared_balance(self):
         value = 0.0
-        for transaction in self.cur_transaction:
-            if transaction.get_state() == "cleared":
-                value = value + transaction.amount
+        for bill in self.cur_bill:
+            if bill.get_state() == "cleared":
+                value = value + bill.amount
         return value
 
     def about(self, *args):
         d = wx.MessageDialog(self,
                              "Python Asset Manager\n"
-                             "Copyright (c) 2016-2024 Joseph J. Gorak\n"
+                             "Copyright (c) 2016-2023 Joseph J. Gorak\n"
                              "Extended from ideas in Python Checkbook (pyCheckbook)\n"
                              "written by Richard P. Muller\n"
                              "Released under the Gnu GPL\n",
@@ -639,56 +631,49 @@ class TransactionFrame(wx.Frame):
         return
 
     def markcleared(self, *args):
-        index = self.trans_grid.GetGridCursorRow()
+        index = self.bill_grid.GetGridCursorRow()
         if index < 0:
             errorMsg = "index out of bounds in markcleared - %d: ignored" % (index)
             self.DisplayMsg(errorMsg)
         else:
             self.edited = True
-            prev_state = self.transactions[index].get_prev_state()
-            cur_state = self.transactions[index].get_state()
-            self.transactions[index].set_prev_state(cur_state)
+            prev_state = self.bills[index].get_prev_state()
+            cur_state = self.bills[index].get_state()
+            self.bills[index].set_prev_state(cur_state)
             if cur_state == "cleared":
-                self.transactions[index].set_state(cur_state)
-                self.trans_grid.setValue(index, "State", cur_state)
+                self.bills[index].set_state(cur_state)
+                self.bill_grid.setValue(index, "State", cur_state)
             else:
-                self.transactions[index].set_state(prev_state)
-                self.trans_grid.setValue(index, "State", prev_state)
+                self.bills[index].set_state(prev_state)
+                self.bill_grid.setValue(index, "State", prev_state)
         return
 
-    def assetchange(self, which_transaction, which_column, new_value):
-        colName = self.trans_grid.getColName(which_column)
-        transaction_changed = self.transactions[which_transaction]
+    def billchange(self, which_bill, which_column, new_value):
+        colName = self.bill_grid.getColName(which_column)
+        bill_changed = self.bills[which_bill]
         modified = True
-        print("TransactionFrame: Recieved notification that transaction ", transaction_changed.get_payee(), " column", colName, "changed, new_value", new_value)
-        if colName == "Pmt Method":
-            transaction_changed.set_pmt_method(new_value)
-        elif colName == "Chk #":
-            transaction_changed.set_check_num(new_value)
-        elif colName == "Payee":
-            transaction_changed.set_payee(new_value)
+        print("billFrame: Recieved notification that bill ", bill_changed.get_payee(), " column", colName, "changed, new_value", new_value)
+        if colName == "Payee":
+            bill_changed.set_payee(new_value)
         elif colName == "Amount":
-            transaction_changed.set_amount(new_value)
-        elif colName == "Action":
-            transaction_changed.set_action(new_value)
-        elif colName == "Value":
-            transaction_changed.set_current_value(new_value)
+            bill_changed.set_amount(new_value)
+        elif colName == "Min Due":
+            bill_changed.set_min_due(new_value)
         elif colName == "Due Date":
-            transaction_changed.set_due_date(new_value)
+            bill_changed.set_due_date(new_value)
         elif colName == "Sched Date":
-            transaction_changed.set_sched_date(new_value)
-        elif colName == "State":
-            transaction_changed.set_state(new_value)
-        elif colName == "Comment":
-            transaction_changed.set_comment(new_value)
-        elif colName == "Memo":
-            transaction_changed.set_memo(new_value)
+            bill_changed.set_sched_date(new_value)
+        elif colName == "Pmt Acct":
+            bill_changed.set_pmt_acct(new_value)
+        elif colName == "Due Date":
+            bill_changed.set_due_date(new_value)
+        elif colName == "Pmt Method":
+            bill_changed.set_pmt_method(new_value)
+        elif colName == "Frequency":
+            bill_changed.set_frequency(new_value)
         else:
             self.DisplayMsg("Unknown column " + colName + " ignored!")
             modified = False
 
         if modified == True:
-            transaction_changed.assetchange(which_column, new_value)
-            del self.transactions[which_transaction]
-            self.transactions.insert(transaction_changed)
             self.edited = True

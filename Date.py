@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -37,27 +37,54 @@ import re
 from wx.core import DateTime
 
 class Date:
-    global_date_format = None
-    global_date_sep = None
+    global_date_format = ""
+    global_date_sep = ""
     global_curr_date = { "dt": None, "str": "" }
-    global_proj_date = None
-    global_curr_paydate = None
-    global_next_paydate = None
+    global_proj_date = ""
 
-    def __init__(self, parent, in_dateFormat, in_payType, in_ref_date):
-        self.set_global_date_format(in_dateFormat)
+    #JJG 12/23/2023 Added defaults if none provided
+    def __init__(self, parent, in_refDate=None, in_dateFormat="", in_payType=""):
         self.parent = parent
-        self.dateFormat = in_dateFormat
-        self.payType = in_payType
-        self.ref_date = in_ref_date
+        self.dateFormats = self.getDateFormats()
+        if in_dateFormat != "":
+            try:
+                self.dateFormatChoice = self.dateFormats.index(in_dateFormat)
+                self.dateSep = "/"
+            except:
+                self.dateFormatChoice = -1
+            if self.dateFormatChoice == -1:
+                today = Date.set_curr_date(self)["str"]
+                if today.index("/") == 4:
+                    self.dateFormatChoice = 1
+                    self.dateSep = "/"
+                else:
+                    self.dateFormatChoice = 0
+                    self.dateSep = "/"
+                defaultDateFormat = self.dateFormats[self.dateFormatChoice].replace("%m", "mm").replace("%d", "dd").replace("%y", "yy").replace("%Y", "yyyy")
+                self.MsgBox("Unknown date format %s ignored - default to %s" % (in_dateFormat, defaultDateFormat))
+        else:
+            self.dateFormatChoice = 0
+            self.dateSep = "/"
+        self.dateFormat = self.dateFormats[self.dateFormatChoice]
+        self.inDateFormat = self.dateFormats[self.dateFormatChoice]
+        Date.set_global_date_format(self,self.inDateFormat)
+        Date.set_global_date_sep(self,self.dateSep)
+        if in_dateFormat == "" or in_dateFormat == None:
+            self.dateFormat = "%m/%d/%Y"                                # JJG 12/23/2023   added default if no dateFormat given
+        else:
+            self.dateFormat = in_dateFormat
+        self.set_global_date_format(self.dateFormat)
+        self.parent = parent
         self.curr_date = self.set_curr_date()
         self.proj_date = self.set_proj_date(self.curr_date["str"])
         self.set_global_proj_date(self.proj_date)
-        Date.set_curr_paydate(self)
-        Date.set_next_paydate(self)
         Date.set_global_curr_date(self, self.get_curr_date())
         Date.set_global_proj_date(self, self.get_proj_date())
         Date.set_global_date_format(self, self.dateFormat)
+        Date.set_global_date_sep(self,"/")
+ 
+    def getDateFormats(self):
+        return ["%m/%d/%Y", "%Y/%m/%d", "%m-%d-%Y", "%Y-%m-%d"]
 
     def __lt__(self, other):
         val = __lt__(self.year, other.year)
@@ -163,6 +190,8 @@ class Date:
                 inp_date = in_date.replace("'","/").replace(" ","0")           # JJG 1/22/2022 replace ' with / and " " with 0 to handle Quicken .QIF files!
                 dt = wx.DateTime()  # Uninitialized datetime
                 in_date = inp_date + " 12:00:00 PM"                            # append a valid time so parse will succeed if we have a valid date! JJG 08/04/2021
+                if type(in_date_format) is not str:
+                    in_date_format = Date.global_date_format
                 if dt.ParseFormat(in_date, in_date_format) == -1:
                     error = True
         elif type(in_date) is DateTime:
@@ -173,28 +202,26 @@ class Date:
             error = True
         if error:
             pass                                # Leave error message display to the caller!  We just return None!
-            #self.MsgBox("Bad input date (%s) in Date.parse_date - ignored!" % (str(in_date)))
         else:
             self.retVal = { "year" : dt.year, "month" : dt.month + 1, "day" : dt.day, "dt" : dt }
         return self.retVal
 
     def set_curr_date(self):
         curr_date = wx.DateTime.Today()
-        retVal = { "dt": curr_date, "str": curr_date.Format(self.dateFormat) }
-        self.curr_date = retVal
+        retVal = { "dt": curr_date, "str": curr_date.Format(self.get_date_format()) }
+        self.curr_date = retVal["str"]
         return retVal
 
     def set_proj_date(self, proj_date):
+        retVal = None
         error = False
         self.proj_date = ""
         if type(proj_date) is str:
+            parsed_proj_date = None
             if (proj_date != ""):
-                self.proj_date = proj_date
-            self.parsed_proj_date = Date.parse_date(self, proj_date, self.dateFormat)
-            if self.parsed_proj_date == None:
-                error = True
-            else:
-                proj_date_in = wx.DateTime.FromDMY(self.parsed_proj_date['day'], self.parsed_proj_date['month']-1, self.parsed_proj_date['year'])
+                parsed_proj_date = Date.parse_date(self, proj_date, self.get_date_format())
+            if parsed_proj_date != None:
+                proj_date_in = wx.DateTime.FromDMY(parsed_proj_date['day'], parsed_proj_date['month']-1, parsed_proj_date['year'])
                 self.proj_date = proj_date_in.Format(self.dateFormat)
         elif type(proj_date) is dict:
             self.proj_date = proj_date["str"].Format(self.dateFormat)
@@ -203,142 +230,22 @@ class Date:
         if error:
             self.MsgBox("Bad projected date (%s) - ignored!" % (str(proj_date)))
         else:
-            self.pay_dates = Date.get_paydates_in_range(self, self.curr_date, self.proj_date)
-            print("Pay dates in range %s-%s: %s" % (self.curr_date["str"], self.proj_date, self.pay_dates))
             retVal = self.proj_date
-            #TO DO: Add logic to update Salary transactions for pay_dates
         Date.set_global_proj_date(self, retVal)
         return retVal
 
-    def get_pay_incr(self):
-        if self.payType == "every week":
-            incr = wx.DateSpan(weeks=1)
-        elif self.payType == "every 2 weeks":
-            incr = wx.DateSpan(weeks=2)
-        elif self.payType == "every month":
-            incr = wx.DateSpan(months=1)
-        else:
-            incr = None
-        return incr
-
-    def set_curr_paydate(self):
-        retVal = ""
-        if self.ref_date == None:
-            self.MsgBox("Reference pay date not found - curr paydate calculations ignored!")
-        else:
-            test_curr_paydate = Date.get_curr_date(self)["dt"]
-            while test_curr_paydate != None and type(test_curr_paydate) != DateTime:
-                test_curr_paydate =  test_curr_paydate["dt"]
-            if type(self.ref_date) is DateTime:
-                ref_date = self.ref_date
-            else:
-                ref_date = Date.convertDateFormat(self, self.ref_date, self.dateFormat, self.dateFormat)["dt"]
-            incr = Date.get_pay_incr(self)
-            if incr == None:
-                self.MsgBox("Bad pay Type - curr paydate calculations ignored!")
-            else:
-                while ref_date < test_curr_paydate:
-                    ref_date.Add(incr)
-                if ref_date > test_curr_paydate:
-                    ref_date.Subtract(incr)
-                self.curr_paydate = ref_date.Format(self.dateFormat)
-                retVal = self.curr_paydate
-        Date.global_curr_paydate = retVal
-        return retVal
-
-    def set_next_paydate(self):
-        retVal = ""
-        if self.ref_date == None:
-            self.MsgBox("Reference pay date not found - curr paydate calculations ignored!")
-        else:
-            next_paydate = self.curr_paydate
-            next_paydate = Date.convertDateFormat(self, next_paydate, self.dateFormat, self.dateFormat)["dt"]
-            incr = Date.get_pay_incr(self)
-            if incr == None:
-                self.MsgBox("Bad pay Type - next paydate calculations ignored!")
-            else:
-                next_paydate.Add(incr)
-                self.next_paydate = next_paydate.Format(self.dateFormat)
-                retVal = self.next_paydate
-        Date.global_next_paydate = retVal
-        return retVal
+    def set_date_format(self, desired_date_format):
+        Date.global_date_format = desired_date_format
+        self.dateFormat = desired_date_format
 
     def get_date_format(self):
-        return self.dateFormat
+        return Date.global_date_format
 
     def get_curr_date(self):
         return Date.global_curr_date
 
     def get_proj_date(self):
         return Date.global_proj_date
-
-    def get_curr_paydate(self):
-        retVal = None
-        if self.ref_date == "":
-            self.MsgBox("No pay information entered! Get curr_paydate skipped")
-        else:
-            retVal = Date.global_curr_paydate
-        return retVal
-
-    def get_next_paydate(self):
-        retVal = None
-        if self.ref_date == "":
-            self.MsgBox("No pay information entered! Get next_paydate skipped")
-            return
-        else:
-            retVal = Date.global_next_paydate
-        return retVal
-
-    def get_paydates_in_range(self, start_date, end_date):
-        paydates = None
-        dateFormat = Date.get_global_date_format(self)
-        if self.ref_date == None:
-            self.MsgBox("No pay information entered! get paydates_in_range skipped")
-        else:
-            start_date_parsed = Date.parse_date(self, start_date["dt"], dateFormat)
-            if start_date_parsed == None:
-                self.MsgBox("Can't parse start date (%s) - ignored!" % (start_date))
-            else:
-                start_date = wx.DateTime.FromDMY(start_date_parsed["day"], start_date_parsed["month"]-1, start_date_parsed["year"])
-                end_date_parsed = Date.parse_date(self, end_date, dateFormat)
-                if end_date_parsed == None:
-                    self.MsgBox("Can't parse end date (%s) - ignored!" % (end_date))
-                else:
-                    end_date = wx.DateTime.FromDMY(end_date_parsed["day"], end_date_parsed["month"]-1, end_date_parsed["year"])
-                    paydates = []
-                    if end_date < start_date:
-                        start_date, end_date = end_date, start_date
-                    incr = Date.get_pay_incr(self)
-                    if incr == None:
-                        self.MsgBox("Bad pay Type - get_paydates_in_range calculations ignored!")
-                    else:
-                        ref_date_parsed = Date.parse_date(self, self.ref_date, dateFormat)
-                        if ref_date_parsed == None:
-                            self.MsgBox("Can't parse ref date (%s) - ignored!" % (ref_date))
-                        else:
-                            ref_date = wx.DateTime.FromDMY(ref_date_parsed['day'], ref_date_parsed['month']-1, ref_date_parsed['year'])
-                            if ref_date > start_date:
-                                while ref_date > start_date:
-                                    ref_date.Subtract(incr)
-                                if ref_date < start_date:
-                                    ref_date.Add(incr)
-                            elif ref_date < start_date:
-                                while ref_date < start_date:
-                                    ref_date.Add(incr)
-                            if ref_date == start_date:
-                                pay_date = ref_date.Format(self.dateFormat)
-                                paydates.append(pay_date)
-                                ref_date.Add(incr)
-                            while ref_date <= end_date:
-                                pay_date = ref_date.Format(self.dateFormat)
-                                paydates.append(pay_date)
-                                ref_date.Add(incr)
-        return paydates
-
-    def updatePayDates(self):
-        Date.set_curr_paydate(self)
-        Date.set_next_paydate(self)
-        print("Curr paydate: %s, Next paydate: %s" % (Date.global_curr_paydate, Date.global_next_paydate))
 
     def convertDateFormat(self, in_date, in_dateFormat, out_dateFormat):
         in_date_parsed = Date.parse_date(self, in_date, in_dateFormat)

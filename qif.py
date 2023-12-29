@@ -131,7 +131,7 @@ class qif(object):
         return cur_asset
 
     def write_qif(self, filename):
-        Found_assets = AssetList(self)
+        Found_assets = self.parent.assets.assets
         # Write and process Assets and Transactions here!   JJG 1/17/2022
         print("In writing ", filename, " as .qif file. Found_assets = ", Found_assets)
         return True

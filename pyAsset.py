@@ -87,6 +87,8 @@ if len(sys.argv) > 2:
     assetFile = sys.argv[2]
 app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
 app.frame = AssetFrame(None, 'PyAsset', cfgFile, assetFile)
-if app.frame.ref_date != '':
-    app.frame.Show()
-    app.MainLoop()
+#if app.frame.ref_date != '':
+#    app.frame.Show()
+#    app.MainLoop()
+app.frame.Show()
+app.MainLoop()

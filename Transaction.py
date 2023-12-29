@@ -92,7 +92,19 @@ class Transaction:
 
     def __gt__(self, other):
         if self.sched_date != None and other.sched_date != None:
-            return self.sched_date > other.sched_date
+            date_self = Date.parse_date(self,self.sched_date,Date.get_global_date_format)
+            date_other = Date.parse_date(self,other.sched_date,Date.get_global_date_format)
+            return date_self["dt"] > date_other["dt"]
+        elif self.sched_date != None:
+            return False
+        else:
+            return True
+
+    def __ge__(self, other):
+        if self.sched_date != None and other.sched_date != None:
+            date_self = Date.parse_date(self,self.sched_date,Date.get_global_date_format)
+            date_other = Date.parse_date(self,other.sched_date,Date.get_global_date_format)
+            return date_self["dt"] >= date_other["dt"]
         elif self.sched_date != None:
             return False
         else:
@@ -100,7 +112,19 @@ class Transaction:
 
     def __lt__(self, other):
         if self.sched_date != None and other.sched_date != None:
-            return self.sched_date < other.sched_date
+            date_self = Date.parse_date(self,self.sched_date,Date.get_global_date_format)
+            date_other = Date.parse_date(self,other.sched_date,Date.get_global_date_format)
+            return date_self["dt"] < date_other["dt"]
+        elif self.sched_date != None:
+            return False
+        else:
+            return True
+
+    def __le__(self, other):
+        if self.sched_date != None and other.sched_date != None:
+            date_self = Date.parse_date(self,self.sched_date,Date.get_global_date_format)
+            date_other = Date.parse_date(self,other.sched_date,Date.get_global_date_format)
+            return date_self["dt"] <= date_other["dt"]
         elif self.sched_date != None:
             return False
         else:

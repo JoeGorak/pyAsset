@@ -96,14 +96,14 @@ class TransactionList:
 
     def update_current_and_projected_values(self, start_trans_number = 0):
         trans_number = 0
-        proj_date = Date.get_global_proj_date(self)
+        trans_sched_date = proj_date = Date.get_global_proj_date(self)
         while trans_number < start_trans_number:
             trans_number = trans_number + 1
         if trans_number == 0:
             current_value = self.parent.get_value()
         else:
             current_value = self.transactions[trans_number].get_current_value()
-        proj_value = current_value
+        ret_proj_value= proj_value = current_value
         while trans_number < len(self.transactions):
             trans_pmt_method = self.transactions[trans_number].get_pmt_method()
             if trans_pmt_method != "posted":
@@ -113,7 +113,8 @@ class TransactionList:
                 trans_sched_date = self.transactions[trans_number].get_sched_date()
                 if trans_sched_date != None:
                     trans_action = self.transactions[trans_number].get_action()
-                    if trans_sched_date and trans_action:
+#                   if trans_sched_date <= proj_date and trans_action:
+                    if trans_action:
 
 #                       Check to make sure transaction hasn't been voided before updaing current value   JJG 07/17/2021
 
@@ -123,24 +124,21 @@ class TransactionList:
                             trans_amount = 0.00
                         if trans_action == '-':
                             new_current_value = current_value - trans_amount
-                            if trans_sched_date <= proj_date:
-                                new_proj_value = proj_value - trans_amount
+                            new_proj_value = proj_value - trans_amount
                         elif trans_action == '+':
                             new_current_value = current_value + trans_amount
-                            if trans_sched_date <= proj_date:
-                                new_proj_value = proj_value + trans_amount
+                            new_proj_value = proj_value + trans_amount
                         else:
                             print("Unknown action " + trans_action + " ignored")
                             new_current_value = current_value
-                            if trans_sched_date <= proj_date:
-                                new_proj_value = proj_value
+                            new_proj_value = proj_value
                         self.transactions[trans_number].set_current_value(str(new_current_value))
                         self.transactions[trans_number].set_projected_value(str(new_proj_value))
-                    else:
-                        self.transactions[trans_number].set_current_value(None)
                     current_value = new_current_value
                     proj_value = new_proj_value
-                    if trans_sched_date <= proj_date:
-                        self.parent.set_value_proj(proj_value)
+                    trans_sched_date_obj = Date.parse_date(self, trans_sched_date, Date.get_global_date_format(self))["dt"]
+                    proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(self))["dt"]
+                    if trans_sched_date_obj <= proj_date_obj:
+                        ret_proj_value = proj_value
             trans_number = trans_number + 1
-        return proj_value
+        return ret_proj_value
