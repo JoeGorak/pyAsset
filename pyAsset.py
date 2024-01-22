@@ -50,7 +50,7 @@ INSTALLATION/REQUIREMENTS
 PyAsset requires Python (>=3.7) and wxPython.
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -83,12 +83,9 @@ cfgFile = ""
 if len(sys.argv) > 1:
     cfgFile = sys.argv[1]
 assetFile = ""
-if len(sys.argv) > 2:
+if len(sys.argv) > 2: 
     assetFile = sys.argv[2]
 app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
 app.frame = AssetFrame(None, 'PyAsset', cfgFile, assetFile)
-#if app.frame.ref_date != '':
-#    app.frame.Show()
-#    app.MainLoop()
 app.frame.Show()
 app.MainLoop()

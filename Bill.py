@@ -132,12 +132,12 @@ class Bill:
             if due_date == '':
                 finished = True
             else:
-                temp_due_date = Date.parse_date(self,due_date,Date.get_global_date_format(self))
+                temp_due_date = Date.parse_date(self,due_date,Date.get_global_date_format(Date))
                 temp_due_date = date(temp_due_date['year'],temp_due_date['month'],temp_due_date['day'])
         else:
             temp_due_date = date(due_date.year,due_date.month,due_date.day)
         if not finished:
-            date_fields = Date.get_global_date_format(self).split(Date.get_global_date_sep(self))
+            date_fields = Date.get_global_date_format(Date).split(Date.get_global_date_sep(Date))
             for i in range(3):
                 if date_fields[i] == "%m":
                     month = int(temp_due_date.month)
@@ -165,12 +165,12 @@ class Bill:
             if sched_date == '':
                 finished = True
             else:
-                temp_sched_date = Date.parse_date(self,sched_date,Date.get_global_date_format(self))
+                temp_sched_date = Date.parse_date(self,sched_date,Date.get_global_date_format(Date))
                 temp_sched_date = date(temp_sched_date['year'],temp_sched_date['month'],temp_sched_date['day'])
         else:
             temp_sched_date = date(sched_date.year,sched_date.month,sched_date.day)
         if not finished:
-            date_fields = Date.get_global_date_format(self).split(Date.get_global_date_sep(self))
+            date_fields = Date.get_global_date_format(Date).split(Date.get_global_date_sep(self))
             for i in range(3):
                 if date_fields[i] == "%m":
                     month = int(temp_sched_date.month)

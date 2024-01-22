@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -33,7 +33,7 @@ from Date import Date
 
 class TransactionGrid(grd.Grid):
     def __init__(self, frame, **keywords):
-        self.dateFormat = Date.get_global_date_format(self)
+        self.dateFormat = Date.get_global_date_format(Date)
         self.dateSep = Date.get_global_date_sep(self)
         self.grid = grd.Grid.__init__(self, frame, **keywords)
         self.frame = frame
@@ -120,11 +120,17 @@ class TransactionGrid(grd.Grid):
                          [self.TRANS_SCHED_DATE_COL, TRANS_SCHED_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
                          [self.TRANS_DUE_DATE_COL, TRANS_DUE_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
                          [self.TRANS_STATE_COL, TRANS_STATE_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_COMMENT_COL, TRANS_COMMENT_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_MEMO_COL, TRANS_MEMO_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_COMMENT_COL, TRANS_COMMENT_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+                         [self.TRANS_MEMO_COL, TRANS_MEMO_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
         ]
 
         return
+
+    def getDateFormat(self):
+        return self.dateFormat
+
+    def setDateFormat(self):
+        self.dateFormat = Date.get_global_date_format(Date)
 
     def getColName(self, col):
         return self.GetColLabelValue(col)
@@ -146,6 +152,9 @@ class TransactionGrid(grd.Grid):
             print("Bad value for zero_suppress:" + zero_suppress + " Ignored! Should be either " + self.ZERO_SUPPRESS + " or " + self.NO_ZERO_SUPPRESS_)
         else:
             self.col_info[i][self.ZERO_SUPPRESS_COL] = zero_suppress
+
+    def getFrame(self):
+        return self.Parent
 
     def getColMethod(self, row, i):
         if i == self.TRANS_PMT_METHOD_COL:
@@ -172,6 +181,36 @@ class TransactionGrid(grd.Grid):
             return self.frame.transactions[row].get_memo()
         else:
             return "??"
+
+    def setColMethod(self, row, i, value):
+        ret_val = "??"
+        if i == self.TRANS_PMT_METHOD_COL:
+            ret_val = self.frame.transactions[row].set_pmt_method(value)
+        elif i == self.TRANS_CHECK_NUM_COL:
+            ret_val = self.frame.transactions[row].set_check_num(value)
+        elif i == self.TRANS_PAYEE_COL:
+            ret_val = self.frame.transactions[row].set_payee(value)
+        elif i == self.TRANS_AMOUNT_COL:
+            ret_val = self.frame.transactions[row].set_amount(value)
+        elif i == self.TRANS_ACTION_COL:
+            ret_val = self.frame.transactions[row].set_action(value)
+        elif i == self.TRANS_VALUE_COL:
+            ret_val = self.frame.transactions[row].set_current_value(value)
+        elif i == self.TRANS_DUE_DATE_COL:
+            ret_val = self.frame.transactions[row].set_due_date(value)
+        elif i == self.TRANS_SCHED_DATE_COL:
+            ret_val = self.frame.transactions[row].set_sched_date(value)
+        elif i == self.TRANS_STATE_COL:
+            ret_val = self.frame.transactions[row].set_state(value)
+        elif i == self.TRANS_COMMENT_COL:
+            ret_val = self.frame.transactions[row].set_comment(value)
+        elif i == self.TRANS_MEMO_COL:
+            ret_vak = self.frame.transactions[row].set_memo(value)
+        return ret_val
+
+    def getCurrTrans(self, row, col):
+        col = col                                   # JJG 1/1/2024 So editor will do folding right!
+        return self.getFrame().transactions[row]
 
     def getNumLayoutCols(self):
         return len(self.col_info)
@@ -273,10 +312,10 @@ class TransactionGrid(grd.Grid):
         elif self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):
             tableValue = ""
         else:
-            returned_date = Date.parse_date(self, cellValue, Date.get_global_date_format(self))
+            returned_date = Date.parse_date(self, cellValue, Date.get_global_date_format(Date))
             if returned_date != None:
                 tableDate = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"] - 1, returned_date["year"])
-                dateFormat = Date.get_global_date_format(self)
+                dateFormat = Date.get_global_date_format(Date)
                 date_sep = Date.get_global_date_sep(self)
                 dateParts = dateFormat.split(date_sep)
                 tableValue = ""
@@ -371,7 +410,7 @@ class TransactionGrid(grd.Grid):
             if new_value == "" and self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS:
                 evt.Veto()
             else:
-                dateFormat = Date.get_global_date_format(self)
+                dateFormat = Date.get_global_date_format(Date)
                 date_sep = Date.get_global_date_sep(self)
                 input_date = new_value.split(date_sep)
                 dateParts = dateFormat.split(date_sep)
@@ -391,7 +430,7 @@ class TransactionGrid(grd.Grid):
                             tableValue = tableValue + "%s" % (date_sep)
                 evt.Veto()
                 try:
-                    returned_date = Date.parse_date(self, tableValue, Date.get_global_date_format(self))
+                    returned_date = Date.parse_date(self, tableValue, Date.get_global_date_format(Date))
                 except:
                     str = "%s is not a valid date string" % (new_value)
                     ret_val = self.DisplayMsg(str)
@@ -460,9 +499,7 @@ class TransactionGrid(grd.Grid):
     def set_properties(self, frame):
         frame.statusbar.SetStatusWidths([-1])
         statusbar_fields = [""]
-        self.columnNames = ["Pmt Method", "Chk #", "Payee", "Amount", "Action", "Value", "Sched Date", "Due Date", "State",
-                       "Comment",
-                       "Memo"];
+        self.columnNames = ["Pmt Method", "Chk #", "Payee", "Amount", "Action", "Value", "Sched Date", "Due Date", "State", "Comment", "Memo"];
 
         for i in range(len(statusbar_fields)):
             frame.statusbar.SetStatusText(statusbar_fields[i], i)

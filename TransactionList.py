@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -113,7 +113,6 @@ class TransactionList:
                 trans_sched_date = self.transactions[trans_number].get_sched_date()
                 if trans_sched_date != None:
                     trans_action = self.transactions[trans_number].get_action()
-#                   if trans_sched_date <= proj_date and trans_action:
                     if trans_action:
 
 #                       Check to make sure transaction hasn't been voided before updaing current value   JJG 07/17/2021
@@ -136,9 +135,14 @@ class TransactionList:
                         self.transactions[trans_number].set_projected_value(str(new_proj_value))
                     current_value = new_current_value
                     proj_value = new_proj_value
-                    trans_sched_date_obj = Date.parse_date(self, trans_sched_date, Date.get_global_date_format(self))["dt"]
-                    proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(self))["dt"]
-                    if trans_sched_date_obj <= proj_date_obj:
-                        ret_proj_value = proj_value
+                    oldDateFormat = Date.get_global_date_format(Date)
+                    trans_sched_date_obj = Date.parse_date(self, trans_sched_date, Date.get_global_date_format(Date))["dt"]
+                    if trans_sched_date_obj == None:
+                        if trans_sched_date == "":
+                            self.parent.DisplayMsg("Bad trans_sched_date ignored")
+                        else:
+                            proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
+                            if trans_sched_date_obj <= proj_date_obj:
+                                ret_proj_value = proj_value
             trans_number = trans_number + 1
         return ret_proj_value

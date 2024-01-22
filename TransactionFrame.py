@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -50,8 +50,8 @@ class TransactionFrame(wx.Frame):
         self.asset_index = asset_index
         self.transactions = transactions
         self.parent = parent
-        self.dateFormat = Date.get_global_date_format(self)
-        self.dateSep = Date.get_global_date_sep(self)
+#        self.dateFormat = Date.get_global_date_format(Date)
+#        self.dateSep = Date.get_global_date_sep(Date)
 
         if len(self.transactions) > 0:
             self.cur_transaction = self.transactions[0]
@@ -181,6 +181,25 @@ class TransactionFrame(wx.Frame):
         sizer_1.SetSizeHints(self)
         self.Layout()
         self.Show()
+
+    def update_transaction_grid_dates(self, oldDateFormat, newDateFormat):
+        self.edited = True
+        ntransactions = len(self.transactions)
+        for row in range(ntransactions):           
+            for col in range(self.trans_grid.getNumLayoutCols()):
+                cellValue = self.trans_grid.GridCellDefaultRenderer(row, col)
+                if cellValue != None and cellValue != 'None':
+                    cellType = self.trans_grid.getColType(col)
+                    if cellType == self.trans_grid.DATE_TYPE and oldDateFormat != None and newDateFormat != None:
+                        tableValue = Date.convertDateFormat(Date, cellValue, oldDateFormat, newDateFormat)["str"]
+                        if tableValue != "":
+                            curr_trans = self.trans_grid.getCurrTrans(row, col)
+                            curr_trans.setDateFormat(newDateFormat)
+                            if self.trans_grid.setColMethod(row, col, tableValue) != "??":
+                                self.trans_grid.GridCellDateRenderer(row, col)
+                                self.trans_grid.Refresh()
+                            else:
+                                print("update_transaction_grid_dates: Warning: unknown method for cell! row, ", row, " col ", col, " Skipping!")
 
     def DisplayMsg(self, str):
         d = wx.MessageDialog(self, str, "Error", wx.OK | wx.ICON_INFORMATION)

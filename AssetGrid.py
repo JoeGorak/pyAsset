@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -34,7 +34,7 @@ from Date import Date
 
 class AssetGrid(grd.Grid):
     def __init__(self, frame, **keywrds):
-        self.dateFormat = Date.get_global_date_format(self)
+        self.dateFormat = Date.get_global_date_format(Date)
         self.dateSep = Date.get_global_date_sep(self)
         self.columnNames = ["Account", "Value (Curr)", "Value (Proj)", "last pulled",
                             "Limit", "Avail (Online)", "Avail (Proj)", "Rate",
@@ -180,7 +180,7 @@ class AssetGrid(grd.Grid):
             self.col_info[i][self.ZERO_SUPPRESS_COL] = zero_suppress
 
     def getFrame(self):
-        return(self.Parent.Parent)
+        return self.Parent.Parent
 
     def getColMethod(self, row, i):
         currAsset = self.getFrame().assets[row]
@@ -218,6 +218,51 @@ class AssetGrid(grd.Grid):
             return currAsset.get_cash_avail()
         else:
             return "??"
+
+    def getCurrAsset(self, row, col):
+        col = col                                   # JJG 1/1/2024 So editor will do folding right!
+        return self.getFrame().assets[row]
+
+    def setColMethod(self, currAsset, row, col, value):
+        row = row                                   # JJG 1/1/2024 So editor will do folding right!
+        ret_val = "??"
+        if col == self.ACCT_NAME_COL:
+            ret_val =  currAsset.set_name(value)
+        elif col == self.ACCT_CURR_VAL_COL:
+            ret_val =  currAsset.set_value(value)
+        elif col == self.ACCT_PROJ_VAL_COL:
+            ret_val =  currAsset.set_value_proj(value)
+        elif col == self.ACCT_LAST_PULL_COL:
+            ret_val =  currAsset.set_last_pull_date(value)
+        elif col == self.ACCT_LIMIT_COL:
+            ret_val =  currAsset.set_limit(value)
+        elif col == self.ACCT_AVAIL_ONLINE_COL:
+            ret_val =  currAsset.set_avail(value)
+        elif col == self.ACCT_AVAIL_PROJ_COL:
+            ret_val =  currAsset.set_avail_proj(value)
+        elif col == self.ACCT_RATE_COL:
+            ret_val =  currAsset.set_rate(value)
+        elif col == self.ACCT_PAYMENT_COL:
+            ret_val =  currAsset.set_payment(value)
+        elif col == self.ACCT_DUE_DATE_COL:
+            currAsset.dateFormat = Date.get_global_date_format(Date)
+            currAsset.dateSep = Date.get_global_date_sep(Date)
+            ret_val =  currAsset.set_due_date(value)
+        elif col == self.ACCT_SCHED_DATE_COL:
+            currAsset.dateFormat = Date.get_global_date_format(Date)
+            currAsset.dateSep = Date.get_global_date_sep(Date)
+            ret_val =  currAsset.set_sched_date(value)
+        elif col == self.ACCT_MIN_PMT_COL:
+            ret_val =  currAsset.set_min_pay(value)
+        elif col == self.ACCT_STMT_BAL_COL:
+            ret_val =  currAsset.set_stmt_bal(value)
+        elif col == self.ACCT_CASH_LIMIT_COL:
+            ret_val =  currAsset.set_cash_limit(value)
+        elif col == self.ACCT_CASH_USED_COL:
+            ret_val =  currAsset.set_cash_used(value)
+        elif col == self.ACCT_CASH_AVAIL_COL:
+            ret_val =  currAsset.set_cash_avail(value)
+        return ret_val
 
     def getNumLayoutCols(self):
         return len(self.col_info)
@@ -320,10 +365,10 @@ class AssetGrid(grd.Grid):
         elif self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):
             tableValue = ""
         else:
-            returned_date = Date.parse_date(self, cellValue, Date.get_global_date_format(self))
+            returned_date = Date.parse_date(self, cellValue, Date.get_global_date_format(Date))
             if returned_date != None:
                 tableDate = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"]-1, returned_date["year"])
-                dateFormat = Date.get_global_date_format(self)
+                dateFormat = Date.get_global_date_format(Date)
                 date_sep = Date.get_global_date_sep(self)
                 dateParts = dateFormat.split(date_sep)
                 tableValue = ""
@@ -351,13 +396,14 @@ class AssetGrid(grd.Grid):
             tableValue = ""
         else:
             datetimeParts = cellValue.split(" ")
-            dateParts = datetimeParts[0].split("-")
-            time = datetimeParts[1]
+            dateParts = Date.get_date_fields(Date, datetimeParts[0])
+            timeParts = datetimeParts[1].split(":")
+            time = "%02s:%02s:%0s" % (timeParts[0], timeParts[1], timeParts[2])
             month = dateParts[1]
             day = dateParts[2]
             year = dateParts[0]
             self.SetCellAlignment(row, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
-            tableValue = "%02s/%02s/%04s %s" % (month, day, year, time)
+            tableValue = wx.DateTime.FromDMY(day, month-1, year).Format(Date.get_global_date_format(Date)) + " " + time
         self.SetCellValue(row, col, tableValue)
 
     def GridCellStringRenderer(self, row, col):
@@ -497,7 +543,7 @@ class AssetGrid(grd.Grid):
     def OnCellLeftClick(self, evt):
         row = evt.GetRow()
         col = evt.GetCol()
-        pos = evt.GetPosition()
+        pos = evt.GetPosition
         if row < len(self.getFrame().assets):
             if col == self.ACCT_NAME_COL:
                 self.getFrame().add_transaction_frame(row, col)

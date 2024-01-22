@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2020 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -48,9 +48,10 @@ from Transaction import Transaction
 class Asset(object):
     def __init__(self,name = "", type = "OTHER", last_pull_date = 0, value = 0.0, value_proj = 0.0, est_method = "", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
                 payment = 0.0, due_date = None, sched_date = None, min_pay = 0.0, stmt_bal = 0.0, amt_over = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
-        self.dateFormat = Date.get_global_date_format(self)
-        self.dateSep = Date.get_global_date_sep(self)
+        self.dateFormat = Date.get_global_date_format(Date)
+        self.dateSep = Date.get_global_date_sep(Date)
         self.name = name
+        self.filename = name
         if name != "":
             self.filename = self.name + ".qif"
         self.set_type(type)
@@ -106,14 +107,13 @@ class Asset(object):
         self.transactions.sort()
 
     def write_qif(self, filename=None):
-        if not filename:
-            if not self.filename: raise Exception("No Asset filename defined")
-            filename = self.filename
-        self.filename = filename
-        file = open(filename, 'w')
-        file.write("%s" % self.qif_repr())
-        file.close()
-        return
+        if filename != None:
+            self.filename = filename
+            file = open(filename, 'w+')
+            file.write("%s" % self.qif_repr())
+            file.close()
+        else:
+            pass                                # TODO JJD 1/7/2024 prompt for filename and create it
 
     def write_txt(self, filename='pyasset.txt'):
         file = open(filename, 'w')
@@ -167,7 +167,20 @@ class Asset(object):
 
     def set_last_pull_date(self, last_pull_date):
         if last_pull_date != 0:
-            self.last_pull_date = str(last_pull_date).split(".")[0]
+            if type(last_pull_date) is str:
+                dateTimeParts = last_pull_date.split(" ")
+                [year, month, day] = Date.get_date_fields(Date,dateTimeParts[0])
+                [hour, min, sec] = dateTimeParts[1].split(":")
+            else:
+                month = last_pull_date.month
+                day = last_pull_date.day
+                year = last_pull_date.year
+                hour = last_pull_date.hour
+                min = last_pull_date.minute
+                sec = last_pull_date.second
+            time = "%02d:%02d:%02d" % (int(hour), int(min), int(sec))
+            last_pull_date = wx.DateTime.FromDMY(day, month-1, year).Format(Date.get_global_date_format(Date))
+            self.last_pull_date = last_pull_date + " " + time
 
     def get_limit(self):
         return self.limit

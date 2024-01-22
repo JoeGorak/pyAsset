@@ -4,7 +4,7 @@ INSTALLATION/REQUIREMENTS
 PyAsset requires Python (>=3.7) and wxPython.
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -26,6 +26,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  06/11/2016     Initial version v0.1
 #  08/07/2021     Version v0.2
 #  04/02/2023     Version v1.0
+#  01/01/2024     Version v1.1       JJG Rewrote ProcessTranactionSheet to handle comments and be more efficient
 
 # TO-DOs
 #
@@ -57,7 +58,7 @@ class ExcelToAsset:
             if cv == None or "Bills" in cv or "Total" in cv or "Cash Flow" in cv:
                 continue
             elif "Accounts" in cv or "Other" in cv:
-                #                print(row)
+#                print(row)
                 ColumnHeaders = dict()
                 col_num = 1
                 for cell in row:
@@ -73,7 +74,7 @@ class ExcelToAsset:
                         break
                     if len(ColumnHeaders) == 1:
                         continue
-            #                print(ColumnHeaders)
+#                print(ColumnHeaders)
             else:
                 col_num = 1
                 for cell in row:
@@ -112,25 +113,25 @@ class ExcelToAsset:
                                 new_asset.set_value(cv)
                             elif "Value (Proj)" in heading:
                                 new_asset.set_value_proj(cv)
-                            elif heading == "last pulled":
+                            elif "last pulled" in heading:
                                 new_asset.set_last_pull_date(cv)
-                            elif heading == "Limit":
+                            elif "Limit" in heading:
                                 new_asset.set_limit(cv)
-                            elif heading == "Avail (Online)":
+                            elif "Avail (Online)" in heading:
                                 new_asset.set_avail(cv)
-                            elif heading == "Avail (Proj)":
+                            elif "Avail (Proj)" in heading:
                                 new_asset.set_avail_proj(cv)
-                            elif heading == "Estimate Method":
+                            elif "Estimate Method" in heading:
                                 new_asset.set_est_method(cv)
-                            elif heading == "Rate":
+                            elif "Rate" in heading:
                                 new_asset.set_rate(cv)
-                            elif heading == "Payment":
+                            elif "Payment" in heading:
                                 new_asset.set_payment(cv)
-                            elif heading == "Due Date":
+                            elif "Due Date" in heading:
                                 new_asset.set_due_date(cv)
-                            elif heading == "Sched":
+                            elif "Sched" in heading:
                                 new_asset.set_sched_date(cv)
-                            elif heading == "Min Pmt":
+                            elif "Min Pmt" in heading:
                                 new_asset.set_min_pay(cv)
                             elif "Stmt Bal" in heading:
                                 new_asset.set_stmt_bal(cv)
@@ -143,9 +144,7 @@ class ExcelToAsset:
                             elif "Cash avail" in heading:
                                 new_asset.set_cash_avail(cv)
                             else:
-                                print("Unknown field " + heading + " ignored!")
-                                pass
-
+                                print("ProcessAssetSheets: Unknown field " + heading + " ignored!")
                     col_num += 1
                     if col_num > len(ColumnHeaders):
                         break
@@ -167,60 +166,61 @@ class ExcelToAsset:
         ws = self.wb.get_sheet_by_name(SheetName)
         SheetName = str(SheetName).upper()
         if "CHECKING" in SheetName:
-            ColumnHeaders = ["Pmt Method", "Chk #", "Payee", "Amount", "Action", "", "Sched date", "Due date"]
+            ColumnHeaders = ["Pmt Method", "Chk #", "Payee", "Amt", "B", "Sched date", "Due date", "Comment"]
         else:
-            ColumnHeaders = ["Pmt Method", "Payee", "Amount", "Action", "", "Sched date", "Due date"]
-        actionIndex = -1
-        for index in range(len(ColumnHeaders)):
-            if ColumnHeaders[index].upper() == "ACTION":
-                actionIndex = index
-                break
-        row_num = 0
+            ColumnHeaders = ["Pmt Method", "Payee", "Amt", "B", "Sched date", "Due date", "Comment"]
+        placeIndex = {}
+        row_num = -1
         for row in ws.rows:
             row_num += 1
-            if row_num == 1:
-                continue
-            actionValue = row[actionIndex].value
-            if actionValue == None:
-                continue
-            cv = row[0].value
-            if cv == None:
-                continue
+            if row_num == 0:
+                for index in range(len(ColumnHeaders)):
+                    foundIndex = -1
+                    for cell in row:
+                        if cell.data_type != 's': continue
+                        if ColumnHeaders[index].upper() == cell.value.upper():
+                            foundIndex = cell.column-1
+                            break
+                    if foundIndex != -1:
+                        placeIndex[ColumnHeaders[index].upper()] = foundIndex
+                    else:
+                        placeIndex[ColumnHeaders[index].upper()] = -1
             else:
-                new_transaction = Transaction(self)
-                col_num = 0
-                for cell in row:
-                    cv = cell.value
-                    heading = str(ColumnHeaders[col_num]).upper()
-                    if heading != "":
-                        if "PMT METHOD" in heading:
+                cv = row[0].value                           # JJG 1/1/2024 Don't waste time on rows without headers
+                if cv == None:
+                    continue
+                else:
+                    new_transaction = Transaction(self)
+                    for heading in ColumnHeaders:
+                        headingUpper = heading.upper()
+                        cv =  row[placeIndex[headingUpper]].value
+                        if cv == None: continue
+                        if "PMT METHOD" == headingUpper:
                             new_transaction.set_pmt_method(cv)
-                        elif "CHK #" in heading:
-                            pmt_method = new_transaction.get_pmt_method().upper()
+                        elif "CHK #" == headingUpper:
+                            pmt_method = new_transaction.get_pmt_method()
                             if pmt_method != None:
                                 new_transaction.set_check_num(cv)
-                        elif "PAYEE" in heading:
+                        elif "PAYEE" == headingUpper:
                             new_transaction.set_payee(cv)
-                        elif "AMOUNT" in heading:
+                        elif "AMT" == headingUpper:
                             new_transaction.set_amount(cv)
-                        elif "ACTION" in heading:
+                        elif "B" == headingUpper:
                             if cv != "":
                                 new_transaction.set_action(cv)
-                        elif "SCHED DATE" in heading:
+                        elif "SCHED DATE" == headingUpper:
                             if cv != "":
                                 new_transaction.set_sched_date(cv)
-                        elif "DUE DATE" in heading:
+                        elif "DUE DATE" == headingUpper:
                             if cv != "":
                                 new_transaction.set_due_date(cv)
+                        elif "COMMENT" == headingUpper:
+                            if cv != "" and cv != None:
+                                new_transaction.set_comment(cv)
                         else:
-                            print("Unknown field " + str(ColumnHeaders[col_num]) + " ignored!")
-                            pass
-
-                    col_num += 1
-                    if col_num >= len(ColumnHeaders):
-                        new_transaction.parent = self.parent                # make sure transaction gets attached to asset and not EXCEL object!  JJG 1/15/2023
-                        TransactionsFound.insert(new_transaction)
-                        break
+                           print("ProcessTransactionSheet: Unknown field " + headingUpper + " on sheet " + SheetName + " ignored!")
+                    new_transaction.parent = self.parent                # make sure transaction gets attached to asset and not EXCEL object!  JJG 1/15/2023
+                    TransactionsFound.insert(new_transaction)
         return TransactionsFound
 
     def ProcessBillsSheet(self, bills):

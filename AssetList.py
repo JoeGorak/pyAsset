@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -99,7 +99,13 @@ class AssetList():
         return ret_index
 
     def append_by_name(self, name):
-        self.assets.append(Asset(name))
+        uname = name.upper()
+        type = "Other"
+        if uname.find("SAVINGS") != -1:
+            type = "Savings"
+        elif uname.find("CHECKING") != -1:
+            type = "Checking"
+        self.assets.append(Asset(name, type=type))
         return self.assets[len(self.assets)-1]
  
     def append_by_object(self, asset_in):

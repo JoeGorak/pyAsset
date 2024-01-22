@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -43,7 +43,8 @@ def string_limit(mystr, limit):
 class Transaction:
     def __init__(self, parent):
         self.parent = parent
-        self.dateFormat = Date.get_global_date_format(self)
+        self.assetFrame = self.parent.parent
+        self.dateFormat = Date.get_global_date_format(Date)
         self.dateSep = Date.get_global_date_sep(self)
         self.pmt_method = None
         self.check_num = None
@@ -130,11 +131,19 @@ class Transaction:
         else:
             return True
 
+    def getDateFormat(self):
+        return self.dateFormat
+
+    def setDateFormat(self, newDateFormat):
+        self.dateFormat = Date.set_global_date_format(Date, newDateFormat)
+        self.dateFormat = Date.set_global_date_format(Date, newDateFormat)
+
     def qif_repr(self):
         lines = []
         lines.append("S%s" % self.sched_date)
         lines.append("D%s" % self.due_date)
-        lines.append("T%.2f" % self.amount)
+        if self.amount != None:
+            lines.append("T%.2f" % self.amount)
         lines.append("A%s" % self.state)
         if self.check_num:
             lines.append("N%d" % self.check_num)
@@ -151,7 +160,7 @@ class Transaction:
 
     def set_amount(self, rest):
         if type(rest) == str:
-            rest = float(rest.replace('$',''))
+            rest = float(rest.replace('$','').replace(',',''))
         try:
             self.amount = round(rest,2)
         except:
@@ -204,7 +213,7 @@ class Transaction:
                         self.due_date = wx.DateTime.FromDMY(day, month-1, year).Format(self.dateFormat)
                     except:
                         error = "Invalid due_date entered: %s - try again!" % (rest)
-                        Date.MsgBox(self.parent.get_transaction_frame(), error)
+                        self.assetFrame.DisplayMsg(error)
                 else:
                     self.due_date = None
             elif type(rest) is dict:
