@@ -240,10 +240,10 @@ class BillFrame(wx.Frame):
         self.bill_grid.SetGridCursor(cursorCell, 0)
         self.bill_grid.MakeCellVisible(cursorCell, True)
 
-        win_height = len(self.bills)*self.rowSize
-        self.SetSize(size=(self.total_width, win_height))
-        self.Show()
-        self.parent.redraw_all(-1)      # Make sure balances get updated!
+#        win_height = len(self.bills)*self.rowSize
+#        self.SetSize(size=(self.total_width, win_height))
+#        self.Show()
+#        self.parent.redraw_all(-1)      # Make sure balances get updated!
 
     def cellchange(self, evt):
         doredraw = 0
@@ -316,7 +316,7 @@ class BillFrame(wx.Frame):
 
     def quit(self, *args):
         self.close()
-        self.Close(wx.true)
+        self.Close()
 
     #
     #     @brief Receives data to be written to and its location

@@ -24,6 +24,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  Version information
 #  06/11/2016     Initial version v0.1
 #  08/07/2021     Version v0.2
+#  05/25/2024     Version v0.5      Added more support for .qif files
 
 import os
 import wx
@@ -31,16 +32,20 @@ from Date import Date
 from Transaction import Transaction
 
 # Asset Types
-CHECKING = 0
-SAVINGS = 1
-MONEY_MARKET = 2
-OVERDRAFT = 3
-CREDIT_CARD = 4
-STORE_CARD = 5
-RETIREMENT = 6
-LOAN = 7
-MORTGAGE = 8
-OTHER = 9
+CASH = 0
+CHECKING = 1
+SAVINGS = 2
+MONEY_MARKET = 3
+OVERDRAFT = 4
+CREDIT_CARD = 5
+STORE_CARD = 6
+RETIREMENT = 7
+LOAN = 8
+MORTGAGE = 9
+CD = 10
+HOUSE = 11
+CAR = 12
+OTHER = 13
 
 from TransactionList import TransactionList
 from Transaction import Transaction
@@ -106,20 +111,18 @@ class Asset(object):
     def sort(self):
         self.transactions.sort()
 
-    def write_qif(self, filename=None):
+    def write_qif(self, filename):
         if filename != None:
             self.filename = filename
-            file = open(filename, 'w+')
-            file.write("%s" % self.qif_repr())
-            file.close()
-        else:
-            pass                                # TODO JJD 1/7/2024 prompt for filename and create it
+            with open(filename, 'a') as file:
+                arep = self.qif_repr()
+                file.writelines("%s" % arep)
 
-    def write_txt(self, filename='pyasset.txt'):
-        file = open(filename, 'w')
-        file.write("%s" % self.text_repr())
-        file.close()
-        return
+    def write_txt(self, filename=None):
+        if filename != None:
+            with open(filename, 'a') as file:
+                trep = self.text_repr()
+                file.writelines("%s" % trep)
 
     def text_repr(self):
         lines = []
@@ -127,9 +130,12 @@ class Asset(object):
         return '\n'.join(lines)
 
     def qif_repr(self):
-        lines = ['Type:Bank']
-        for transaction in self.transactions: lines.append(transaction.qif_repr())
-        lines.append('')
+        lines = []
+        lines.append("N%s" % self.get_name())
+        lines.append("T%s" % self.get_type())
+        lines.append("L%s" % self.get_limit())
+        lines.append("M%s" % self.get_last_pull_date())         # Use Memo field for last_pull_date
+        lines.append("^\n")
         return '\n'.join(lines)
 
     def get_name(self):
@@ -166,21 +172,32 @@ class Asset(object):
         return self.est_method
 
     def set_last_pull_date(self, last_pull_date):
-        if last_pull_date != 0:
+        if last_pull_date != None:
             if type(last_pull_date) is str:
                 dateTimeParts = last_pull_date.split(" ")
                 [year, month, day] = Date.get_date_fields(Date,dateTimeParts[0])
                 [hour, min, sec] = dateTimeParts[1].split(":")
             else:
-                month = last_pull_date.month
-                day = last_pull_date.day
-                year = last_pull_date.year
-                hour = last_pull_date.hour
-                min = last_pull_date.minute
-                sec = last_pull_date.second
+                try:
+                    month = last_pull_date["dt"].month + 1
+                    day = last_pull_date["dt"].day
+                    year = last_pull_date["dt"].year
+                    hour = last_pull_date["dt"].hour
+                    min = last_pull_date["dt"].minute
+                    sec = last_pull_date["dt"].second
+                except:
+                    month = last_pull_date.month
+                    day = last_pull_date.day
+                    year = last_pull_date.year
+                    hour = last_pull_date.hour
+                    min = last_pull_date.minute
+                    sec = last_pull_date.second
             time = "%02d:%02d:%02d" % (int(hour), int(min), int(sec))
             last_pull_date = wx.DateTime.FromDMY(day, month-1, year).Format(Date.get_global_date_format(Date))
             self.last_pull_date = last_pull_date + " " + time
+
+    def get_last_pull_date(self):
+        return self.last_pull_date
 
     def get_limit(self):
         return self.limit
@@ -239,7 +256,10 @@ class Asset(object):
                 else:
                     self.due_date = None
             else:
-                self.due_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(self.dateFormat)
+                try:
+                    self.due_date = rest["str"]
+                except:
+                    self.due_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(self.dateFormat)
 
     def get_sched_date(self):
         return self.sched_date
@@ -253,7 +273,10 @@ class Asset(object):
                 else:
                     self.sched_date = None
             else:
-                self.sched_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(self.dateFormat)
+                try:
+                    self.sched_date = rest["str"]
+                except:
+                    self.sched_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(self.dateFormat)
 
     def get_min_pay(self):
         return self.min_pay
@@ -264,53 +287,33 @@ class Asset(object):
         except:
             self.min_pay = 0.0
 
-    def get_type(self):
+    def get_type(self):                 # JJG 2/11/24 Modified to retun qif codes for assets
         st = self.type
-        if st == CHECKING:
-            return "checking"
-        elif st == SAVINGS:
-            return "savings"
-        elif st == MONEY_MARKET:
-            return "money market"
-        elif st == OVERDRAFT:
-            return "overdraft"
-        elif st == CREDIT_CARD:
-            return "credit card"
-        elif st == STORE_CARD:
-            return "store card"
-        elif st == RETIREMENT:
-            return "retirement"
-        elif st == MORTGAGE:
-            return "mortgage"
-        elif st == LOAN:
-            return "loan"
-        elif st == OTHER:
-            return "other"
-        else:
-            return "unknown type"
+        if st == CASH: return "Cash"
+        elif st == CHECKING or st == SAVINGS or st == MONEY_MARKET: return "Bank"
+        elif st == CREDIT_CARD or st == STORE_CARD: return "CCard"
+        elif st == CD or st == RETIREMENT: return "Invst"
+        elif st == HOUSE or st == CAR: return "Oth A"
+        elif st == OVERDRAFT or st == LOAN or st == MORTGAGE: return "Oth L"
+        elif st == OTHER: return "OTH U"                # JJG 2/11/24 Addition to qif codes
+        else: return "UNK"                              # JJG 2/11/24 Also addition to qif codes (should not occur if code is working properly!!)
 
     def set_type(self, type):
         tu = type.upper()
-        if "CHECKING" in tu:
-            self.type = CHECKING
-        elif "SAVINGS" in tu:
-            self.type = SAVINGS
-        elif "MONEY MARKET" in tu:
-            self.type = MONEY_MARKET
-        elif "OVERDRAFT" in tu:
-            self.type = OVERDRAFT
-        elif "STORE CARD" in tu:
-            self.type = STORE_CARD
-        elif "CREDIT CARD" in tu:
-            self.type = CREDIT_CARD
-        elif "RETIREMENT" in tu:
-            self.type = RETIREMENT
-        elif "MORTGAGE" in tu:
-            self.type = MORTGAGE
-        elif "LOAN" in tu:
-            self.type = LOAN
-        else:
-            self.type = OTHER
+        if "CASH" in tu: self.type = CASH
+        elif "CHECKING" in tu: self.type = CHECKING
+        elif "SAVINGS" in tu: self.type = SAVINGS
+        elif "MONEY MARKET" in tu: self.type = MONEY_MARKET
+        elif "OVERDRAFT" in tu: self.type = OVERDRAFT
+        elif "STORE CARD" in tu: self.type = STORE_CARD
+        elif "CREDIT CARD" in tu: self.type = CREDIT_CARD
+        elif "RETIREMENT" in tu: self.type = RETIREMENT
+        elif "MORTGAGE" in tu: self.type = MORTGAGE
+        elif "LOAN" in tu: self.type = LOAN
+        elif "CD" in tu: self.type = CD
+        elif "HOUSE" in tu: self.type = HOUSE
+        elif "CAR" in tu: self.type = CAR
+        else: self.type = OTHER
 
     def get_stmt_bal(self):
         return self.stmt_bal

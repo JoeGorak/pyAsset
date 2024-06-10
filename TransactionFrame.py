@@ -43,15 +43,15 @@ from Asset import Asset
 from Date import Date
 from HelpDialog import HelpDialog
 from Transaction import Transaction
+from TransactionList import TransactionList
 from TransactionGrid import TransactionGrid
 
 class TransactionFrame(wx.Frame):
-    def __init__(self, style, parent, my_id, asset_index, transactions, title="PyAsset:Transaction", myfile=None, **kwds):
+    def __init__(self, style, parent, my_id, asset_index, transactions, title="PyAsset:Transaction", filename=None, **kwds):
         self.asset_index = asset_index
         self.transactions = transactions
         self.parent = parent
-#        self.dateFormat = Date.get_global_date_format(Date)
-#        self.dateSep = Date.get_global_date_sep(Date)
+        self.filename = filename
 
         if len(self.transactions) > 0:
             self.cur_transaction = self.transactions[0]
@@ -69,8 +69,8 @@ class TransactionFrame(wx.Frame):
 
         self.make_widgets()
 
-        if myfile:
-            self.cur_transaction.read_qif(myfile)
+        if filename:
+            self.cur_transaction.read_qif(filename)
 
         self.SetTitle("PyAsset:Transactions for %s" % title)
         self.redraw_all()
@@ -168,6 +168,9 @@ class TransactionFrame(wx.Frame):
 
     def make_trans_grid(self):
         self.trans_grid = TransactionGrid(self)
+
+    def get_trans_grid(self):
+        return self.get_trans_grid
 
     def set_properties(self):
         self.total_width = self.trans_grid.set_properties(self)
@@ -267,10 +270,10 @@ class TransactionFrame(wx.Frame):
         self.trans_grid.MakeCellVisible(cursorCell, True)
 
 #        win_height = len(self.transactions)*self.rowSize + 120
-        win_height = len(self.transactions)*self.rowSize
-        self.SetSize(size=(self.total_width, win_height))
-        self.Show()
-        self.parent.redraw_all(-1)      # Make sure balances get updated!
+#        win_height = len(self.transactions)*self.rowSize
+#        self.SetSize(size=(self.total_width, win_height))
+#        self.Show()
+#        self.parent.redraw_all(-1)      # Make sure balances get updated!
 
     def cellchange(self, evt):
         doredraw = 0
@@ -316,34 +319,60 @@ class TransactionFrame(wx.Frame):
         if self.cur_transaction.name: self.SetTitle("PyAsset: %s" % self.cur_transaction.name)
         return
 
-    def save_file(self, *args): 
+    def save_file(self, *args):
+        filename = self.filename
         for cur_transaction in self.transactions:
-            if self.parent.filename != None and self.parent.filename != "":
+            if filename != None or filename != "":
                 self.save_as_file()
             else:
-                qif.write_qif(self, self.transactions.parent.filename)
+                qif.write_qif(self, filename)
         self.edited = False
         return
 
     def save_as_file(self, *args):
-        d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.SAVE)
+        d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
             qif.write_qif(self,os.path.join(dir, fname))
-        if self.cur_transaction.name: self.SetTitle("PyAsset: %s" % self.cur_transaction.name)
         return
+
+    def process_transaction_list(self, transactionList, function, lines = None):
+        ntransactions = len(transactionList.transactions)
+        if ntransactions > 0:
+            if function == 'writeAccountHeaders' or function == 'writeAccountDetails':
+               qif.write_qif(self, self.filename, function, lines)
+            else:
+                for i in range(ntransactions):
+                    if function == 'add':
+                        cur_asset = transactionList.transactions[i]
+                        cur_name = cur_asset.get_payee()
+                        j = self.transactions.index(cur_name)
+                        if j != -1:
+                            self.transactioons[j] = cur_asset           # For now, just replace, when dates are working, save later date JJG 1/22/2022
+                        else:            
+                          self.transactions.append_by_object(cur_asset)
+                    elif function == 'delete':
+                        del transactionList.transactions[0]                         # Since we are deleting the entire list, we can just delete the first one each time!
+                    else:
+                        pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
+            if function == 'delete':
+                self.trans_grid.ClearGrid()
+        self.redraw_all()
 
     def close(self, *args):
         if self.edited:
-            d = wx.MessageDialog(self, 'Save file before closing', 'Question',
+            d = wx.MessageDialog(self, 'Save file before closing?', 'Question',
                                  wx.YES_NO)
             if d.ShowModal() == wx.ID_YES: self.save_file()
-        return
+        trans_frame_obj = self.parent.assets[self.asset_index].trans_frame
+        if trans_frame_obj != None:
+            del self.parent.assets[self.asset_index].trans_frame
+#            self.parent.assets[self.asset_index] = None
+        self.Close()    
 
     def quit(self, *args):
         self.close()
-        self.Close(wx.true)
 
     #
     #     @brief Receives data to be written to and its location
@@ -642,8 +671,6 @@ class TransactionFrame(wx.Frame):
         d = wx.MessageDialog(self,
                              "Python Asset Manager\n"
                              "Copyright (c) 2016-2024 Joseph J. Gorak\n"
-                             "Extended from ideas in Python Checkbook (pyCheckbook)\n"
-                             "written by Richard P. Muller\n"
                              "Released under the Gnu GPL\n",
                              "About PyAsset",
                              wx.OK | wx.ICON_INFORMATION)

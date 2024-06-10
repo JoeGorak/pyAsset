@@ -47,7 +47,7 @@ class ExcelToAsset:
     def OpenXLSMFile(self, FileName):
         self.wb = load_workbook(FileName, read_only=True, data_only=True)
 
-    def ProcessAssetsSheet(self, parent):
+    def ProcessAssetsSheet(self, parent, ignoredHeadings = ['Who']):
         self.parent = parent
         AssetsFound = AssetList(parent)
 
@@ -85,7 +85,11 @@ class ExcelToAsset:
                         # Also set type of asset using clues from the account name
                         new_asset = AssetsFound.get_asset_by_name(cv)
                         asset_name = new_asset.get_name()
-                        if "Checking" in asset_name:
+                        if "HOUSE" in asset_name.upper():
+                            new_asset.set_type("House")
+                        elif "CAR" in asset_name.upper():
+                            new_asset.set_type("Car")
+                        elif "Checking" in asset_name:
                             new_asset.set_type("Checking")
                         elif "Savings" in asset_name:
                             new_asset.set_type("Savings")
@@ -95,7 +99,7 @@ class ExcelToAsset:
                             new_asset.set_type("Overdraft")
                         elif "TSP" in asset_name or "Annuity" in asset_name or "Life" in asset_name:
                             new_asset.set_type("Retirement")
-                        elif "Visa" in asset_name or "MC" in asset_name or "Master Card" in asset_name or "Blue" in asset_name or "Credit Card" in asset_name:
+                        elif "Discover" in asset_name or "Visa" in asset_name or "MC" in asset_name or "Master Card" in asset_name or "Blue" in asset_name or "Credit Card" in asset_name:
                             new_asset.set_type("Credit Card")
                         elif "Sears" in asset_name or "Macy's" in asset_name:
                             new_asset.set_type("Store Card")
@@ -115,7 +119,7 @@ class ExcelToAsset:
                                 new_asset.set_value_proj(cv)
                             elif "last pulled" in heading:
                                 new_asset.set_last_pull_date(cv)
-                            elif "Limit" in heading:
+                            elif "Credit Limit" in heading:
                                 new_asset.set_limit(cv)
                             elif "Avail (Online)" in heading:
                                 new_asset.set_avail(cv)
@@ -144,7 +148,12 @@ class ExcelToAsset:
                             elif "Cash avail" in heading:
                                 new_asset.set_cash_avail(cv)
                             else:
-                                print("ProcessAssetSheets: Unknown field " + heading + " ignored!")
+                                found = False
+                                for ignore in ignoredHeadings:
+                                    if ignore in heading:
+                                        found = True
+                                if not found:
+                                    print("ProcessAssetSheets: Unknown field " + heading + " ignored!")
                     col_num += 1
                     if col_num > len(ColumnHeaders):
                         break

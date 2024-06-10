@@ -96,21 +96,25 @@ class TransactionList:
 
     def update_current_and_projected_values(self, start_trans_number = 0):
         trans_number = 0
-        trans_sched_date = proj_date = Date.get_global_proj_date(self)
-        while trans_number < start_trans_number:
-            trans_number = trans_number + 1
-        if trans_number == 0:
-            current_value = self.parent.get_value()
-        else:
-            current_value = self.transactions[trans_number].get_current_value()
-        ret_proj_value= proj_value = current_value
-        while trans_number < len(self.transactions):
-            trans_pmt_method = self.transactions[trans_number].get_pmt_method()
-            if trans_pmt_method != "posted":
-                new_current_value = current_value
-                new_proj_value = proj_value
-                trans_state = self.transactions[trans_number].get_state()
-                trans_sched_date = self.transactions[trans_number].get_sched_date()
+        trans_sched_date = proj_date = Date.get_proj_date(Date)
+        proj_date_obj = ret_proj_value = None
+        if 'mm' not in proj_date:
+            proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
+        if proj_date_obj != None:
+            while trans_number < start_trans_number:
+                trans_number = trans_number + 1
+            if trans_number == 0:
+                current_value = self.parent.get_value()
+            else:
+                current_value = self.transactions[trans_number].get_current_value()
+            ret_proj_value= proj_value = current_value
+            while trans_number < len(self.transactions):
+                trans_pmt_method = self.transactions[trans_number].get_pmt_method()
+                if trans_pmt_method != "posted":
+                    new_current_value = current_value
+                    new_proj_value = proj_value
+                    trans_state = self.transactions[trans_number].get_state()
+                    trans_sched_date = self.transactions[trans_number].get_sched_date()
                 if trans_sched_date != None:
                     trans_action = self.transactions[trans_number].get_action()
                     if trans_action:
@@ -135,14 +139,31 @@ class TransactionList:
                         self.transactions[trans_number].set_projected_value(str(new_proj_value))
                     current_value = new_current_value
                     proj_value = new_proj_value
-                    oldDateFormat = Date.get_global_date_format(Date)
-                    trans_sched_date_obj = Date.parse_date(self, trans_sched_date, Date.get_global_date_format(Date))["dt"]
-                    if trans_sched_date_obj == None:
-                        if trans_sched_date == "":
-                            self.parent.DisplayMsg("Bad trans_sched_date ignored")
-                        else:
-                            proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
-                            if trans_sched_date_obj <= proj_date_obj:
-                                ret_proj_value = proj_value
+                    DateFormat = Date.get_global_date_format(Date)
+                    trans_sched_date_obj = Date.parse_date(self, trans_sched_date, DateFormat)["dt"]
+                    proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
+                    if trans_sched_date_obj <= proj_date_obj:
+                        ret_proj_value = proj_value
+                trans_number += 1
             trans_number = trans_number + 1
         return ret_proj_value
+
+    def update_transaction_dates(self, oldDateFormat, newDateFormat):
+        trans_number = 0
+        newDateFormat, newDateSep = Date.parse_date_format(Date, newDateFormat)
+
+        while trans_number < len(self.transactions):
+            due_date = self.transactions[trans_number].get_due_date()
+            if due_date != None:
+                new_due_date = Date.convertDateFormat(Date, due_date, oldDateFormat, newDateFormat)
+                self.transactions[trans_number].set_due_date(new_due_date)
+
+            sched_date = self.transactions[trans_number].get_sched_date()
+            if sched_date != None:
+                new_sched_date = Date.convertDateFormat(Date, sched_date, oldDateFormat, newDateFormat)
+                self.transactions[trans_number].set_sched_date(new_sched_date)
+
+            self.transactions[trans_number].dateFormat = newDateFormat
+            self.transactions[trans_number].dateSep = newDateSep
+
+            trans_number += 1

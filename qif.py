@@ -132,12 +132,9 @@ class qif(object):
                 if section == ACCOUNT:
                     cur_asset.set_limit(rest)
                 elif section == DETAIL:
-#                    if last_transaction == None and rest[0] == '[' and rest[len(rest)-1] == ']':            # JJG 1/21/2024 Special handling of first L line to support Quicken qif exported files
                     if last_transaction == None:                    # JJG 1/21/2024 Special handling of first L line to support Quicken qif exported files
-                        if rest[0] == '[':
-                            asset_name = rest[1:len(rest)-1]
-                        else:
-                            asset_name = rest
+                        asset_name_parts = filename.split('\\')
+                        asset_name = asset_name_parts[-1].split('.')[0]
                         cur_asset = Found_assets.get_asset_by_name(asset_name)
                         cur_asset_name = cur_asset.get_name().upper()
                         if cur_asset_name.find("SAVINGS") != -1:
@@ -147,14 +144,22 @@ class qif(object):
                         elif cur_asset_name.find("DISCOVER") != -1 or cur_asset_name.find("CREDIT CARD") != -1 or cur_asset_name.find("MASTERCARD") != -1 or cur_asset_name.find("AM EX") != -1:
                             cur_asset.set_type("credit card")
                     cur_transaction.set_memo(rest)
+            elif input_type == "M":
+                if section == ACCOUNT:
+                    cur_asset.set_memo(rest)
             elif input_type == "N":
                 if section == ACCOUNT:
                     cur_asset = Found_assets.get_asset_by_name(rest)
                 elif section == DETAIL:
                     cur_transaction.set_check_num(rest)
-            elif input_type == "P" or input_type == "M":                    # JJG 1/22/2022  Seems some use M lines incorrectly!
+            elif input_type == "P" or input_type == "M":                # JJG 1/22/2022  Seems some use M lines incorrectly (payee vice a strict memo)! 1/21/2024 merge vice simply copy latest stuff!
                 if section == DETAIL:
-                    cur_transaction.set_payee(rest)
+                    payee = cur_transaction.get_payee()
+                    if payee == None:
+                        payee = rest
+                    else:
+                        payee += " " + rest
+                    cur_transaction.set_payee(payee)
             elif input_type == "S":
                 if section != SPLIT:
                     split_total = cur_transaction.get_amount()
@@ -223,10 +228,24 @@ class qif(object):
                 print("in", section, "section got unparsable line: ", line[:-1])
         return Found_assets
 
-    def write_qif(self, filename):
-        Found_assets = self.parent.assets.assets
-        # Write and process Assets and Transactions here!   JJG 1/17/2022
-        print("In writing ", filename, " as .qif file. Found_assets = ", Found_assets)
+    def write_qif(self, filename, function, lines):
+        filelines = '\n'.join(lines)
+        with open(filename, 'a') as file:
+            file.writelines("%s" % filelines)
+        Found_assets = self.assets.assets
+        for asset in Found_assets:
+            if function == 'writeAccountHeaders':
+                asset.write_qif(filename)
+            elif function == 'writeAccountDetails':
+                lines = []
+                lines.append("N%s\m" % asset.get_name())
+                for transaction in asset.transactions.transactions:
+                    lines.append(transaction.qif_repr())
+                lines.append("^\n")
+                filelines = '\n'.join(lines)
+                with open(filename, 'a') as file:
+                    file.writelines("%s" % filelines)
+
         return True
 
     def save_as_file(self):
@@ -247,7 +266,7 @@ class qif(object):
             if d.ShowModal() == wx.ID_YES:
                 qif.write_qif(self, self.filename)
                 assetFile = ""
-        self.clear_all_assets()
+#        self.clear_all_assets()
         if assetFile != "":
             self.SetTitle("PyAsset: %s" % self.filename)
             return qif.read_qif(self, self.filename)

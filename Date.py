@@ -26,11 +26,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  07/04/2021     Added error checking to parse_date
 #  08/07/2021     Version v0.2
 
-# To Do list:
-# Plot balance vs day
-# Search functions
-# goto date
-
 import wx
 import re
 
@@ -158,7 +153,7 @@ class Date:
         month = 0
         day = 0
         year = 0
-        date_sep = Date.get_global_date_sep(self)
+        date_sep = Date.get_global_date_sep(Date)
         date_fields = Date.get_global_date_format(Date).split(date_sep)
         in_date = in_date.replace("'","/").replace(" ","0")           # JJG 1/12/2022 replaced ' with / and " " with 0 to handle Quicken .QIF files!
         m = re.match("^[\d]+([/-])[\d]+([/-])[\d]+$", in_date)        # JJG 1/12/2022 removed number length restrictions to handle Quicken .QIF files!
@@ -219,6 +214,10 @@ class Date:
         curr_date = wx.DateTime.Today()
         return { "dt": curr_date, "str": curr_date.Format(Date.get_global_date_format(Date)) }
 
+    def get_today_date_time(self):
+        curr_date = self.get_today_date(self)["str"]
+        return { curr_date + str(wx.DateTime.GetTimeNow()) }
+
     def set_curr_date(self):
         curr_date = Date.get_today_date(Date)
         self.curr_date = curr_date["str"]
@@ -246,7 +245,7 @@ class Date:
             self.MsgBox("Bad projected date (%s) - ignored!" % (str(proj_date)))
         else:
             retVal = self.proj_date
-        Date.set_global_proj_date(self, retVal)
+        Date.set_global_proj_date(Date, retVal)
         return retVal
 
     def set_date_format(self, desired_date_format):
@@ -260,6 +259,13 @@ class Date:
 
     def get_proj_date(self):
         return Date.global_proj_date
+
+    def convertDateTimeFormat(self, in_date_time, old_date_format, new_date_format):
+        date_time = in_date_time.split()
+        in_date = date_time[0]
+        in_time = date_time[1]
+        new_date = Date.convertDateFormat(self, in_date, old_date_format, new_date_format)["str"]
+        return new_date + " " + in_time
 
     def convertDateFormat(self, in_date, in_dateFormat, out_dateFormat):
         in_date_parsed = Date.parse_date(self, in_date, in_dateFormat)
@@ -288,7 +294,7 @@ class Date:
         return parsed_date_format
 
     def get_global_date_format(self):
-        return self.global_date_format
+        return Date.global_date_format
 
     def set_global_date_sep(self, sep):
         Date.global_date_sep = sep

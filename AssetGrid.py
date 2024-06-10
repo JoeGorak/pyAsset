@@ -133,8 +133,8 @@ class AssetGrid(grd.Grid):
         # Grid layout array
         self.col_info = [
             [self.ACCT_NAME_COL, ACCT_NAME_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-            [self.ACCT_CURR_VAL_COL, ACCT_CURR_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
-            [self.ACCT_PROJ_VAL_COL, ACCT_PROJ_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
+            [self.ACCT_CURR_VAL_COL, ACCT_CURR_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
+            [self.ACCT_PROJ_VAL_COL, ACCT_PROJ_VAL_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
             [self.ACCT_LAST_PULL_COL, ACCT_LAST_PULL_COL_WIDTH, self.DATE_TIME_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
             [self.ACCT_LIMIT_COL, ACCT_LIMIT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
             [self.ACCT_AVAIL_ONLINE_COL, ACCT_AVAIL_ONLINE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
@@ -326,7 +326,7 @@ class AssetGrid(grd.Grid):
         str_out = ""
         for j in range(len(groups) - 2, -1, -1):
             str_out += str(groups[j])
-        if self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and str_out == "0.00":
+        if (self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS) and (str_out == "0.00"):
             tableValue = ""
         else:
             str_out = str_out.strip(' \t')
@@ -525,6 +525,7 @@ class AssetGrid(grd.Grid):
                 str = "Warning: cellchanging not allowed for cell %d %d!" % (row, col)
                 ret_val = self.DisplayMsg(str)
         if ret_val == wx.OK:
+            self.setColMethod(self.getCurrAsset(row, col), row, col, new_value)
             self.getFrame().assetchange(evt)
             self.getFrame().redraw_all(row)  # only redraw current row
         else:
@@ -546,7 +547,12 @@ class AssetGrid(grd.Grid):
         pos = evt.GetPosition
         if row < len(self.getFrame().assets):
             if col == self.ACCT_NAME_COL:
-                self.getFrame().add_transaction_frame(row, col)
+                assetFrame = self.getFrame()
+                transactionFrame = assetFrame.get_transaction_frame(row)
+                if transactionFrame != None:
+                    transactionFrame.redraw_all()
+                else:
+                    assetFrame.add_transaction_frame(row)
             else:
                 print("OnCellLeftClick: AssetGrid (%d,%d) %s\n" % (row, col, pos))
             evt.Skip()

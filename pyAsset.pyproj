@@ -16,7 +16,7 @@
     <CommandLineArguments>E:\Dropbox\Private\Programming\Python\pyAsset\pyAsset.cfg</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <IsWindowsApplication>False</IsWindowsApplication>
-    <InterpreterId>Global|PythonCore|3.9</InterpreterId>
+    <InterpreterId>Global|PythonCore|3.11</InterpreterId>
   </PropertyGroup>
   <PropertyGroup Condition=" '$(Configuration)' == 'Debug' ">
     <DebugSymbols>true</DebugSymbols>
@@ -30,6 +30,8 @@
     <Compile Include="Asset.py" />
     <Compile Include="AssetFrame.py" />
     <Compile Include="AssetGrid.py" />
+    <Compile Include="Bill.py" />
+    <Compile Include="BillFrame.py" />
     <Compile Include="BillGrid.py" />
     <Compile Include="AssetList.py" />
     <Compile Include="BillList.py" />
@@ -41,6 +43,7 @@
     <Compile Include="pyAsset.py">
       <Publish>True</Publish>
     </Compile>
+    <Compile Include="qif.py" />
     <Compile Include="Transaction.py" />
     <Compile Include="TransactionFrame.py" />
     <Compile Include="TransactionGrid.py" />

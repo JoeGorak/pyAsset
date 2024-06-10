@@ -512,6 +512,29 @@ class TransactionGrid(grd.Grid):
             self.SetColSize(i, cur_width)
         return self.value_width
 
+    def update_transaction_grid_dates(self, oldDateFormat, newDateFormat):
+        self.edited = True
+        nassets = len(self.assets)
+        for row in range(nassets):           
+            for col in range(self.assetGrid.getNumLayoutCols()):
+                cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
+                if cellValue != None and cellValue != 'None':
+                    cellType = self.assetGrid.getColType(col)
+                    if (cellType == self.assetGrid.DATE_TYPE or cellType == self.assetGrid.DATE_TIME_TYPE) and oldDateFormat != None and newDateFormat != None:
+                        tableValue = Date.convertDateFormat(Date, cellValue, oldDateFormat, newDateFormat)["str"]
+                        if cellType == self.assetGrid.DATE_TIME_TYPE:
+                            time = cellValue.split(" ")[1]
+                            tableValue += " " + time
+                        if tableValue != "":
+                            curr_asset = self.assetGrid.getCurrAsset(row, col)
+                            if self.assetGrid.setColMethod(curr_asset, row, col, tableValue) != "??":
+                                if cellType == self.assetGrid.DATE_TIME_TYPE:
+                                    self.assetGrid.GridCellDateTimeRenderer(row, col)
+                                else:
+                                    self.assetGrid.GridCellDateRenderer(row, col)
+                            else:
+                                print("update_asset_grid_dates: Warning: unknown method for cell! row, ", row, " col ", col, " Skipping!")
+
     def OnCellLeftClick(self, evt):
         print("OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
                                                  evt.GetCol(),

@@ -305,8 +305,13 @@ class PropertyForm(wx.Panel):
                 parsed_new_format = Date.parse_date_format(Date, new_format)
                 new_format = parsed_new_format[0]
                 new_date_sep = parsed_new_format[1]
-                self.assetFrame.curr_date = Date.get_today_date(Date)["dt"].Format(new_format)      # JJG 1/7/2024 Change current date to new format
-                self.assetFrame.proj_date = new_format.replace("%y", "yy").replace("%m", "mm").replace("%d", "dd").replace("%Y", "yyyy")
+                Date.set_global_date_format(Date, new_format)
+                Date.set_global_date_sep(Date, new_date_sep)
+                global_proj_date = Date.get_global_proj_date(Date)
+                new_global_proj_date = Date.convertDateFormat(self,global_proj_date,old_format,new_format)
+                Date.set_global_proj_date(Date, new_global_proj_date)
+                self.assetFrame.curr_date = Date.get_today_date(Date)["dt"].Format(new_format)              # JJG 1/7/2024 Change current date to new format
+                self.assetFrame.proj_date = new_global_proj_date                                            # JJG 5/26/2024 Change proj_date to new format
             if self.oldRefDate != self.NewRefDate or old_format != new_format:
                 ref_date = Date.parse_date(self, self.assetFrame.ref_date, old_format)
                 self.assetFrame.ref_date = Date.convertDateFormat(self, ref_date, old_format, new_format)

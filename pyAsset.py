@@ -73,6 +73,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  06/11/2016     Initial version v0.1
 #  08/07/2021     Version v0.2                  Total rewrite of Date.py, lots of bug fixes and code cleanup!
 
+# To Do list:
+# Plot balance vs day
+# Search functions
+# goto date
+
 import sys
 import wx
 from AssetFrame import AssetFrame

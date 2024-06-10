@@ -128,6 +128,7 @@ class Bill:
     def set_due_date(self, due_date):
         date_str = ''
         finished = False
+        inc_month = False
         if type(due_date)==str:
             if due_date == '':
                 finished = True
@@ -135,22 +136,28 @@ class Bill:
                 temp_due_date = Date.parse_date(self,due_date,Date.get_global_date_format(Date))
                 temp_due_date = date(temp_due_date['year'],temp_due_date['month'],temp_due_date['day'])
         else:
-            temp_due_date = date(due_date.year,due_date.month,due_date.day)
+            try:
+                temp_due_date = due_date["dt"]
+                inc_month = True
+            except:
+                temp_due_date = date(due_date.year,due_date.month,due_date.day)
         if not finished:
             date_fields = Date.get_global_date_format(Date).split(Date.get_global_date_sep(Date))
             for i in range(3):
                 if date_fields[i] == "%m":
                     month = int(temp_due_date.month)
-                    date_str += "%02d" % (temp_due_date.month)
+                    if inc_month:
+                        month += 1
+                    date_str += "%02d" % (month)
                 elif date_fields[i] == "%d":
                     day = int(temp_due_date.day)
-                    date_str += "%02d" % (temp_due_date.day)
+                    date_str += "%02d" % (day)
                 elif date_fields[i] == "%Y":
                     year = int(temp_due_date.year)
-                    date_str += "%04d" % (due_date.year)
+                    date_str += "%04d" % (year)
                 elif date_fields[i] == "%y":
                     year = int(due_date.year)
-                    date_str += "%02d" % (temp_due_date.year)
+                    date_str += "%02d" % (year)
                 if i < 2:
                     date_str += Date.get_global_date_sep(self)
         self.due_date = date_str
@@ -161,6 +168,7 @@ class Bill:
     def set_sched_date(self, sched_date):
         date_str = ""
         finished = False
+        inc_month = False
         if type(sched_date)==str:
             if sched_date == '':
                 finished = True
@@ -168,22 +176,28 @@ class Bill:
                 temp_sched_date = Date.parse_date(self,sched_date,Date.get_global_date_format(Date))
                 temp_sched_date = date(temp_sched_date['year'],temp_sched_date['month'],temp_sched_date['day'])
         else:
-            temp_sched_date = date(sched_date.year,sched_date.month,sched_date.day)
+            try:
+                temp_sched_date = sched_date["dt"]
+                inc_month = True
+            except:
+                temp_sched_date = date(sched_date.year,sched_date.month,sched_date.day)
         if not finished:
             date_fields = Date.get_global_date_format(Date).split(Date.get_global_date_sep(self))
             for i in range(3):
                 if date_fields[i] == "%m":
                     month = int(temp_sched_date.month)
-                    date_str += "%02d" % (temp_sched_date.month)
+                    if inc_month:
+                        month += 1
+                    date_str += "%02d" % (month)
                 elif date_fields[i] == "%d":
                     day = int(temp_sched_date.day)
-                    date_str += "%02d" % (temp_sched_date.day)
+                    date_str += "%02d" % (day)
                 elif date_fields[i] == "%Y":
                     year = int(temp_sched_date.year)
-                    date_str += "%04d" % (temp_sched_date.year)
+                    date_str += "%04d" % (year)
                 elif date_fields[i] == "%y":
                     year = int(temp_sched_date.year)
-                    date_str += "%02d" % (temp_sched_date.year)
+                    date_str += "%02d" % (year)
                 if i < 2:
                     date_str += Date.get_global_date_sep(self)
         self.sched_date = date_str

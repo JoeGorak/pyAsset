@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  06/11/2016     Initial version v0.1
 #  08/07/2021     Version v0.2
 #  04/15/2022     Version v0.3         Added support for Bills
+#  05/25/2024     Version v0.4         fixed bugs with Bill support and projected date logic
 
 # To Do list (possible new features?):
 # Speed redraw_all: break o redraw_all, redraw_range, redraw_totals
@@ -57,17 +58,17 @@ from ExcelToAsset import ExcelToAsset
 from iMacrosToAsset import iMacrosToAsset
 
 class AssetFrame(wx.Frame):
-    global_curr_paydate = "mm/dd/yyyy"                      # JJG 12/29/2023 Set this way to get spacing right!
-    global_next_paydate = "mm/dd/yyyy"                      # JJG 12/29/2023 Set this way to get spacing right!
+    global_curr_paydate = "mm/dd/YYYY"                                          # JJG 5/19/2024 Done this way to get spacing right
+    global_next_paydate = "mm/dd/YYYY"                                          # JJG 5/19/2024 Done this way to get spacing right
 
     def __init__(self, parent, title="PyAsset", cfgFile="", assetFile=""):
         self.parent = parent
         self.frame = self
         self.assets = AssetList(self)
-        self.bills = BillList()
+        self.bills = None
+        self.bills_frame = None
         self.qif = qif(self)
         self.cur_asset = Asset(name=assetFile)
-        self.edited = False
         self.cfgFile = copy.deepcopy(cfgFile)
         self.assetFile = copy.deepcopy(assetFile)
         self.CreateParams()
@@ -75,21 +76,21 @@ class AssetFrame(wx.Frame):
         self.make_widgets()
         if self.readConfigFile(cfgFile):
             self.curr_date = Date.set_curr_date(Date)["str"]
-            self.proj_date = Date.set_proj_date(Date, "")
+            self.proj_date = self.curr_date                          # JJG 5/13/2024 Set proj date to curr date initially
             Date.set_global_curr_date(self, self.curr_date)
             Date.set_global_proj_date(self, self.proj_date)
             self.set_curr_paydate()
             self.set_next_paydate()
             oldDateFormat = ""                                       # JJG 1/1/2024 Force date format to be set the first time
             newDateFormat = Date.get_global_date_format(Date)
-            self.update_date_grid_dates(oldDateFormat, newDateFormat)
+            self.update_date_dates(oldDateFormat, newDateFormat)
             oldDateFormat = newDateFormat
             oldRefDate = self.ref_date
             oldDateSep = Date.get_global_date_sep(self)
  
             if self.assetFile:
                 latest_assets = qif.load_file(self, self.assetFile)
-                self.process_asset_list(latest_assets)
+                self.process_asset_list(latest_assets, 'add')
         else:
             curr_date = Date(parent)
             self.curr_date = curr_date.curr_date["str"]
@@ -109,6 +110,7 @@ class AssetFrame(wx.Frame):
         currDate = Date.parse_date(self, self.curr_date, Date.get_global_date_format(Date))
         self.projDate = currDate
         self.properties(self, oldDateFormat, oldPayType, oldRefDate, oldNetPay, oldPayDepositAcct)
+        self.edited = False
 
     def get_display_date(self, in_date):
         if type(in_date) is not str:
@@ -140,6 +142,12 @@ class AssetFrame(wx.Frame):
         elif payType == "every month":
             incr = wx.DateSpan(months=1)
         return incr
+
+    def get_curr_date(self):
+        return self.curr_date
+
+    def get_proj_date(self):
+        return self.proj_date
 
     def set_curr_paydate(self):
         retVal = ""
@@ -388,11 +396,10 @@ class AssetFrame(wx.Frame):
         self.billButton.Bind(wx.EVT_LEFT_DOWN, self.onBillButtonClick)
 
     def onBillButtonClick(self, evt):
-        try:
-#            print(self.frame.latest_bills)
-            self.bills_frame = BillFrame(None, self, -1, self.frame.latest_bills)
-        except:
+        if self.bills == None:
             self.DisplayMsg("No bills in the system yet")
+        else:
+            self.bills_frame = BillFrame(None, self, -1, self.frame.bills)
 
     def get_bills_frame(self):
         return self.bills_frame
@@ -415,11 +422,11 @@ class AssetFrame(wx.Frame):
         self.nextPayDateOutput = wx.StaticText(panel, label=str(self.nextPayDate))
         self.projDateInput.Bind(wx.EVT_TEXT_ENTER,self.onProjDateEntered)
 
-    def update_date_grid_dates(self, oldDateFormat, newDateFormat):
+    def update_date_dates(self, oldDateFormat, newDateFormat):
         if type(self.curr_date) is str:
             curr_date_label = self.curr_date
             if curr_date_label == "":
-                curr_date_label =  Date.get_global_date_format(Date).replace("%m", "mm").replace("%d", "dd").replace("%y","yy").replace("%Y", "yyyy")
+                curr_date_label = Date.get_global_date_format(Date).replace("%m", "mm").replace("%d", "dd").replace("%y","yy").replace("%Y", "yyyy")
         else:
             curr_date_label = self.curr_date["str"]
         self.currDateInput.LabelText = curr_date_label
@@ -466,17 +473,6 @@ class AssetFrame(wx.Frame):
         self.assetGrid = AssetGrid(panel)
         self.needed_width = self.assetGrid.set_properties(self)
 
-    def add_transaction_frame(self, row, col):
-        name = self.assets[row].name
-        transactions = self.assets[row].transactions
-        self.trans_frame = TransactionFrame(None, self, -1, row, transactions, name)
-
-    def get_transaction_frame(self):
-        try:
-            return self.trans_frame
-        except:
-            return None
-
     def setup_layout(self):
         self.panel = wx.Panel(self)
 
@@ -512,13 +508,12 @@ class AssetFrame(wx.Frame):
         self.Show()
 
     def redraw_all(self, index=-1):
-        self.edited = True
-        nassets = len(self.assets)
+        nassets = len(self.assets.assets)
         if index == -1:
             nrows = nassets + 1
-            if nrows > 0 and (index == None or index == -1):
-                self.assetGrid.DeleteRows(0, nrows)
-                nrows = 0
+#            if nrows > 0 and (index == None or index == -1):
+#                self.assetGrid.DeleteRows(0, nrows)
+#                nrows = 0
             start_range = 0
             end_range = nassets
             if nrows < nassets:
@@ -536,12 +531,6 @@ class AssetFrame(wx.Frame):
                 if ret_val != wx.OK:
                     continue
 
-                # Logic to always display Value (Curr), Value (Proj), Avail(Proj), Amt Over, Cash Limit, Cash Used and Cash Avail for credit cards,store cards, and overdraft
-                asset_type = self.assets[row].get_type()
-                col_name = self.assetGrid.getColName(col)
-                self.assetGrid.setColZeroSuppress(row, col, True)
-                if (asset_type == "store card" or asset_type == "credit card" or asset_type == "overdraft") and ("Curr" in col_name or "Proj" in col_name or "Amt" in col_name or "Cash" in col_name):
-                    self.assetGrid.setColZeroSuppress(row, col, False)
                 cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
                 cellType = self.assetGrid.getColType(col)
                 if cellType == self.assetGrid.DOLLAR_TYPE:
@@ -557,34 +546,57 @@ class AssetFrame(wx.Frame):
                 else:
                     self.assetGrid.GridCellErrorRenderer(row, col)
         if index == -1:
-            self.assetGrid.SetGridCursor(0, 0)              # was (nassets-1, 0)
-            self.assetGrid.MakeCellVisible(0, True)         # was (nassets-1, 0)
+            self.assetGrid.SetGridCursor(0, 0)
+            self.assetGrid.MakeCellVisible(0, True)
         elif index > 0:
             self.assetGrid.SetGridCursor(index, 0)
             self.assetGrid.MakeCellVisible(index, True)
 
-    def update_asset_grid_dates(self, oldDateFormat, newDateFormat):
+    def add_transaction_frame(self, row):
+        name = self.assets[row].name
+        transactions = self.assets[row].transactions
+        self.assets.assets[row].trans_frame = TransactionFrame(None, self, -1, row, transactions, name)
+
+    def get_transaction_frame(self, row):
+        try:
+            return self.assets[row].trans_frame
+        except:
+            return None
+
+    def update_asset_dates(self, oldDateFormat, newDateFormat):
         self.edited = True
         nassets = len(self.assets)
-        for row in range(nassets):           
-            for col in range(self.assetGrid.getNumLayoutCols()):
-                cellValue = self.assetGrid.GridCellDefaultRenderer(row, col)
-                if cellValue != None and cellValue != 'None':
-                    cellType = self.assetGrid.getColType(col)
-                    if (cellType == self.assetGrid.DATE_TYPE or cellType == self.assetGrid.DATE_TIME_TYPE) and oldDateFormat != None and newDateFormat != None:
-                        tableValue = Date.convertDateFormat(Date, cellValue, oldDateFormat, newDateFormat)["str"]
-                        if cellType == self.assetGrid.DATE_TIME_TYPE:
-                            time = cellValue.split(" ")[1]
-                            tableValue += " " + time
-                        if tableValue != "":
-                            curr_asset = self.assetGrid.getCurrAsset(row, col)
-                            if self.assetGrid.setColMethod(curr_asset, row, col, tableValue) != "??":
-                                if cellType == self.assetGrid.DATE_TIME_TYPE:
-                                    self.assetGrid.GridCellDateTimeRenderer(row, col)
-                                else:
-                                    self.assetGrid.GridCellDateRenderer(row, col)
-                            else:
-                                print("update_asset_grid_dates: Warning: unknown method for cell! row, ", row, " col ", col, " Skipping!")
+        for row in range(nassets):
+            curr_asset = self.assets.assets[row]
+            last_pull_date = curr_asset.get_last_pull_date()
+            if last_pull_date != None:
+                curr_asset.set_last_pull_date(Date.convertDateTimeFormat(Date, last_pull_date, oldDateFormat, newDateFormat))
+            due_date = curr_asset.get_due_date()
+            if due_date != None:
+                curr_asset.set_due_date(Date.convertDateFormat(Date, due_date, oldDateFormat, newDateFormat))
+            sched_date = curr_asset.get_sched_date()
+            if sched_date != None:
+                curr_asset.set_sched_date(Date.convertDateFormat(Date, sched_date, oldDateFormat, newDateFormat))
+            if self.assets.assets[row].transactions != None:
+                self.assets.assets[row].transactions.update_transaction_dates(oldDateFormat, newDateFormat)
+                trans_frame = self.get_transaction_frame(row)
+                if trans_frame != None:
+                    trans_frame.redraw_all()
+
+    def update_bill_dates(self, oldDateFormat, newDateFormat):
+        if self.bills != None:
+            self.edited = True
+            nbills = len(self.bills)
+            for row in range(nbills):
+                curr_bill = self.bills[row]
+                due_date = curr_bill.get_due_date()
+                if due_date != None:
+                    curr_bill.set_due_date(Date.convertDateFormat(Date, due_date, oldDateFormat, newDateFormat))
+                sched_date = curr_bill.get_sched_date()
+                if sched_date != None:
+                    curr_bill.set_sched_date(Date.convertDateFormat(Date, sched_date, oldDateFormat, newDateFormat))
+            if self.bills_frame != None:
+                self.bills_frame.redraw_all()
 
     def assetchange(self, evt):
         row = evt.GetRow()
@@ -630,25 +642,16 @@ class AssetFrame(wx.Frame):
             self.edited = True
 
     def update_all_Date_Formats(self, oldDateFormat, newDateFormat):
-        self.update_date_grid_dates(oldDateFormat, newDateFormat)
-        self.update_asset_grid_dates(oldDateFormat, newDateFormat)
-
-# Updating transaction grid dates isn't working yet       TODO   JJG 1/13/2024
-#        transaction_frame = self.get_transaction_frame()
-#        if transaction_frame != None:
-#            transaction_frame.update_transaction_grid_dates(oldDateFormat, newDateFormat)
+        self.update_asset_dates(oldDateFormat, newDateFormat)
+        self.update_bill_dates(oldDateFormat, newDateFormat)
+        self.update_date_dates(oldDateFormat, newDateFormat)
+        self.redraw_all()
         self.edited = True
 
     def load_file(self, assetFile):
         latest_assets = qif.load_file(self, "")
         if latest_assets != None:
-            self.process_asset_list(latest_assets)
-
-    def write_assets(self, file_name):
-        assetList = self.assets.assets
-        for cur_asset in assetList:
-            cur_asset.write_qif(file_name)
-        self.edited = False
+            self.process_asset_list(latest_assets, 'add')
 
     def save_file(self, *args):
         assetFile = copy.deepcopy(self.assetFile)
@@ -662,28 +665,35 @@ class AssetFrame(wx.Frame):
         else:
            self.assetFile = copy.deepcopy(assetFile)
         assetFile = copy.deepcopy(self.assetFile)
-        file = open(assetFile, 'w')                             # Make sure file starts empty! JJG 1/17/2024
-        file.close()
-        if len(self.assets) != 0:
-            if assetFile != "":
-                self.write_assets(assetFile)
+        if assetFile != "" and len(self.assets.assets) != 0:
+            file = open(assetFile, 'w')                             # Make sure file starts empty! JJG 1/17/2024
+            file.close()
+            lines = [ "!Option:AutoSwitch", "!Account\n" ]
+            self.process_asset_list(self.assets, "writeAccountHeaders", lines)
+            lines = [ "!Clear:AutoSwitch" , "!Account\n" ]
+            self.process_asset_list(self.assets, "writeAccountDetails", lines)
 
     def save_as_file(self, *args):
-        self.assetFile = None
+        self.assetFile = self.assetFile
         self.save_file(self)
 
     def close(self, *args):
-#        if self.edited:
-#            self.save_file(self)                                            # Not sure if this is all we need to do however it'll do for now!  JJG 1/17/2024
+        if self.edited:
+            d = wx.MessageDialog(self,
+                                 "",
+                                 "Update file before closing?", wx.YES_NO)
+            if d.ShowModal() == wx.ID_YES:
+                self.save_file(self)
+        self.process_asset_list(self, 'delete')
         self.cur_asset = None
+        for cur_asset in self.assets.assets:
+            del cur_asset
         del self.assets
         del self.bills
         self.assets = AssetList(self)
-        self.bills = BillList()
-        self.redraw_all()
+        self.bills = None
         self.edited = False
         self.SetTitle("PyAsset: Asset")
-
 
     def quit(self, *args):
         self.close()
@@ -811,15 +821,27 @@ class AssetFrame(wx.Frame):
                 self.MsgBox(error)
                 return
 
-    def process_asset_list(self, assetList):
-        for i in range(len(assetList.assets)):
-            cur_asset = assetList.assets[i]
-            cur_name = cur_asset.get_name()
-            j = self.assets.index(cur_name)
-            if  j != -1:
-                self.assets.assets[j] = cur_asset           # For now, just replace, when dates are working, save later date JJG 1/22/2022
-            else:            
-                self.assets.append_by_object(cur_asset)
+    def process_asset_list(self, assetList, function, lines = None):
+        nassets = len(assetList.assets)
+        if nassets > 0:
+            if function == 'writeAccountHeaders' or function == 'writeAccountDetails':
+               qif.write_qif(self, self.assetFile, function, lines)
+            else:
+                for i in range(nassets):
+                    if function == 'add':
+                        cur_asset = assetList.assets[i]
+                        cur_name = cur_asset.get_name()
+                        j = self.assets.index(cur_name)
+                        if j != -1:
+                            self.assets.assets[j] = cur_asset           # For now, just replace, when dates are working, save later date JJG 1/22/2022
+                        else:            
+                          self.assets.append_by_object(cur_asset)
+                    elif function == 'delete':
+                        del assetList.assets[0]                         # Since we are deleting the entire list, we can just delete the first one each time!
+                    else:
+                        pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
+            if function == 'delete':
+                self.assetGrid.ClearGrid()
         self.redraw_all()
 
     def import_XLSX_file(self, *args):
@@ -839,22 +861,22 @@ class AssetFrame(wx.Frame):
 
             if error == "":
                 self.cur_assets = None
-                xlsm = ExcelToAsset(ignore_sheets=['Assets', 'Bills', 'Shop Your Way transactions', 'Slate transactions', 'Slate old transactions'])
+                xlsm = ExcelToAsset(ignore_sheets=['Assets', 'Bills'])
                 xlsm.OpenXLSMFile(total_name_in)
                 latest_assets = xlsm.ProcessAssetsSheet(self)
-                self.process_asset_list(latest_assets)
+                self.process_asset_list(latest_assets, 'add')
                 transaction_sheet_names = xlsm.GetTransactionSheetNames()
                 for sheet in transaction_sheet_names:
                     sheet_index = self.assets.index(sheet)
                     if sheet_index != -1:
                         self.assets[sheet_index].transactions = xlsm.ProcessTransactionSheet(self.assets[sheet_index], sheet)
                         if self.assets[sheet_index].transactions:
-                             proj_value = self.assets[sheet_index].transactions.update_current_and_projected_values()
-                             self.assets[sheet_index].set_value_proj(proj_value)
+                            proj_value = self.assets[sheet_index].transactions.update_current_and_projected_values()
+                            self.assets[sheet_index].set_value_proj(proj_value)
                     else:
                         print(sheet + " not found in asset list")
 
-#                self.latest_bills = xlsm.ProcessBillsSheet(self.bills)             # TODO JJG 1/7/2024 Fix this to do dates correctly!
+                self.bills = xlsm.ProcessBillsSheet(self.bills)
             else:
                 self.DisplayMsg(error)
 
@@ -862,14 +884,14 @@ class AssetFrame(wx.Frame):
         w = iMacrosToAsset()
         w.Init()
         net_asset_codes = [
-                           ("HFCU",1,[False,False,False,True]),
-                           #("BOA",-1,[False,True]),
-                           #("AMEX",-1,[True,True]),
-                           #("CITI",-1,[True]),
-                           #("MACYS",-1,[True]),
-                           #("SYW",-1,[True]),
-                           #("TSP",-1,[False,False,False,True]),
-                           #("MET",1,[False])
+                           ("HFCU",1,[False,False,False,True], "Hickam "),
+                           #("NFCU",-1,[False,True], "Navy Fed "),
+                           #("SOFI",-1.[False,True], "SoFi "),
+                           #("AMEX",-1,[True,True], "Am Ex Blue "),
+                           #("CITI",-1,[True], "Citi MC "),
+                           #("SYW",-1,[True], "Shop Your Way MC "),
+                           #("TSP",-1,[False,False,False,True], "TSP "),
+                           #("MET",1,[False], "Met Life annuity ")
                            ]
         for net_asset_code in net_asset_codes:
             latest_assets = w.GetNetInfo(net_asset_code)
@@ -877,19 +899,18 @@ class AssetFrame(wx.Frame):
             for i in range(len(latest_assets)):
                 net_asset = latest_assets.__getitem__(i)
                 if net_asset != None:
-                    latest_name = net_asset.get_name()
+                    latest_name = net_asset_code[3] + net_asset.get_name()
                     found = False
                     for j in range(len(self.assets)):
                         cur_name = self.assets[j].get_name()
                         if "(" in cur_name:
                             cur_name = cur_name.split("(")[1].split(")")[0]
-                        if cur_name in latest_name:
+                        if latest_name in cur_name:
                             net_index = j
                             found = True
-                            found = Tr
                             break
                     if not found:
-                        self.assets.append(latest_name)
+                        self.assets.append_by_name(latest_name)
                         net_index = -1
                     # Always update Value (Curr) column and type ... others check if non-zero value before update is done!
                     self.assets[net_index].set_value(net_asset.get_value())
@@ -947,7 +968,6 @@ class AssetFrame(wx.Frame):
         self.update_all_Date_Formats(oldDateFormat, newDateFormat)
         #TO DO: Add logic to update Salary transactions and Bill transactions for pay_dates
         Date.set_global_date_format(Date, newDateFormat)
-
 
     def setDateFormat(self, new_DateFormat):
         self.dateFormat = new_DateFormat
