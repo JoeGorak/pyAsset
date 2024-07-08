@@ -52,9 +52,9 @@ class qif(object):
             self.read_qif(assetFile, readmode)
 
     def read_qif(self, filename, readmode="normal"):
-        if readmode == 'normal':  # things not to do on 'import':
-            name = filename.replace('.qif', '')
-            self.filename = os.path.split(name)[1]
+#        if readmode == 'normal':  # things not to do on 'import':
+#            name = filename.replace('.qif', '')
+#            self.filename = os.path.split(name)[1]
         Found_assets = AssetList(self)
         mffile = open(filename, 'r')
         lines = mffile.readlines()
@@ -68,35 +68,35 @@ class qif(object):
         for line in lines:
             input_type, rest = line[0], line[1:].strip().replace(",","")
             if input_type == "!":
-                if rest == "Account":
+                if rest == 'Account' or rest == 'Clear:AutoSwitch':
                     section = ACCOUNT
-                elif (rest.__contains__("Type")) or (rest.__contains__("Clear:Autoswitch")):
+                elif rest == 'Option:AutoSwitch':
                     section = DETAIL
                     cur_transaction = Transaction(self)
                 else:
                     if section == ACCOUNT:
-                        section = "account"
+                        outSection = "account"
                     elif section == DETAIL:
-                        section = "detail"
+                        outSection = "detail"
                     else:
-                        section = "unknown"
-                    print("in", section, "section got unknown ! line: ", line[:-1])                   
+                        outSection = "unknown"
+                    print("in", outSection, "section got unknown ! line: ", line[:-1])                   
             elif input_type == "^":
                 if section == DETAIL:
-                    if len(Found_assets.assets) == 0:
-                        asset_name_parts = self.filename.split('\\')
-                        asset_name = asset_name_parts[-1].split('.')[0]
-                        cur_asset = Found_assets.get_asset_by_name(asset_name)
-                        cur_asset_name = cur_asset.get_name().upper()
-                        if cur_asset_name.find("SAVINGS") != -1:
-                            cur_asset.set_type("savings")
-                        elif cur_asset_name.find("CHECKING") != -1:
-                            cur_asset.set_type("checking")
-                        elif cur_asset_name.find("DISCOVER") != -1 or cur_asset_name.find("CREDIT CARD") != -1 or cur_asset_name.find("MASTERCARD") != -1 or cur_asset_name.find("AM EX") != -1:
-                            cur_asset.set_type("credit card")
-
-                    else:
-                        cur_asset.transactions.append(cur_transaction)
+#                    if len(Found_assets.assets) == 0:
+#                        asset_name_parts = self.filename.split('\\')
+#                        asset_name = asset_name_parts[-1].split('.')[0]
+#                        cur_asset = Found_assets.get_asset_by_name(asset_name)
+#                        cur_asset_name = cur_asset.get_name().upper()
+#                        if cur_asset_name.find("SAVINGS") != -1:
+#                            cur_asset.set_type("savings")
+#                        elif cur_asset_name.find("CHECKING") != -1:
+#                            cur_asset.set_type("checking")
+#                        elif cur_asset_name.find("DISCOVER") != -1 or cur_asset_name.find("CREDIT CARD") != -1 or cur_asset_name.find("MASTERCARD") != -1 or cur_asset_name.find("AM EX") != -1:
+#                            cur_asset.set_type("credit card")
+#                    else:
+#                        cur_asset.transactions.append(cur_transaction)
+                    cur_asset.transactions.append(cur_transaction)
                     last_transaction = cur_transaction
                     cur_transaction = Transaction(self)
                 elif section == SPLIT:
@@ -109,6 +109,9 @@ class qif(object):
                     cur_asset.transactions.append(cur_transaction)
                     last_transaction = cur_transaction
                     cur_transaction = Transaction(self)
+            elif input_type == "A":
+                if section == DETAIL:
+                    cur_transaction.set_state(rest)
             elif input_type == "C":
                 if section == DETAIL:
                     if rest == "*" or rest == "C":
@@ -119,9 +122,10 @@ class qif(object):
                         cur_transaction.set_state("unknown")
             elif input_type == "D":
                 if section == DETAIL:
-                    formatted_date = Date.parse_date(Date, rest, "%m/%d/%y")
-                    formatted_date['month'] = formatted_date['month'] - 1
-                    cur_transaction.set_due_date(formatted_date)
+                    if rest != "None":
+                        formatted_date = Date.parse_date(Date, rest, "%m/%d/%y")
+                        formatted_date['month'] = formatted_date['month'] - 1
+                        cur_transaction.set_due_date(formatted_date)
             elif input_type == "E":
                 if section == SPLIT:
                     if split_text == "":
@@ -144,31 +148,84 @@ class qif(object):
                         elif cur_asset_name.find("DISCOVER") != -1 or cur_asset_name.find("CREDIT CARD") != -1 or cur_asset_name.find("MASTERCARD") != -1 or cur_asset_name.find("AM EX") != -1:
                             cur_asset.set_type("credit card")
                     cur_transaction.set_memo(rest)
-            elif input_type == "M":
+            elif input_type == "M":                               # 6/26/2024 Pare coded memo lines based on asset or transaction being processed!
+                memo_info = rest.split(";")
                 if section == ACCOUNT:
-                    cur_asset.set_memo(rest)
+                    for info in memo_info:
+                        if info == "": continue
+                        info_type, info_rest = info[0], info[1:]
+                        if info_rest == "None": continue
+                        if info_type == "P":
+                            cur_asset.set_last_pull_date(info_rest)
+                        elif info_type == "A":
+                            cur_asset.set_avail(info_rest)
+                        elif info_type == "R":
+                            cur_asset.set_rate(info_rest)
+                        elif info_type == "Y":
+                            cur_asset.set_payment(info_rest)
+                        elif info_type == "D":
+                            cur_asset.set_due_date(info_rest)
+                        elif info_type == "S":
+                            cur_asset.set_sched_date(info_rest)
+                        elif info_type == "M":
+                            cur_asset.set_min_pay(info_rest)
+                        elif info_type == "E":
+                            cur_asset.set_est_method(info_rest)
+                        elif info_type == "O":
+                            cur_asset.set_amt_over(info_rest)
+                        elif info_type == "B":
+                            cur_asset.set_stmt_bal(info_rest)
+                        elif info_type == "C":
+                            cur_asset.set_cash_limit(info_rest)
+                        elif info_type == "U":
+                            cur_asset.set_cash_used(info_rest)
+                            cur_asset.set_cash_avail(cur_asset.get_cash_limit()-cur_asset.get_cash_used())
+                elif section == DETAIL:
+                    for info in memo_info:
+                        if info == "": continue
+                        info_type, info_rest = info[0], info[1:]
+                        if info_rest == "None": continue
+                        if info_type == "P":
+                            cur_transaction.set_pmt_method(info_rest)
+                        elif info_type == "A":
+                            cur_transaction.set_action(info_rest)
+                        elif info_type == "V":
+                            cur_transaction.set_current_value(info_rest)
+                        elif info_type == "J":
+                            cur_transaction.set_projected_value(info_rest)
+                        elif info_type == "S":
+                            cur_transaction.set_state(info_rest)
+                        elif info_type == "T":
+                            cur_transaction.set_prev_state(info_rest)
+                        elif info_type == "M":
+                            cur_transaction.set_memo(info_rest)
             elif input_type == "N":
                 if section == ACCOUNT:
                     cur_asset = Found_assets.get_asset_by_name(rest)
                 elif section == DETAIL:
                     cur_transaction.set_check_num(rest)
-            elif input_type == "P" or input_type == "M":                # JJG 1/22/2022  Seems some use M lines incorrectly (payee vice a strict memo)! 1/21/2024 merge vice simply copy latest stuff!
+            elif input_type == "P":                # 1/21/2024 merge vice simply copy latest stuff!
                 if section == DETAIL:
                     payee = cur_transaction.get_payee()
                     if payee == None:
                         payee = rest
                     else:
                         payee += " " + rest
-                    cur_transaction.set_payee(payee)
+                    cur_transaction.set_payee(payee)                            # 1/21/2024 merge vice simply copy latest stuff!
             elif input_type == "S":
-                if section != SPLIT:
+                if section == DETAIL:
+                    if rest != "None":
+                        formatted_date = Date.parse_date(Date, rest, "%m/%d/%y")
+                        formatted_date['month'] = formatted_date['month'] - 1
+                        cur_transaction.set_sched_date(formatted_date)
+                elif section != SPLIT:
                     split_total = cur_transaction.get_amount()
                     old_section = section
-                section = SPLIT
-                if split_text == "":
-                    split_text = rest
-                else:
-                    split_text += " " + rest
+                    section = SPLIT
+                    if split_text == "":
+                        split_text = rest
+                    else:
+                        split_text += " " + rest
             elif input_type == "T":
                 type = line[1:].strip()
                 if section == ACCOUNT:
@@ -216,35 +273,32 @@ class qif(object):
                     if input_type == "%":
                         cur_split_value = split_total * cur_split_value / 100.00
                     split_value += cur_split_value
+                elif section == ACCOUNT:
+                    cur_asset.set_value(round(float(rest), 2))
             else:
                 if section == ACCOUNT:
-                    section = "account"
+                    outSection = "account"
                 elif section == DETAIL:
-                    section = "detail"
+                    outSection = "detail"
                 elif section == SPLIT:
-                    section = "split"
+                    outSection = "split"
                 else:
-                    section = "unknown"
-                print("in", section, "section got unparsable line: ", line[:-1])
+                    outSection = "unknown"
+                print("in", outSection, "section got unparsable line: ", line[:-1])
         return Found_assets
 
-    def write_qif(self, filename, function, lines):
-        filelines = '\n'.join(lines)
-        with open(filename, 'a') as file:
-            file.writelines("%s" % filelines)
-        Found_assets = self.assets.assets
-        for asset in Found_assets:
-            if function == 'writeAccountHeaders':
-                asset.write_qif(filename)
-            elif function == 'writeAccountDetails':
-                lines = []
-                lines.append("N%s\m" % asset.get_name())
-                for transaction in asset.transactions.transactions:
-                    lines.append(transaction.qif_repr())
-                lines.append("^\n")
-                filelines = '\n'.join(lines)
-                with open(filename, 'a') as file:
-                    file.writelines("%s" % filelines)
+    def write_qif(self, filename, function, asset):
+        if function == 'writeAccountHeader':
+            asset.write_qif(filename)
+        elif function == 'writeAccountDetail':
+            lines = ["!Option:AutoSwitch"]
+            for transaction in asset.transactions.transactions:
+                lines.append(transaction.qif_repr())
+            lines.append("!Clear:AutoSwitch")
+            lines.append("^\n")
+            filelines = '\n'.join(lines)
+            with open(filename, 'a') as file:
+                file.writelines("%s" % filelines)
 
         return True
 
@@ -260,14 +314,15 @@ class qif(object):
             self.SetTitle("PyAsset: %s" % self.filename)
 
     def load_file(self, assetFile):
-        if assetFile != "" and self.edited:
+        self.filename = copy.deepcopy(assetFile)
+        if self.filename != "" and self.edited:
             d = wx.MessageDialog(self, 'Save file before loading new file?', 'Question',
                                  wx.YES_NO)
             if d.ShowModal() == wx.ID_YES:
                 qif.write_qif(self, self.filename)
                 assetFile = ""
 #        self.clear_all_assets()
-        if assetFile != "":
+        if self.filename != "":
             self.SetTitle("PyAsset: %s" % self.filename)
             return qif.read_qif(self, self.filename)
         else:

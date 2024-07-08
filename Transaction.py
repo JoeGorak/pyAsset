@@ -139,18 +139,24 @@ class Transaction:
 
     def qif_repr(self):
         lines = []
-        lines.append("S%s" % self.sched_date)
-        lines.append("D%s" % self.due_date)
-        if self.amount != None:
-            lines.append("T%.2f" % self.amount)
-        lines.append("A%s" % self.state)
-        if self.check_num:
-            lines.append("N%d" % self.check_num)
-        lines.append("P%s" % self.payee)
-        if self.comment:
-            lines.append("L%s" % self.comment)
-        if self.memo:
-            lines.append("M%s" % self.memo)
+        lines.append("S%s" % self.get_sched_date())
+        lines.append("D%s" % self.get_due_date())
+        amount = self.get_amount()
+        if amount != None:
+            lines.append("T%.2f" % amount)
+        lines.append("A%s" % self.get_state())
+        check_num = self.get_check_num()
+        if check_num:
+            lines.append("N%d" % check_num)
+        lines.append("P%s" % self.get_payee())
+        comment = self.get_comment()
+        if comment:
+            lines.append("L%s" % comment)
+        memo = self.get_memo()
+        if memo:
+            lines.append("M%s" % memo)
+        memo_line = "P%s;A%s;V%s;J%s;S%s;T%s;M%s" % (self.get_pmt_method(), self.get_action(), self.get_current_value(), self.get_projected_value(), self.get_state(), self.get_prev_state(), self.get_memo())
+        lines.append("M%s" % memo_line)         # Use Memo field for parsable string of info for this asset
         lines.append("^")
         return '\n'.join(lines)
 
@@ -251,18 +257,23 @@ class Transaction:
         return
 
     def set_state(self, rest):
-        rest = str(rest).upper()
-        if rest == "UNKNOWN":
+        if type(rest) == "str":
+            rest = str(rest).upper()
+            if rest == "UNKNOWN":
+                self.state = UNKNOWN
+            elif rest == "OUTSTANDING":
+                self.state = OUTSTANDING
+            elif rest == "CLEARED":
+                self.state = CLEARED
+            elif rest == "VOID":
+                self.state = VOID
+            elif rest == "RECONCILED":
+                self.state = RECONCILED
+        elif type(rest) == "int":
+            self.state = rest
+        else:
             self.state = UNKNOWN
-        elif rest == "OUTSTANDING":
-            self.state = OUTSTANDING
-        elif rest == "CLEARED":
-            self.state = CLEARED
-        elif rest == "VOID":
-            self.state = VOID
-        elif rest == "RECONCILED":
-            self.state = RECONCILED
-        return
+        return self.state
 
     def set_prev_state(self, rest):
         rest = str(rest).upper()
@@ -276,7 +287,7 @@ class Transaction:
             self.prev_state = VOID
         elif rest == "RECONCILED":
             self.prev_state = RECONCILED
-        return
+        return self.prev_state
 
     def get_pmt_method(self):
         return self.pmt_method

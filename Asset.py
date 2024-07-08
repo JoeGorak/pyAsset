@@ -133,8 +133,10 @@ class Asset(object):
         lines = []
         lines.append("N%s" % self.get_name())
         lines.append("T%s" % self.get_type())
+        lines.append("$%s" % self.get_value())
         lines.append("L%s" % self.get_limit())
-        lines.append("M%s" % self.get_last_pull_date())         # Use Memo field for last_pull_date
+        memo_line = "P%s;A%s;R%s;Y%s;D%s;S%s;M%s;E%s;O%s;B%s;C%s;U%s" % (self.get_last_pull_date(), self.get_avail(), self.get_rate(), self.get_payment(), self.get_due_date(), self.get_sched_date(), self.get_min_pay(), self.get_est_method(), self.get_amt_over(), self.get_stmt_bal(), self.get_cash_limit(), self.get_cash_used())
+        lines.append("M%s" % memo_line)         # Use Memo field for parsable string of info for this asset
         lines.append("^\n")
         return '\n'.join(lines)
 

@@ -337,7 +337,8 @@ class TransactionFrame(wx.Frame):
             qif.write_qif(self,os.path.join(dir, fname))
         return
 
-    def process_transaction_list(self, transactionList, function, lines = None):
+    def process_transaction_list(self, transactionList, function):
+        transactionList = self.transactions
         ntransactions = len(transactionList.transactions)
         if ntransactions > 0:
             if function == 'writeAccountHeaders' or function == 'writeAccountDetails':
@@ -353,11 +354,11 @@ class TransactionFrame(wx.Frame):
                         else:            
                           self.transactions.append_by_object(cur_asset)
                     elif function == 'delete':
-                        del transactionList.transactions[0]                         # Since we are deleting the entire list, we can just delete the first one each time!
+                        del transactionList.transactions[0]             # Since we are deleting the entire list, we can just delete the first one each time!
                     else:
                         pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
-            if function == 'delete':
-                self.trans_grid.ClearGrid()
+                if function == 'delete':
+                    self.trans_grid.ClearGrid()
         self.redraw_all()
 
     def close(self, *args):
@@ -365,6 +366,7 @@ class TransactionFrame(wx.Frame):
             d = wx.MessageDialog(self, 'Save file before closing?', 'Question',
                                  wx.YES_NO)
             if d.ShowModal() == wx.ID_YES: self.save_file()
+#        self.process_transaction_list(self, 'delete')
         trans_frame_obj = self.parent.assets[self.asset_index].trans_frame
         if trans_frame_obj != None:
             del self.parent.assets[self.asset_index].trans_frame

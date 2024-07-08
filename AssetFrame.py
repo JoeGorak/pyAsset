@@ -648,10 +648,13 @@ class AssetFrame(wx.Frame):
         self.redraw_all()
         self.edited = True
 
-    def load_file(self, assetFile):
-        latest_assets = qif.load_file(self, "")
+    def load_file(self, *args):
+        assetFile = copy.deepcopy(self.assetFile)
+        latest_assets = qif.load_file(self, assetFile)
         if latest_assets != None:
             self.process_asset_list(latest_assets, 'add')
+            self.assets.update_proj_values(Date.get_proj_date(Date))
+        self.redraw_all()
 
     def save_file(self, *args):
         assetFile = copy.deepcopy(self.assetFile)
@@ -668,13 +671,11 @@ class AssetFrame(wx.Frame):
         if assetFile != "" and len(self.assets.assets) != 0:
             file = open(assetFile, 'w')                             # Make sure file starts empty! JJG 1/17/2024
             file.close()
-            lines = [ "!Option:AutoSwitch", "!Account\n" ]
-            self.process_asset_list(self.assets, "writeAccountHeaders", lines)
-            lines = [ "!Clear:AutoSwitch" , "!Account\n" ]
-            self.process_asset_list(self.assets, "writeAccountDetails", lines)
+            lines = ["!Account"]
+            self.process_asset_list(self.assets, "writeAccountsToQIF", lines)
 
     def save_as_file(self, *args):
-        self.assetFile = self.assetFile
+        self.assetFile = ""                                         # JJG 6/24/2024 Force a file path to be selected
         self.save_file(self)
 
     def close(self, *args):
@@ -822,26 +823,31 @@ class AssetFrame(wx.Frame):
                 return
 
     def process_asset_list(self, assetList, function, lines = None):
+        if lines != None:
+            with open(self.assetFile, 'a') as file:
+                fileLines = '\n'.join(lines)
+                file.writelines("%s" % fileLines)
+                file.write('\n')
         nassets = len(assetList.assets)
         if nassets > 0:
-            if function == 'writeAccountHeaders' or function == 'writeAccountDetails':
-               qif.write_qif(self, self.assetFile, function, lines)
-            else:
-                for i in range(nassets):
-                    if function == 'add':
-                        cur_asset = assetList.assets[i]
-                        cur_name = cur_asset.get_name()
-                        j = self.assets.index(cur_name)
-                        if j != -1:
-                            self.assets.assets[j] = cur_asset           # For now, just replace, when dates are working, save later date JJG 1/22/2022
-                        else:            
-                          self.assets.append_by_object(cur_asset)
-                    elif function == 'delete':
-                        del assetList.assets[0]                         # Since we are deleting the entire list, we can just delete the first one each time!
-                    else:
-                        pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
+            for i in range(nassets):
+                if function == 'writeAccountsToQIF':
+                    qif.write_qif(self, self.assetFile, "writeAccountHeader", assetList.assets[i])
+                    qif.write_qif(self, self.assetFile, "writeAccountDetail", assetList.assets[i])
+                elif function == 'add':
+                    cur_asset = assetList.assets[i]
+                    cur_name = cur_asset.get_name()
+                    j = self.assets.index(cur_name)
+                    if j != -1:
+                        self.assets.assets[j] = cur_asset           # For now, just replace, when dates are working, save later date JJG 1/22/2022
+                    else:            
+                        self.assets.append_by_object(cur_asset)
+                elif function == 'delete':
+                    del assetList.assets[0]                         # Since we are deleting the entire list, we can just delete the first one each time!
+                else:
+                    pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
             if function == 'delete':
-                self.assetGrid.ClearGrid()
+                    self.assetGrid.ClearGrid()
         self.redraw_all()
 
     def import_XLSX_file(self, *args):
@@ -1000,7 +1006,7 @@ class AssetFrame(wx.Frame):
         return self.payDepositAcct
 
     def export_text(self, *args):
-        d = wx.FileDialog(self, "Save", "", "", "*.txt", wx.SAVE)
+        d = wx.FileDialog(self, "Save", "", "", "*.txt", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()

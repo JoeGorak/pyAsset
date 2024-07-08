@@ -292,7 +292,7 @@ class AssetGrid(grd.Grid):
             NumberAmount = cellValue.replace("$", "").replace(",", "")
             amount = round(float(NumberAmount),2)
         except:
-            amount = round(float(0.0),2)
+            amount = 0.0
         if amount < 0:
             negative = True
             amount = -amount
@@ -308,7 +308,7 @@ class AssetGrid(grd.Grid):
         cents = "%02d" % (cent_val)
         groups = [cents]
         groups.append(".")
-        amount = round(amount - float(cent_val) / 100, 2)
+        amount = round(amount - float(cent_val) // 100, 2)
         if amount < 1:
             groups.append("0")
             groups.append(",")
@@ -322,7 +322,7 @@ class AssetGrid(grd.Grid):
                 next_digits = digit + next_digits
             groups.append(next_digits)
             groups.append(",")
-            amount = round(amount / 1000, 2)
+            amount = round(amount // 1000, 2)
         str_out = ""
         for j in range(len(groups) - 2, -1, -1):
             str_out += str(groups[j])

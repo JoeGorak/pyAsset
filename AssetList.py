@@ -128,7 +128,9 @@ class AssetList():
             cur_transactions = self.assets[i].transactions
             new_proj_value = cur_transactions.update_current_and_projected_values()
             self.assets[i].set_value_proj(new_proj_value)
-            
+            limit = self.assets[i].get_limit()
+            if limit != 0.0:
+                self.assets[i].set_avail_proj(self.assets[i].get_limit()+new_proj_value)
 
     def sort(self):
         return self.assets.sort()
@@ -138,11 +140,8 @@ class AssetList():
         for cur_asset in self.assets:
             cur_asset_type = cur_asset.get_type()
             if cur_asset_type in [
-                "checking",
-                "savings",
-                "money market",
-                "credit card",
-                "store card"
+                "Bank",
+                "CCard",
             ]:
                 paymentAccts.append(cur_asset.get_name())
         return paymentAccts
