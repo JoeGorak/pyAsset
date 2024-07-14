@@ -510,7 +510,7 @@ class AssetFrame(wx.Frame):
     def redraw_all(self, index=-1):
         nassets = len(self.assets.assets)
         if index == -1:
-            nrows = nassets + 1
+            nrows = self.assetGrid.GetNumberRows()
 #            if nrows > 0 and (index == None or index == -1):
 #                self.assetGrid.DeleteRows(0, nrows)
 #                nrows = 0
@@ -556,12 +556,16 @@ class AssetFrame(wx.Frame):
         name = self.assets[row].name
         transactions = self.assets[row].transactions
         self.assets.assets[row].trans_frame = TransactionFrame(None, self, -1, row, transactions, name)
+        return self.assets.assets[row].trans_frame
 
     def get_transaction_frame(self, row):
         try:
-            return self.assets[row].trans_frame
+            return self.assets.assets[row].trans_frame
         except:
-            return None
+            return self.add_transaction_frame(row)
+
+    def removeTransactionFrame(self, trans_frame):
+        del self.assets.assets[trans_frame.asset_index].trans_frame
 
     def update_asset_dates(self, oldDateFormat, newDateFormat):
         self.edited = True

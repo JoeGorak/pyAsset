@@ -549,10 +549,7 @@ class AssetGrid(grd.Grid):
             if col == self.ACCT_NAME_COL:
                 assetFrame = self.getFrame()
                 transactionFrame = assetFrame.get_transaction_frame(row)
-                if transactionFrame != None:
-                    transactionFrame.redraw_all()
-                else:
-                    assetFrame.add_transaction_frame(row)
+                transactionFrame.redraw_all()
             else:
                 print("OnCellLeftClick: AssetGrid (%d,%d) %s\n" % (row, col, pos))
             evt.Skip()

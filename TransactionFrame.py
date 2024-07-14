@@ -35,7 +35,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # goto date
 
 import wx
-import wx.grid
+import wx.grid as gridlib
 import csv
 import os
 from qif import qif
@@ -58,16 +58,15 @@ class TransactionFrame(wx.Frame):
         else:
             self.cur_transaction = None
 
-        self.edited = False
-        self.rowSize = 25
-        self.colSize = 20
-
         if style == None:
             style = wx.DEFAULT_FRAME_STYLE
-        kwds["style"] = wx.DEFAULT_FRAME_STYLE
+        kwds["style"] = style
         wx.Frame.__init__(self, parent, my_id, title, **kwds)
 
+        self.Bind(wx.EVT_CLOSE,self.close)
         self.make_widgets()
+
+        self.edited = False
 
         if filename:
             self.cur_transaction.read_qif(filename)
@@ -88,26 +87,26 @@ class TransactionFrame(wx.Frame):
 
     def make_filemenu(self):
         self.filemenu = wx.Menu()
-        ID_IMPORT_CSV = wx.NewId()
-        ID_IMPORT_XLSX = wx.NewId()
-        ID_EXPORT_TEXT = wx.NewId()
-        ID_ARCHIVE = wx.NewId()
+        self.ID_IMPORT_CSV = wx.NewId()
+        self.ID_IMPORT_XLSX = wx.NewId()
+        self.ID_EXPORT_TEXT = wx.NewId()
+        self.ID_ARCHIVE = wx.NewId()
         self.filemenu.Append(wx.ID_OPEN, "Open\tCtrl-o",
                              "Open a new transction file", wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_SAVE, "Save\tCtrl-s",
                              "Save the current transactions in the same file", wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_SAVEAS, "Save As",
                              "Save the current transactions under a different name", wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_IMPORT_CSV, "Import CSV\tCtrl-c",
+        self.filemenu.Append(self.ID_IMPORT_CSV, "Import CSV\tCtrl-c",
                              "Import transactions from a CSV file",
                              wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_IMPORT_XLSX, "Import XLSX\tCtrl-X",
+        self.filemenu.Append(self.ID_IMPORT_XLSX, "Import XLSX\tCtrl-X",
                              "Import transactions from an EXCEL file",
                              wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_EXPORT_TEXT, "Export Text",
+        self.filemenu.Append(self.ID_EXPORT_TEXT, "Export Text",
                              "Export the current transaction register as a text file",
                              wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_ARCHIVE, "Archive",
+        self.filemenu.Append(self.ID_ARCHIVE, "Archive",
                              "Archive transactions older than a specified date",
                              wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_CLOSE, "Close\tCtrl-w",
@@ -118,72 +117,79 @@ class TransactionFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.load_file, None, wx.ID_OPEN)
         self.Bind(wx.EVT_MENU, self.save_file, None, wx.ID_SAVE)
         self.Bind(wx.EVT_MENU, self.save_as_file, None, wx.ID_SAVEAS)
-        self.Bind(wx.EVT_MENU, self.import_CSV_file, None, ID_IMPORT_CSV)
-        #self.Bind(wx.EVT_MENU, self.export_text, None, ID_EXPORT_TEXT)
-        self.Bind(wx.EVT_MENU, self.archive, None, ID_ARCHIVE)
+        self.Bind(wx.EVT_MENU, self.import_CSV_file, None, self.ID_IMPORT_CSV)
+        #self.Bind(wx.EVT_MENU, self.export_text, None, self.ID_EXPORT_TEXT)
+        self.Bind(wx.EVT_MENU, self.archive, None, self.ID_ARCHIVE)
         self.Bind(wx.EVT_MENU, self.close, None, wx.ID_CLOSE)
         self.Bind(wx.EVT_MENU, self.quit, None, wx.ID_EXIT)
 
     def make_editmenu(self):
-        ID_SORT = wx.NewId()
-        ID_MARK_ENTRY = wx.NewId()
-        ID_VOID_ENTRY = wx.NewId()
-        ID_DELETE_ENTRY = wx.NewId()
-        ID_RECONCILE = wx.NewId()
+        self.ID_SORT = wx.NewId()
+        self.ID_MARK_ENTRY = wx.NewId()
+        self.ID_VOID_ENTRY = wx.NewId()
+        self.ID_DELETE_ENTRY = wx.NewId()
+        self.ID_RECONCILE = wx.NewId()
         self.editmenu = wx.Menu()
         self.editmenu.Append(wx.ID_NEW, "New Entry\tCtrl-n",
                              "Create a new transaction in the register",
                              wx.ITEM_NORMAL)
-        self.editmenu.Append(ID_SORT, "Sort Entries",
+        self.editmenu.Append(self.ID_SORT, "Sort Entries",
                              "Sort entries", wx.ITEM_NORMAL)
-        self.editmenu.Append(ID_MARK_ENTRY, "Mark Cleared\tCtrl-m",
+        self.editmenu.Append(self.ID_MARK_ENTRY, "Mark Cleared\tCtrl-m",
                              "Mark the current transaction cleared",
                              wx.ITEM_NORMAL)
-        self.editmenu.Append(ID_VOID_ENTRY, "Void Entry\tCtrl-v",
+        self.editmenu.Append(self.ID_VOID_ENTRY, "Void Entry\tCtrl-v",
                              "", wx.ITEM_NORMAL)
-        self.editmenu.Append(ID_DELETE_ENTRY, "Delete Entry",
+        self.editmenu.Append(self.ID_DELETE_ENTRY, "Delete Entry",
                              "Delete the current transaction", wx.ITEM_NORMAL)
-        self.editmenu.Append(ID_RECONCILE, "Reconcile\tCtrl-r",
+        self.editmenu.Append(self.ID_RECONCILE, "Reconcile\tCtrl-r",
                              "Reconcile your Asset", wx.ITEM_NORMAL)
         self.menubar.Append(self.editmenu, "&Edit")
         self.Bind(wx.EVT_MENU, self.newentry, None, wx.ID_NEW)
-        self.Bind(wx.EVT_MENU, self.sort, None, ID_SORT)
-        self.Bind(wx.EVT_MENU, self.markcleared, None, ID_MARK_ENTRY)
-        self.Bind(wx.EVT_MENU, self.voidentry, None, ID_VOID_ENTRY)
-        self.Bind(wx.EVT_MENU, self.deleteentry, None, ID_DELETE_ENTRY)
-        self.Bind(wx.EVT_MENU, self.reconcile, None, ID_RECONCILE)
+        self.Bind(wx.EVT_MENU, self.sort, None, self.ID_SORT)
+        self.Bind(wx.EVT_MENU, self.markcleared, None, self.ID_MARK_ENTRY)
+        self.Bind(wx.EVT_MENU, self.voidentry, None, self.ID_VOID_ENTRY)
+        self.Bind(wx.EVT_MENU, self.deleteentry, None, self.ID_DELETE_ENTRY)
+        self.Bind(wx.EVT_MENU, self.reconcile, None, self.ID_RECONCILE)
         return
 
     def make_helpmenu(self):
-        ID_HELP = wx.NewId()
+        self.ID_HELP = wx.NewId()
         self.helpmenu = wx.Menu()
         self.helpmenu.Append(wx.ID_ABOUT, "About",
                              "About PyAsset", wx.ITEM_NORMAL)
-        self.helpmenu.Append(ID_HELP, "Help\tCtrl-h",
+        self.helpmenu.Append(self.ID_HELP, "Help\tCtrl-h",
                              "PyAsset Help", wx.ITEM_NORMAL)
 
         self.menubar.Append(self.helpmenu, "&Help")
         self.Bind(wx.EVT_MENU, self.about, None, wx.ID_ABOUT)
-        self.Bind(wx.EVT_MENU, self.gethelp, None, ID_HELP)
+        self.Bind(wx.EVT_MENU, self.gethelp, None,self. ID_HELP)
 
     def make_trans_grid(self):
-        self.trans_grid = TransactionGrid(self)
+        self.panel = wx.Panel(self)
+        self.trans_grid = TransactionGrid(self, self.panel)
+        self.rowSize = 20
+        self.colSize = self.trans_grid.getNumLayoutCols()
+        self.trans_grid.CreateGrid(self.rowSize, self.colSize) 
+        return self.trans_grid
+
 
     def get_trans_grid(self):
-        return self.get_trans_grid
+        try:
+            trans_grid = self.trans_grid
+        except:
+            trans_grid = self.make_trans_grid()
+        self.trans_grid = trans_grid
+        return self.trans_grid
 
     def set_properties(self):
         self.total_width = self.trans_grid.set_properties(self)
 
     def do_layout(self):
-        sizer_1 = wx.BoxSizer(wx.VERTICAL)
-        sizer_1.Add(self.trans_grid, 1, wx.EXPAND, 0)
-        self.SetAutoLayout(1)
-        self.SetSizer(sizer_1)
-        sizer_1.Fit(self)
-        sizer_1.SetSizeHints(self)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.trans_grid, 1, wx.EXPAND)
+        self.panel.SetSizer(sizer)
         self.Layout()
-        self.Show()
 
     def update_transaction_grid_dates(self, oldDateFormat, newDateFormat):
         self.edited = True
@@ -217,13 +223,7 @@ class TransactionFrame(wx.Frame):
         start_range = 0
         end_range = ntransactions
         if index == -1:
-            nrows = self.trans_grid.GetNumberRows()
-            if nrows > 0 and (index == None or index == -1):
-                self.trans_grid.DeleteRows(0, nrows)
-                nrows = 0
-            if nrows < ntransactions:
-                rows_needed = ntransactions - nrows
-                self.trans_grid.AppendRows(rows_needed)
+            trans_grid = self.get_trans_grid()
         else:
             start_range = index
             end_range = start_range + 1
@@ -255,6 +255,11 @@ class TransactionFrame(wx.Frame):
                     self.trans_grid.GridCellStringRenderer(row, col)
                 else:
                     self.trans_grid.GridCellErrorRenderer(row, col)
+
+        win_height = (ntransactions+3) * self.rowSize + 120                 # +3 for header lines + 120 for borders
+        self.SetSize(self.total_width, win_height)
+        self.Show()
+
         cursorCell = index
         if index == -1:
             if ntransactions > 0:
@@ -269,11 +274,7 @@ class TransactionFrame(wx.Frame):
         self.trans_grid.SetGridCursor(cursorCell, 0)
         self.trans_grid.MakeCellVisible(cursorCell, True)
 
-#        win_height = len(self.transactions)*self.rowSize + 120
-#        win_height = len(self.transactions)*self.rowSize
-#        self.SetSize(size=(self.total_width, win_height))
-#        self.Show()
-#        self.parent.redraw_all(-1)      # Make sure balances get updated!
+        self.parent.redraw_all(-1)      # Make sure balances get updated!
 
     def cellchange(self, evt):
         doredraw = 0
@@ -359,22 +360,23 @@ class TransactionFrame(wx.Frame):
                         pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
                 if function == 'delete':
                     self.trans_grid.ClearGrid()
+                    del self.trans_grid
+                    self.trans_grid = None
         self.redraw_all()
 
-    def close(self, *args):
+    def close(self, event):
         if self.edited:
             d = wx.MessageDialog(self, 'Save file before closing?', 'Question',
                                  wx.YES_NO)
             if d.ShowModal() == wx.ID_YES: self.save_file()
-#        self.process_transaction_list(self, 'delete')
-        trans_frame_obj = self.parent.assets[self.asset_index].trans_frame
-        if trans_frame_obj != None:
-            del self.parent.assets[self.asset_index].trans_frame
-#            self.parent.assets[self.asset_index] = None
-        self.Close()    
+        self.trans_grid.close()
+        del self.trans_grid
+        del self.panel
+        self.parent.removeTransactionFrame(self)
+        self.Destroy()
 
-    def quit(self, *args):
-        self.close()
+    def quit(self, event):
+        self.close(event)
 
     #
     #     @brief Receives data to be written to and its location

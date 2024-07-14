@@ -32,10 +32,10 @@ from datetime import date, datetime
 from Date import Date
 
 class TransactionGrid(grd.Grid):
-    def __init__(self, frame, **keywords):
+    def __init__(self, frame, panel, **keywords):
         self.dateFormat = Date.get_global_date_format(Date)
         self.dateSep = Date.get_global_date_sep(self)
-        self.grid = grd.Grid.__init__(self, frame, **keywords)
+        self.grid = grd.Grid.__init__(self, panel, **keywords)
         self.frame = frame
         self.Bind(grd.EVT_GRID_CELL_CHANGING, self.cellchanging)
 
@@ -125,6 +125,9 @@ class TransactionGrid(grd.Grid):
         ]
 
         return
+
+    def getNumLayoutCols(self):
+        return len(self.col_info)
 
     def getDateFormat(self):
         return self.dateFormat
@@ -503,7 +506,7 @@ class TransactionGrid(grd.Grid):
 
         for i in range(len(statusbar_fields)):
             frame.statusbar.SetStatusText(statusbar_fields[i], i)
-        self.CreateGrid(0, len(self.columnNames))
+#        self.CreateGrid(0, len(self.columnNames))
         self.value_width = 60  # non-zero start value to account for record number of TransactionGrid frame!
         for i in range(len(self.columnNames)):
             self.SetColLabelValue(i, self.columnNames[i])
@@ -534,6 +537,33 @@ class TransactionGrid(grd.Grid):
                                     self.assetGrid.GridCellDateRenderer(row, col)
                             else:
                                 print("update_asset_grid_dates: Warning: unknown method for cell! row, ", row, " col ", col, " Skipping!")
+
+    def close(self, *args):
+        self.Unbind(grd.EVT_GRID_CELL_CHANGING)
+
+        # Unbind all the events
+        self.Unbind(grd.EVT_GRID_CELL_LEFT_CLICK)
+        self.Unbind(grd.EVT_GRID_CELL_RIGHT_CLICK)
+        self.Unbind(grd.EVT_GRID_CELL_LEFT_DCLICK)
+        self.Unbind(grd.EVT_GRID_CELL_RIGHT_DCLICK)
+
+        self.Unbind(grd.EVT_GRID_LABEL_LEFT_CLICK)
+        self.Unbind(grd.EVT_GRID_LABEL_RIGHT_CLICK)
+        self.Unbind(grd.EVT_GRID_LABEL_LEFT_DCLICK)
+        self.Unbind(grd.EVT_GRID_LABEL_RIGHT_DCLICK)
+
+        self.Unbind(grd.EVT_GRID_ROW_SIZE)
+        self.Unbind(grd.EVT_GRID_COL_SIZE)
+
+        self.Unbind(grd.EVT_GRID_RANGE_SELECT)
+        #self.Unbind(grd.EVT_GRID_CELL_CHANGE)
+        #self.Unbind(grd.EVT_GRID_SELECT_CELL)
+
+        self.Unbind(grd.EVT_GRID_EDITOR_SHOWN)
+        self.Unbind(grd.EVT_GRID_EDITOR_HIDDEN)
+        self.Unbind(grd.EVT_GRID_EDITOR_CREATED)
+
+        self.Destroy()
 
     def OnCellLeftClick(self, evt):
         print("OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
