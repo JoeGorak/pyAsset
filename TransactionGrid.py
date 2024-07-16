@@ -506,7 +506,6 @@ class TransactionGrid(grd.Grid):
 
         for i in range(len(statusbar_fields)):
             frame.statusbar.SetStatusText(statusbar_fields[i], i)
-#        self.CreateGrid(0, len(self.columnNames))
         self.value_width = 60  # non-zero start value to account for record number of TransactionGrid frame!
         for i in range(len(self.columnNames)):
             self.SetColLabelValue(i, self.columnNames[i])

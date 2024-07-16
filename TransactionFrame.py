@@ -173,7 +173,6 @@ class TransactionFrame(wx.Frame):
         self.trans_grid.CreateGrid(self.rowSize, self.colSize) 
         return self.trans_grid
 
-
     def get_trans_grid(self):
         try:
             trans_grid = self.trans_grid
@@ -368,7 +367,9 @@ class TransactionFrame(wx.Frame):
         if self.edited:
             d = wx.MessageDialog(self, 'Save file before closing?', 'Question',
                                  wx.YES_NO)
-            if d.ShowModal() == wx.ID_YES: self.save_file()
+            if d.ShowModal() == wx.ID_YES:
+                self.save_file()
+        self.edited = False
         self.trans_grid.close()
         del self.trans_grid
         del self.panel
@@ -377,7 +378,9 @@ class TransactionFrame(wx.Frame):
 
     def quit(self, event):
         self.close(event)
+        self.Close()
 
+    def write_file(self, date_, amount_, memo_, payee_, filelocation_):
     #
     #     @brief Receives data to be written to and its location
     #
@@ -395,8 +398,6 @@ class TransactionFrame(wx.Frame):
     #
     # https://en.wikipedia.org/wiki/Quicken_Interchange_Format
     #
-
-    def write_file(self, date_, amount_, memo_, payee_, filelocation_):
         outFile = open(filelocation_, "a")  # Open file to be appended
         outFile.write("!Type:Cash\n")  # Header of transaction, Currently all set to cash
         outFile.write("D")  # Date line starts with the capital D
@@ -419,6 +420,7 @@ class TransactionFrame(wx.Frame):
         outFile.write("^\n")  # The last line of each transaction starts with a Caret to mark the end
         outFile.close()
 
+    def read_csv(self, inf_, outf_, deff_):  # will need to receive input csv and def file
     #
     #     @brief  Takes given CSV and parses it to be exported to a QIF
     #
@@ -431,7 +433,6 @@ class TransactionFrame(wx.Frame):
     #
     #
 
-    def read_csv(self, inf_, outf_, deff_):  # will need to receive input csv and def file
 
         csvdeff = csv.reader(deff_, delimiter=',')
         next(csvdeff, None)

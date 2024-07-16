@@ -30,6 +30,7 @@ import wx
 import re
 
 from wx.core import DateTime
+from datetime import datetime
 
 class Date:
     global_date_format = "mm/dd/YYYY"
@@ -198,7 +199,7 @@ class Date:
                     in_date_format = Date.global_date_format
                 if dt.ParseFormat(in_date, in_date_format) == -1:
                     error = True
-        elif type(in_date) is DateTime:
+        elif type(in_date) is DateTime or type(in_date) is datetime:
             dt = in_date
         elif type(in_date) is Date or type(in_date) is dict:
             dt = in_date["dt"]
@@ -208,6 +209,8 @@ class Date:
             pass                                # Leave error message display to the caller!  We just return None!
         else:
             retVal = { "year" : dt.year, "month" : dt.month + 1, "day" : dt.day, "dt" : dt }
+            if type(in_date) is datetime:
+                retVal["month"] = retVal["month"] - 1       # This was determined thru testing!
         return retVal
 
     def get_today_date(self):

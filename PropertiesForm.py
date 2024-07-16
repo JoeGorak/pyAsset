@@ -26,10 +26,12 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  Version information
 #  06/11/2016     Initial version v0.1
 #  08/07/2021     Version v0.2
+#  07/15/2024     Version v0.3               Replaced date picker text with minidatepicker widget from Stack Overflow (see minidatepicker.py)
 
 import wx
 import wx.adv
 import re
+import minidatepicker
 
 from Date import Date
 from wx.core import DateTime
@@ -124,14 +126,9 @@ class PropertyForm(wx.Panel):
         self.payment_accounts = self.Parent.Parent.assets.getPaymentAccounts()
         self.payAcctCtrl = wx.Choice(self,
                                      choices=self.payment_accounts)
-#        self.refPayDatePicker = wx.adv.DatePickerCtrl(self,        
-#                                                      pos=(0,0),
-#                                                      size=(180,30),
-#                                                      style=wx.adv.DP_DROPDOWN)
-        self.refPayDateTextCtrl = wx.TextCtrl(self,
-                                              pos=(0,0),
-                                              size=(150,30),
-                                              style=wx.TE_PROCESS_ENTER)
+        ref_date = Date.parse_date(self, self.oldRefDate, self.oldDateFormat)
+        format = (lambda dt: (f'{dt.Format(self.oldDateFormat)}'))
+        self.refPayDatePicker = minidatepicker.MiniDatePicker(self, date=ref_date["dt"], formatter=format)
         self.payTypeRadioBox = wx.RadioBox(self,
                                          label="How often are you paid?",
                                          choices=self.payTypes,
@@ -146,14 +143,12 @@ class PropertyForm(wx.Panel):
         self.netPayTextCtrl.Refresh()
         ref_date_type = type(self.ref_date)
         if ref_date_type is str or ref_date_type is DateTime:
-            if self.NewDateFormatChoice != self.dateFormatChoice:
-                ref_date_parsed = Date.parse_date(self, self.ref_date, self.dateFormat)
-                ref_date = Date.convertDateFormat(self, ref_date_parsed, self.dateFormat, self.NewDateFormat)
-#            self.refPayDatePicker.SetValue(ref_date["dt"])
-#            self.refPayDatePicker.Refresh()
-            self.refPayDateTextCtrl.LabelText = self.NewRefDate
-            self.refPayDateTextCtrl.SetValue(self.NewRefDate)
-            self.refPayDateTextCtrl.Refresh()
+            ref_date_parsed = Date.parse_date(self, self.ref_date, self.dateFormat)
+            ref_date = Date.convertDateFormat(self, ref_date_parsed, self.dateFormat, self.NewDateFormat)
+            format = lambda dt: (dt.Format(self.NewDateFormat))
+            self.refPayDatePicker.SetFormatter(format)
+            self.refPayDatePicker.SetValue(ref_date["str"])
+            self.refPayDatePicker.Refresh()
         else:
             self.MsgBox("Unknown ref date type %s ignored - ref date info ignored" % (type(self.ref_date)))
         try:
@@ -176,14 +171,11 @@ class PropertyForm(wx.Panel):
                  (self.abortButton, wx.EVT_BUTTON, self.onAbort),
                  (self.netPayTextCtrl, wx.EVT_TEXT_ENTER, self.onNetPayEntered),
                  (self.netPayTextCtrl, wx.EVT_KILL_FOCUS, self.onNetPayLostFocus),
-                 (self.refPayDateTextCtrl, wx.EVT_TEXT_ENTER, self.onRefPayDateEntered),
-                 (self.refPayDateTextCtrl, wx.EVT_KILL_FOCUS, self.onRefPayDateLostFocus),
-#                 (self.refPayDatePicker, wx.adv.EVT_DATE_CHANGED, self.onRefPayDatePicked),      # JJG 12/23/2023   Causes lockups!
+                 (self.refPayDatePicker, minidatepicker.EVT_DATE_CHANGED, self.onRefPayDatePicked),
                  (self.dateFormatRadioBox, wx.EVT_RADIOBOX, self.onDateFormatChanged),
                  (self.payTypeRadioBox, wx.EVT_RADIOBOX, self.onPayTypeChanged),
                  (self.payAcctCtrl, wx.EVT_CHOICE, self.onDepositAcctChanged)]:
             control.Bind(event, handler)
-
 
     # Callback methods:
 
@@ -193,10 +185,9 @@ class PropertyForm(wx.Panel):
         self.NewDateFormat = self.dateFormats[dateFormatChoice]
         self.__log('Desired date format: %s' % self.NewDateFormat)
         self.NewRefDate = Date.convertDateFormat(self, self.NewRefDate, olddateFormat, self.NewDateFormat)
-        self.refPayDateTextCtrl.LabelText = self.NewRefDate["str"]
-        self.refPayDateTextCtrl.Refresh()
-#        self.refPayDatePicker.SetValue(self.ref_date["dt"])
-#        self.refPayDatePicker.Refresh()
+        format = lambda dt: (dt.Format(self.NewDateFormat))
+        self.refPayDatePicker.SetValue(self.NewRefDate["dt"])
+        self.refPayDatePicker.SetFormatter(format)
 
     def onPayTypeChanged(self, event):
         self.NewPayType = event.GetInt()
@@ -220,6 +211,7 @@ class PropertyForm(wx.Panel):
     def onNetPayEntered(self, event):
         in_netpay = event.GetString()
         self.processNetPay(in_netpay)
+        event.Skip()
 
     def onNetPayLostFocus(self, event):
         in_netpay = self.netPayTextCtrl.GetValue()
@@ -228,12 +220,8 @@ class PropertyForm(wx.Panel):
 
     def updateRefPayDateControls(self, ref_date, how):
         self.NewRefDate = ref_date["str"]
-        self.__log("User %s ref pay date: %s" % (how, self.NewRefDate))      
-#        self.refPayDatePicker.SetValue(ref_date["dt"])
-#        self.refPayDatePicker.Refresh
-        self.refPayDateTextCtrl.LabelText = self.NewRefDate
-        self.refPayDateTextCtrl.SetValue(self.NewRefDate)
-        self.refPayDateTextCtrl.Refresh()
+        self.__log("User %s ref pay date: %s" % (how, self.NewRefDate))
+        self.refPayDatePicker.SetValue(ref_date["dt"])
 
     def processRefDate(self, ref_date):
         dateFormat = Date.get_date_format(Date)
@@ -250,27 +238,14 @@ class PropertyForm(wx.Panel):
             error = "Bad input reference date (%s) entered - format is %s - try again" % (ref_date, dateFormat)
             self.MsgBox(error)
 
-    def onRefPayDateEntered(self, event):
-        ref_date = event.String
-        self.processRefDate(ref_date)
-
-    def onRefPayDateLostFocus(self, event):
-        ref_date = self.refPayDateTextCtrl.GetValue()
-        self.processRefDate(ref_date)
-        event.Skip()
-
-    def onRefPayDatePicked(self, event):                        # JJG 12/26/2023 Not sure this is still correct
-        year = event.Date.year
-        month = event.Date.month
-        day = event.Date.day
-        self.__log("Month: %02d, Day: %02d, Year: %04d" % (month+1, day, year))
-        ref_date = wx.DateTime.FromDMY(day, month, year)
+    def onRefPayDatePicked(self, event):
+        ref_date = event.GetDate()
         dateFormat = Date.get_date_format(self)
         ref_date_parsed = Date.parse_date(self, ref_date, dateFormat)
         if ref_date_parsed != None:
             ref_date = Date.convertDateFormat(self, ref_date_parsed, dateFormat, dateFormat)
             self.updateRefPayDateControls(ref_date, "picked") 
-            print(ref_date)
+            print(ref_date["str"])
             self.ref_date = ref_date
         else:
             dateFormat = dateFormat.replace("%y", "yy").replace("%m", "mm").replace("%d", "dd").replace("%Y", "yyyy")
@@ -358,24 +333,14 @@ class PropertyForm(wx.Panel):
                  (self.netPayTextCtrl, expandOption),
                  (self.payTypeRadioBox, expandOption),
                  (self.dateFormatRadioBox, expandOption),
-                 # For testing, Have separete Text control and Date Picker.... if it works want to change so TextCtrl overlays text portion of Date Picker JJG 08/08/2021
                  (self.refPayDate, expandOption),
-                 (self.refPayDateTextCtrl, noOptions),
-#                 (self.refPayDatePicker, noOptions),
+                 (self.refPayDatePicker, noOptions),
                  emptySpace,
                  (self.payAcct, expandOption),
                  (self.payAcctCtrl, expandOption),
                  emptySpace
                 ]:
             gridSizer.Add(control, **options)
-
-        #for control, options in \
-        #        [
-        #         (self.refPayDate, expandOption),
-        #         (self.refPayDateTextCtrl, noOptions),
-        #         (self.refPayDatePicker, noOptions),
-        #       ]:
-        #    dateGridSizer.Add(control, **options)
 
         for control, options in \
                 [(self.saveButton, noOptions),
