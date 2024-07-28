@@ -359,7 +359,9 @@ class AssetGrid(grd.Grid):
         self.getFrame().assetGrid.SetCellValue(row, col, tableValue)
 
     def GridCellDateRenderer(self, row, col):
-        cellValue = str(self.getColMethod(row, col))
+        cellValue = self.getColMethod(row, col)
+        if cellValue != "None" and cellValue != None:
+            cellValue = cellValue["str"]
         if cellValue == None or cellValue == "None":
             tableValue = ""
         elif self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):
@@ -548,8 +550,9 @@ class AssetGrid(grd.Grid):
         if row < len(self.getFrame().assets):
             if col == self.ACCT_NAME_COL:
                 assetFrame = self.getFrame()
-                transactionFrame = assetFrame.get_transaction_frame(row)
-                transactionFrame.redraw_all()
+                transactionFrame = assetFrame.getTransactionFrame(row)
+                if transactionFrame != None:
+                    transactionFrame.redraw_all()
             else:
                 print("OnCellLeftClick: AssetGrid (%d,%d) %s\n" % (row, col, pos))
             evt.Skip()

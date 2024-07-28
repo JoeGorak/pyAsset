@@ -309,7 +309,9 @@ class TransactionGrid(grd.Grid):
         self.frame.trans_grid.SetCellValue(row, col, tableValue)
 
     def GridCellDateRenderer(self, row, col):
-        cellValue = str(self.getColMethod(row, col))
+        cellValue = self.getColMethod(row, col)
+        if cellValue != "None" and cellValue != None:
+            cellValue = cellValue["str"]
         if cellValue == None or cellValue == "None":
             tableValue = ""
         elif self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):
@@ -562,7 +564,9 @@ class TransactionGrid(grd.Grid):
         self.Unbind(grd.EVT_GRID_EDITOR_HIDDEN)
         self.Unbind(grd.EVT_GRID_EDITOR_CREATED)
 
-        self.Destroy()
+        del self.grid
+
+#        self.Destroy()
 
     def OnCellLeftClick(self, evt):
         print("OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),

@@ -273,8 +273,6 @@ class TransactionFrame(wx.Frame):
         self.trans_grid.SetGridCursor(cursorCell, 0)
         self.trans_grid.MakeCellVisible(cursorCell, True)
 
-        self.parent.redraw_all(-1)      # Make sure balances get updated!
-
     def cellchange(self, evt):
         doredraw = 0
         row = evt.GetRow()
@@ -337,8 +335,7 @@ class TransactionFrame(wx.Frame):
             qif.write_qif(self,os.path.join(dir, fname))
         return
 
-    def process_transaction_list(self, transactionList, function):
-        transactionList = self.transactions
+    def process_transaction_list(self, function, transactionList):
         ntransactions = len(transactionList.transactions)
         if ntransactions > 0:
             if function == 'writeAccountHeaders' or function == 'writeAccountDetails':
@@ -355,6 +352,8 @@ class TransactionFrame(wx.Frame):
                           self.transactions.append_by_object(cur_asset)
                     elif function == 'delete':
                         del transactionList.transactions[0]             # Since we are deleting the entire list, we can just delete the first one each time!
+                    elif function == 'print':
+                        print(transactionsList.transactions[i])
                     else:
                         pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
                 if function == 'delete':
@@ -370,11 +369,12 @@ class TransactionFrame(wx.Frame):
             if d.ShowModal() == wx.ID_YES:
                 self.save_file()
         self.edited = False
-        self.trans_grid.close()
+        self.get_trans_grid().close()
         del self.trans_grid
         del self.panel
-        self.parent.removeTransactionFrame(self)
-        self.Destroy()
+        trans_frame = self.parent.getTransactionFrame(self.asset_index, False)
+        if trans_frame != None:
+            self.parent.removeTransactionFrame(self.asset_index)
 
     def quit(self, event):
         self.close(event)

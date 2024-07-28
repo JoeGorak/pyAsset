@@ -251,34 +251,18 @@ class Asset(object):
 
     def set_due_date(self, rest):
         if rest != None:
-            if type(rest) is str:
-                if len(rest) != 0:
-                    [year, month, day] = Date.get_date_fields(self,rest)
-                    self.due_date = wx.DateTime.FromDMY(day, month-1, year).Format(self.dateFormat)
-                else:
-                    self.due_date = None
-            else:
-                try:
-                    self.due_date = rest["str"]
-                except:
-                    self.due_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(self.dateFormat)
+            self.due_date = Date.parse_date(self, rest, self.dateFormat)
+        else:
+            self.due_date = None
 
     def get_sched_date(self):
         return self.sched_date
 
     def set_sched_date(self, rest):
         if rest != None:
-            if type(rest) is str:
-                if len(rest) != 0:
-                    [year, month, day] = Date.get_date_fields(self, rest)
-                    self.sched_date = wx.DateTime.FromDMY(day, month-1, year).Format(self.dateFormat)
-                else:
-                    self.sched_date = None
-            else:
-                try:
-                    self.sched_date = rest["str"]
-                except:
-                    self.sched_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(self.dateFormat)
+            self.sched_date = Date.parse_date(self, rest, self.dateFormat)
+        else:
+            self.sched_date = None
 
     def get_min_pay(self):
         return self.min_pay

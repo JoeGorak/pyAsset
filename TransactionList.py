@@ -109,13 +109,16 @@ class TransactionList:
                 current_value = self.transactions[trans_number].get_current_value()
             ret_proj_value= proj_value = current_value
             while trans_number < len(self.transactions):
-                trans_pmt_method = self.transactions[trans_number].get_pmt_method()
+                trans_pmt_method = self.transactions[trans_number].get_pmt_method
+                process_transaction = True
                 if trans_pmt_method != "posted":
                     new_current_value = current_value
                     new_proj_value = proj_value
                     trans_state = self.transactions[trans_number].get_state()
                     trans_sched_date = self.transactions[trans_number].get_sched_date()
-                if trans_sched_date != None:
+                else:
+                    process_transaction = False
+                if trans_sched_date != None and process_transaction:
                     trans_action = self.transactions[trans_number].get_action()
                     if trans_action:
 
@@ -150,7 +153,6 @@ class TransactionList:
 
     def update_transaction_dates(self, oldDateFormat, newDateFormat):
         trans_number = 0
-        newDateFormat, newDateSep = Date.parse_date_format(Date, newDateFormat)
 
         while trans_number < len(self.transactions):
             due_date = self.transactions[trans_number].get_due_date()
@@ -164,6 +166,5 @@ class TransactionList:
                 self.transactions[trans_number].set_sched_date(new_sched_date)
 
             self.transactions[trans_number].dateFormat = newDateFormat
-            self.transactions[trans_number].dateSep = newDateSep
 
             trans_number += 1

@@ -142,15 +142,10 @@ class PropertyForm(wx.Panel):
         self.netPayTextCtrl.SetValue(self.NewNetpay)
         self.netPayTextCtrl.Refresh()
         ref_date_type = type(self.ref_date)
-        if ref_date_type is str or ref_date_type is DateTime:
-            ref_date_parsed = Date.parse_date(self, self.ref_date, self.dateFormat)
-            ref_date = Date.convertDateFormat(self, ref_date_parsed, self.dateFormat, self.NewDateFormat)
-            format = lambda dt: (dt.Format(self.NewDateFormat))
-            self.refPayDatePicker.SetFormatter(format)
-            self.refPayDatePicker.SetValue(ref_date["str"])
-            self.refPayDatePicker.Refresh()
-        else:
-            self.MsgBox("Unknown ref date type %s ignored - ref date info ignored" % (type(self.ref_date)))
+        format = lambda dt: (dt.Format(self.NewDateFormat))
+        self.refPayDatePicker.SetFormatter(format)
+        self.refPayDatePicker.SetValue(self.ref_date["str"])
+        self.refPayDatePicker.Refresh()
         try:
             self.NewPayDepositChoice = self.payment_accounts.index(self.NewpayDepositAcct)
         except:
@@ -184,7 +179,7 @@ class PropertyForm(wx.Panel):
         dateFormatChoice = event.GetInt()
         self.NewDateFormat = self.dateFormats[dateFormatChoice]
         self.__log('Desired date format: %s' % self.NewDateFormat)
-        self.NewRefDate = Date.convertDateFormat(self, self.NewRefDate, olddateFormat, self.NewDateFormat)
+        self.NewRefDate = Date.convertDateFormat(Date, self.NewRefDate, olddateFormat, self.NewDateFormat)
         format = lambda dt: (dt.Format(self.NewDateFormat))
         self.refPayDatePicker.SetValue(self.NewRefDate["dt"])
         self.refPayDatePicker.SetFormatter(format)
@@ -218,39 +213,13 @@ class PropertyForm(wx.Panel):
         self.processNetPay(in_netpay)
         event.Skip()
 
-    def updateRefPayDateControls(self, ref_date, how):
-        self.NewRefDate = ref_date["str"]
-        self.__log("User %s ref pay date: %s" % (how, self.NewRefDate))
-        self.refPayDatePicker.SetValue(ref_date["dt"])
-
-    def processRefDate(self, ref_date):
-        dateFormat = Date.get_date_format(Date)
-        NewDateFormat = self.dateFormats[self.NewDateFormatChoice]
-        ref_date_parsed = Date.parse_date(self, ref_date, NewDateFormat)
-        if ref_date_parsed != None:
-            ref_date = Date.convertDateFormat(self, ref_date_parsed, dateFormat, NewDateFormat)
-            self.__log("Month: %02d, Day: %02d, Year: %04d" % (ref_date_parsed["month"], ref_date_parsed["day"], ref_date_parsed["year"]))
-            self.updateRefPayDateControls(ref_date, "entered")
-            print(ref_date)
-            self.ref_date = ref_date
-        else:
-            dateFormat = dateFormat.replace("%y", "yy").replace("%m", "mm").replace("%d", "dd").replace("%Y", "yyyy")
-            error = "Bad input reference date (%s) entered - format is %s - try again" % (ref_date, dateFormat)
-            self.MsgBox(error)
-
     def onRefPayDatePicked(self, event):
         ref_date = event.GetDate()
         dateFormat = Date.get_date_format(self)
-        ref_date_parsed = Date.parse_date(self, ref_date, dateFormat)
-        if ref_date_parsed != None:
-            ref_date = Date.convertDateFormat(self, ref_date_parsed, dateFormat, dateFormat)
-            self.updateRefPayDateControls(ref_date, "picked") 
-            print(ref_date["str"])
-            self.ref_date = ref_date
-        else:
-            dateFormat = dateFormat.replace("%y", "yy").replace("%m", "mm").replace("%d", "dd").replace("%Y", "yyyy")
-            error = "Bad input reference date (%s) picked - format is %s - try again" % (ref_date, dateFormat)
-            self.MsgBox(error)
+        self.ref_date = Date.parse_date(self, ref_date, dateFormat)
+        self.NewRefDate = self.ref_date
+        self.__log("User picked ref pay date: %s" % (self.NewRefDate["str"]))
+        self.refPayDatePicker.SetValue(self.ref_date["dt"])
 
     # Button action methods
 
@@ -273,27 +242,18 @@ class PropertyForm(wx.Panel):
         else:
             old_format = self.oldDateFormat
             new_format = self.NewDateFormat
-            parsed_new_format = Date.parse_date_format(Date, new_format)
-            new_format = parsed_new_format[0]
-            new_date_sep = parsed_new_format[1]
+            new_format, new_date_sep = Date.parse_date_format(Date, new_format)
             if old_format != new_format:
-                parsed_new_format = Date.parse_date_format(Date, new_format)
-                new_format = parsed_new_format[0]
-                new_date_sep = parsed_new_format[1]
                 Date.set_global_date_format(Date, new_format)
                 Date.set_global_date_sep(Date, new_date_sep)
                 global_proj_date = Date.get_global_proj_date(Date)
-                new_global_proj_date = Date.convertDateFormat(self,global_proj_date,old_format,new_format)
+                new_global_proj_date = Date.convertDateFormat(Date,global_proj_date,old_format,new_format)
                 Date.set_global_proj_date(Date, new_global_proj_date)
-                self.assetFrame.curr_date = Date.get_today_date(Date)["dt"].Format(new_format)              # JJG 1/7/2024 Change current date to new format
-                self.assetFrame.proj_date = new_global_proj_date                                            # JJG 5/26/2024 Change proj_date to new format
-            if self.oldRefDate != self.NewRefDate or old_format != new_format:
-                ref_date = Date.parse_date(self, self.assetFrame.ref_date, old_format)
-                self.assetFrame.ref_date = Date.convertDateFormat(self, ref_date, old_format, new_format)
-                Date.set_global_date_format(Date, new_format)
-                Date.set_global_date_sep(Date, new_date_sep)
-                ref_date = self.NewRefDate
-                self.assetFrame.setRefDate(ref_date)
+                curr_date = self.assetFrame.curr_date
+                self.assetFrame.curr_date = Date.convertDateFormat(Date,curr_date,old_format,new_format)             # JJG 1/7/2024 Change current date to new format
+                self.assetFrame.proj_date = new_global_proj_date                                                     # JJG 5/26/2024 Change proj_date to new format
+            self.NewRefDate = Date.convertDateFormat(Date,self.NewRefDate,old_format,new_format)
+            self.assetFrame.setRefDate(self.NewRefDate)
             if self.oldPayType != self.payType:
                 self.assetFrame.setPayType(self.payType)
             if self.oldNetPay != self.NewNetpay:
@@ -301,13 +261,13 @@ class PropertyForm(wx.Panel):
             if self.oldPayDepositAcct != self.NewpayDepositAcct:
                 self.assetFrame.setPayDepositAcct(self.NewpayDepositAcct)
             self.Parent.newDateFormat = new_format
-            print("%s, %s, %s, %s, %s" % (self.Parent.newDateFormat, self.payType, self.NewRefDate, self.NewNetpay, self.NewpayDepositAcct))
+            print("%s, %s, %s, %s, %s" % (self.Parent.newDateFormat, self.payType, self.NewRefDate["str"], self.NewNetpay, self.NewpayDepositAcct))
             self.Parent.Destroy()
-            return True
+            self.assetFrame.update = True
 
     def onAbort(self, event):
         self.Parent.Destroy()
-        return False
+        self.assetFrame.update = False
 
     def doLayout(self):
         ''' Layout the controls by means of sizers. '''

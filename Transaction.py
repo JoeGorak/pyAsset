@@ -194,43 +194,15 @@ class Transaction:
 
     def set_sched_date(self, rest):
         if rest != None:
-            if type(rest) is str:
-                if len(rest) != 0 and rest != "":
-                    try:
-                        [year, month, day] = Date.get_date_fields(self, rest)
-                        self.sched_date = wx.DateTime.FromDMY(day, month-1, year).Format(Date.get_global_dateFormat(Date))
-                    except:
-                        error = "Invalid sched_date entered: %s - try again!" % (rest)
-                        Date.MsgBox(self.parent, error)
-            elif type(rest) is dict:
-                try:
-                    self.sched_date = rest['str']
-                except:
-                    self.sched_date = wx.DateTime.FromDMY(rest['day'], rest['month'], rest['year']).Format(Date.get_global_date_format(Date))
-            else:
-                self.sched_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(Date.get_global_date_format(Date))
+            self.sched_date = Date.parse_date(self, rest, Date.get_global_date_format(Date))
         else:
             self.sched_date = None
 
     def set_due_date(self, rest):
         if rest != None:
-            if type(rest) is str:
-                if len(rest) != 0 and rest != "":
-                    try:
-                        [year, month, day] = Date.get_date_fields(self, rest)
-                        self.due_date = wx.DateTime.FromDMY(day, month-1, year).Format(Date.get_global_date_format(Date))
-                    except:
-                        error = "Invalid due_date entered: %s - try again!" % (rest)
-                        self.assetFrame.DisplayMsg(error)
-                else:
-                    self.due_date = None
-            elif type(rest) is dict:
-                try:
-                    self.due_date = rest['str']
-                except:
-                    self.due_date = wx.DateTime.FromDMY(rest['day'], rest['month'], rest['year']).Format(Date.get_global_date_format(Date))
-            else:
-                self.due_date = wx.DateTime.FromDMY(rest.day, rest.month-1, rest.year).Format(Date.get_global_date_format(Date))
+            self.due_date = Date.parse_date(self, rest, Date.get_global_date_format(Date))
+        else:
+            self.due_date = None
 
     def set_payee(self, rest):
         if rest == None or rest == "None":

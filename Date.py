@@ -156,6 +156,8 @@ class Date:
         year = 0
         date_sep = Date.get_global_date_sep(Date)
         date_fields = Date.get_global_date_format(Date).split(date_sep)
+        if type(in_date) is dict:
+            in_date = in_date["str"]
         in_date = in_date.replace("'","/").replace(" ","0")           # JJG 1/12/2022 replaced ' with / and " " with 0 to handle Quicken .QIF files!
         m = re.match("^[\d]+([/-])[\d]+([/-])[\d]+$", in_date)        # JJG 1/12/2022 removed number length restrictions to handle Quicken .QIF files!
         if m:
@@ -184,38 +186,52 @@ class Date:
             returnVal = None
         return returnVal
 
-    def parse_date(self, in_date, in_date_format):
+    def parse_date(self, in_date, date_format):
         error = False
         retVal = None
         if type(in_date) is str:
             if in_date == "":
                 dt = wx.DateTime.Today()
             else:
-                inp_date = in_date.replace("'","/").replace(" ","0")           # JJG 1/22/2022 replace ' with / and " " with 0 to handle Quicken .QIF files!
+                in_date = in_date.replace("'","/").replace(" ","0")           # JJG 1/22/2022 replace ' with / and " " with 0 to handle Quicken .QIF files!
                 dt = wx.DateTime()  # Uninitialized datetime
-                in_date = inp_date + " 12:00:00 PM"                            # append a valid time so parse will succeed if we have a valid date! JJG 08/04/2021
-                in_date = inp_date
-                if type(in_date_format) is not str:
-                    in_date_format = Date.global_date_format
-                if dt.ParseFormat(in_date, in_date_format) == -1:
+                if type(date_format) is not str:
+                    date_format = Date.global_date_format
+                if dt.ParseFormat(in_date, date_format) == -1:
                     error = True
+            if not error:
+                year = dt.year
+                month = dt.month+1
+                day = dt.day
         elif type(in_date) is DateTime or type(in_date) is datetime:
             dt = in_date
-        elif type(in_date) is Date or type(in_date) is dict:
+            year = dt.year
+            month = dt.month
+            if type(in_date) is DateTime:
+                month = month+1
+            day = dt.day
+        elif type(in_date) is dict:
             dt = in_date["dt"]
+            [ year, month, day ] = Date.get_date_fields(Date, in_date["str"])
+        elif type(in_date) is Date:
+            dt = in_date["dt"]
+            year = dt.year
+            month = dt.month
+            day = dt.day
         else:
             error = True
         if error:
             pass                                # Leave error message display to the caller!  We just return None!
         else:
-            retVal = { "year" : dt.year, "month" : dt.month + 1, "day" : dt.day, "dt" : dt }
-            if type(in_date) is datetime:
-                retVal["month"] = retVal["month"] - 1       # This was determined thru testing!
+            retVal = { "year" : year, "month" : month, "day" : day, "dt" : dt }
+            out_year, out_month, out_day = year, month-1, day
+            retVal["str"] = wx.DateTime.FromDMY(out_day, out_month, out_year).Format(Date.get_global_date_format(Date))
         return retVal
 
     def get_today_date(self):
         curr_date = wx.DateTime.Today()
-        return { "dt": curr_date, "str": curr_date.Format(Date.get_global_date_format(Date)) }
+        curr_date_str = wx.DateTime.FromDMY(curr_date.day, curr_date.month, curr_date.year).Format(Date.get_global_date_format(Date))
+        return { "dt": curr_date, "str": curr_date_str }
 
     def get_today_date_time(self):
         curr_date = self.get_today_date(self)["str"]
@@ -223,8 +239,8 @@ class Date:
 
     def set_curr_date(self):
         curr_date = Date.get_today_date(Date)
-        self.curr_date = curr_date["str"]
-        Date.set_global_curr_date(Date, self.curr_date)
+ #       self.curr_date = curr_date["str"]
+        Date.set_global_curr_date(Date, curr_date)
         return curr_date
 
     def set_proj_date(self, proj_date):
@@ -271,17 +287,16 @@ class Date:
         return new_date + " " + in_time
 
     def convertDateFormat(self, in_date, in_dateFormat, out_dateFormat):
-        in_date_parsed = Date.parse_date(self, in_date, in_dateFormat)
-        if in_date_parsed == None:
-            self.MsgBox(Date, "Bad input converting date format (%s) - ignored!" % (in_date))
-            out_date = None
-            out_date_str = ""
+        if type(in_date) is str:
+            in_date = Date.parse_date(self, in_date, in_dateFormat)
+            out_date_dt = in_date["dt"]
+            out_date_str = in_date["str"]
         else:
-            in_date = wx.DateTime.FromDMY(in_date_parsed['day'], in_date_parsed['month']-1, in_date_parsed['year'])
-            out_date = in_date
-            self.dateFormat = out_dateFormat
-            out_date_str = out_date.Format(out_dateFormat)
-        return { "dt": out_date, "str": out_date_str }
+            year, month, day = Date.get_date_fields(Date, in_date)
+            month -= 1
+            out_date_dt = wx.DateTime.FromDMY(day, month, year)
+            out_date_str = out_date_dt.Format(out_dateFormat)
+        return { "dt": out_date_dt, "str": out_date_str }
 
     # Helper method(s):
 
@@ -306,12 +321,20 @@ class Date:
         return Date.global_date_sep
 
     def set_global_curr_date(self, curr_date):
+        if type(curr_date) is str:
+            parsed_curr_date = Date.parse_date(Date, curr_date, Date.get_global_date_format(Date))
+            curr_date = parsed_curr_date
+            curr_date_str = wx.DateTime.FromDMY(parsed_curr_date['day'], parsed_curr_date['month'], parsed_curr_date['year'])
+            curr_date["str"] = curr_date_str.Format(Date.get_global_date_format(Date))
         Date.global_curr_date = curr_date
 
     def get_global_curr_date(self):
         return Date.global_curr_date
 
     def set_global_proj_date(self, proj_date):
+        if type(proj_date) is str:
+            parsed_proj_date = Date.parse_date(Date,proj_date,Date.get_global_date_format(Date))
+            proj_date = parsed_proj_date
         Date.global_proj_date = proj_date
 
     def get_global_proj_date(self):
