@@ -42,7 +42,7 @@ class Date:
     def __init__(self, parent, in_refDate=None, in_dateFormat="", in_payType=""):
         Date.parent = parent
         self.parent = parent
-        parsed_in_date = self.parse_date_format(in_dateFormat)
+        parsed_in_date = self.parseDateFormat(in_dateFormat)
         in_dateFormat = parsed_in_date[0]
         in_dateSep = parsed_in_date[1]
         Date.set_global_date_format(Date, in_dateFormat)
@@ -55,7 +55,46 @@ class Date:
     def getDateFormats(self):
         return ["%m/%d/%Y", "%Y/%m/%d", "%m-%d-%Y", "%Y-%m-%d"]
 
-    def parse_date_format(self, in_dateFormat):
+    def guessDateFormat(self, in_date, globalUpdate = False):
+        if type(in_date) is dict:
+            in_date = in_date["str"]
+        dateFormat = Date.get_global_date_format(Date)              # JJG 7/28/2024 if no date passed, just return current global format
+        dateSep = Date.get_global_date_sep(Date)
+        if in_date == "":
+            return dateFormat
+        found = False
+        dateFormats = Date.getDateFormats(self)
+        try:
+            slash_ind = in_date.index("/")
+        except:
+            slash_ind = -1
+        try:
+            dash_ind = in_date.index("-")
+        except:
+            dash_ind = -1
+        if slash_ind != -1:
+            dateSep = "/"
+            dateParts = in_date.split(dateSep)
+            if int(dateParts[0]) > 31:
+                dateFormat = "%Y/%m/%d"
+            else:
+                dateFormat = "%m/%d/%Y"
+        elif dash_ind != -1:
+            dateSep = '-'
+            dateParts = in_date.split(dateSep)
+            if int(dateParts[0]) > 31:
+                dateFormat = "%Y-%m-%d"
+            else:
+                dateFormat = "%m-%d-%Y"
+        else:
+            dateFormat = "%m/%d/%Y"
+            Date.MsgBox(Date, "Unknown date format for date %s ignored - default to %s" % (in_date, dateFormat))
+        if globalUpdate:
+            self.set_global_date_format(Date, dateFormat)
+            self.set_global_date_sep(Date, dateSep)
+        return dateFormat
+
+    def parseDateFormat(self, in_dateFormat=""):
         dateFormats = Date.getDateFormats(self)
         if in_dateFormat != "":
             try:
@@ -151,40 +190,15 @@ class Date:
         return val
 
     def get_date_fields(self, in_date):
-        month = 0
-        day = 0
-        year = 0
-        date_sep = Date.get_global_date_sep(Date)
-        date_fields = Date.get_global_date_format(Date).split(date_sep)
-        if type(in_date) is dict:
+        date_format = Date.guessDateFormat(Date, in_date)
+        date_fields = Date.parse_date(Date, in_date, date_format)
+        retVal = [ date_fields['year'], date_fields['month'], date_fields['day'] ]
+        return retVal
+
+    def get_display_date(self, in_date):
+        if type(in_date) is not str:
             in_date = in_date["str"]
-        in_date = in_date.replace("'","/").replace(" ","0")           # JJG 1/12/2022 replaced ' with / and " " with 0 to handle Quicken .QIF files!
-        m = re.match("^[\d]+([/-])[\d]+([/-])[\d]+$", in_date)        # JJG 1/12/2022 removed number length restrictions to handle Quicken .QIF files!
-        if m:
-            sep = m.groups()
-            pos1 = in_date.index(sep[0])
-            pos2 = in_date.rindex(sep[1])
-            in_fields = []
-            in_fields.append(int(in_date[0:pos1]))
-            in_fields.append(int(in_date[pos1+1:pos2]))
-            in_fields.append(int(in_date[pos2+1:]))
-            if len(date_fields) == 3:
-                for i in range(3):
-                    if date_fields[i] == "%m":
-                        month = int(in_fields[i])
-                    elif date_fields[i] == "%d":
-                        day = int(in_fields[i])
-                    elif date_fields[i] == "%Y":
-                        year = int(in_fields[i])
-                    elif date_fields[i] == "%y":
-                        # assume all 2 digit years are in the range 2000 <= year < 2099.  Don't expect this software to be used in the year 2100!! JJG 07/08/2021
-                        year = 2000 + int(in_fields[i])
-                returnVal = [ year, month, day ]
-            else:
-                returnVal = None                  # Shouldn't happen if properties correct but be defensive! Trust but verify!!        
-        else:
-            returnVal = None
-        return returnVal
+        return Date.parse_date(Date,in_date,Date.get_global_date_format(Date))["str"]
 
     def parse_date(self, in_date, date_format):
         error = False
@@ -195,14 +209,15 @@ class Date:
             else:
                 in_date = in_date.replace("'","/").replace(" ","0")           # JJG 1/22/2022 replace ' with / and " " with 0 to handle Quicken .QIF files!
                 dt = wx.DateTime()  # Uninitialized datetime
-                if type(date_format) is not str:
-                    date_format = Date.global_date_format
                 if dt.ParseFormat(in_date, date_format) == -1:
                     error = True
             if not error:
                 year = dt.year
-                month = dt.month+1
+                month = dt.month
                 day = dt.day
+        elif type(in_date) is dict:
+            dt = in_date["dt"]
+            [ year, month, day ] = [dt.year, dt.month, dt.day]
         elif type(in_date) is DateTime or type(in_date) is datetime:
             dt = in_date
             year = dt.year
@@ -210,9 +225,6 @@ class Date:
             if type(in_date) is DateTime:
                 month = month+1
             day = dt.day
-        elif type(in_date) is dict:
-            dt = in_date["dt"]
-            [ year, month, day ] = Date.get_date_fields(Date, in_date["str"])
         elif type(in_date) is Date:
             dt = in_date["dt"]
             year = dt.year
@@ -224,7 +236,7 @@ class Date:
             pass                                # Leave error message display to the caller!  We just return None!
         else:
             retVal = { "year" : year, "month" : month, "day" : day, "dt" : dt }
-            out_year, out_month, out_day = year, month-1, day
+            out_year, out_month, out_day = year, month, day
             retVal["str"] = wx.DateTime.FromDMY(out_day, out_month, out_year).Format(Date.get_global_date_format(Date))
         return retVal
 
@@ -287,15 +299,21 @@ class Date:
         return new_date + " " + in_time
 
     def convertDateFormat(self, in_date, in_dateFormat, out_dateFormat):
-        if type(in_date) is str:
-            in_date = Date.parse_date(self, in_date, in_dateFormat)
+        if in_dateFormat != "":
+            if type(in_date) is str:
+                in_date = Date.parse_date(self, in_date, in_dateFormat)
+                out_date_dt = in_date["dt"]
+                out_date_str = in_date["str"]
+            else:
+                year, month, day = Date.get_date_fields(Date, in_date)
+                out_date_dt = wx.DateTime.FromDMY(day, month, year)
+                out_date_str = out_date_dt.Format(out_dateFormat)
+        else:
+            if type(in_date) is str:
+                date_format = self.guessDateFormat(Date, in_date)
+                in_date = Date.parse_date(self, in_date, date_format)
             out_date_dt = in_date["dt"]
             out_date_str = in_date["str"]
-        else:
-            year, month, day = Date.get_date_fields(Date, in_date)
-            month -= 1
-            out_date_dt = wx.DateTime.FromDMY(day, month, year)
-            out_date_str = out_date_dt.Format(out_dateFormat)
         return { "dt": out_date_dt, "str": out_date_str }
 
     # Helper method(s):
@@ -306,7 +324,7 @@ class Date:
         d.Destroy()
 
     def set_global_date_format(self, desired_date_format):
-        parsed_date_format = Date.parse_date_format(Date, desired_date_format)
+        parsed_date_format = Date.parseDateFormat(Date, desired_date_format)
         self.global_date_format = Date.global_date_format = parsed_date_format[0]
         self.global_date_sep = Date.global_date_sep = parsed_date_format[1]
         return parsed_date_format

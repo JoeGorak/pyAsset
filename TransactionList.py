@@ -97,6 +97,7 @@ class TransactionList:
     def update_current_and_projected_values(self, start_trans_number = 0):
         trans_number = 0
         trans_sched_date = proj_date = Date.get_proj_date(Date)
+        if proj_date == None: return
         proj_date_obj = ret_proj_value = None
         if 'mm' not in proj_date:
             proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]

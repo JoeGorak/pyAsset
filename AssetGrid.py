@@ -398,14 +398,15 @@ class AssetGrid(grd.Grid):
             tableValue = ""
         else:
             datetimeParts = cellValue.split(" ")
-            dateParts = Date.get_date_fields(Date, datetimeParts[0])
+            datePartsFormat = Date.guessDateFormat(Date, datetimeParts[0])
+            dateParts = Date.parse_date(Date, datetimeParts[0], datePartsFormat)
             timeParts = datetimeParts[1].split(":")
             time = "%02s:%02s:%0s" % (timeParts[0], timeParts[1], timeParts[2])
-            month = dateParts[1]
-            day = dateParts[2]
-            year = dateParts[0]
+            month = dateParts['month']
+            day = dateParts['day']
+            year = dateParts['year']
             self.SetCellAlignment(row, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
-            tableValue = wx.DateTime.FromDMY(day, month-1, year).Format(Date.get_global_date_format(Date)) + " " + time
+            tableValue = wx.DateTime.FromDMY(day, month, year).Format(Date.get_global_date_format(Date)) + " " + time
         self.SetCellValue(row, col, tableValue)
 
     def GridCellStringRenderer(self, row, col):

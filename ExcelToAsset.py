@@ -163,10 +163,11 @@ class ExcelToAsset:
     def GetTransactionSheetNames(self):
         sheets = self.wb.get_sheet_names()
         return_sheets = []
-        if self.ignore_sheets != None:
-            for sheet in sheets:
-                if sheet not in self.ignore_sheets:
-                    return_sheets.append(sheet)
+        for sheet in sheets:
+            if sheet in self.ignore_sheets:
+                continue
+            else:
+                return_sheets.append(sheet)
         return return_sheets
 
     def ProcessTransactionSheet(self, whichAsset, SheetName):

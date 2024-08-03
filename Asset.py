@@ -177,25 +177,30 @@ class Asset(object):
         if last_pull_date != None:
             if type(last_pull_date) is str:
                 dateTimeParts = last_pull_date.split(" ")
-                [year, month, day] = Date.get_date_fields(Date,dateTimeParts[0])
+                date = dateTimeParts[0]
+#                dateFormat = Date.guessDateFormat(Date, date)
+                dateFields = Date.get_date_fields(self, date)
+                year = dateFields[0]
+                month = dateFields[1]
+                day = dateFields[2]
                 [hour, min, sec] = dateTimeParts[1].split(":")
             else:
                 try:
-                    month = last_pull_date["dt"].month + 1
+                    month = last_pull_date["dt"].month+1
                     day = last_pull_date["dt"].day
                     year = last_pull_date["dt"].year
                     hour = last_pull_date["dt"].hour
                     min = last_pull_date["dt"].minute
                     sec = last_pull_date["dt"].second
                 except:
-                    month = last_pull_date.month
+                    month = last_pull_date.month-1
                     day = last_pull_date.day
                     year = last_pull_date.year
                     hour = last_pull_date.hour
                     min = last_pull_date.minute
                     sec = last_pull_date.second
             time = "%02d:%02d:%02d" % (int(hour), int(min), int(sec))
-            last_pull_date = wx.DateTime.FromDMY(day, month-1, year).Format(Date.get_global_date_format(Date))
+            last_pull_date = wx.DateTime.FromDMY(day, month, year).Format(Date.get_global_date_format(Date))
             self.last_pull_date = last_pull_date + " " + time
 
     def get_last_pull_date(self):

@@ -242,7 +242,7 @@ class PropertyForm(wx.Panel):
         else:
             old_format = self.oldDateFormat
             new_format = self.NewDateFormat
-            new_format, new_date_sep = Date.parse_date_format(Date, new_format)
+            new_format, new_date_sep = Date.parseDateFormat(Date, new_format)
             if old_format != new_format:
                 Date.set_global_date_format(Date, new_format)
                 Date.set_global_date_sep(Date, new_date_sep)

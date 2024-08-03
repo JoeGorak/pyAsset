@@ -44,7 +44,7 @@ class Transaction:
     def __init__(self, parent):
         self.parent = parent
         self.assetFrame = self.parent.parent
-        self.dateFormat = Date.get_global_date_format(Date)
+        self.dateFormat = Date.get_global_date_format(self)
         self.dateSep = Date.get_global_date_sep(self)
         self.pmt_method = None
         self.check_num = None
@@ -93,8 +93,8 @@ class Transaction:
 
     def __gt__(self, other):
         if self.sched_date != None and other.sched_date != None:
-            date_self = Date.parse_date(self,self.sched_date,Date.get_global_date_format)
-            date_other = Date.parse_date(self,other.sched_date,Date.get_global_date_format)
+            date_self = Date.parse_date(self,self.sched_date,self.dateFormat)
+            date_other = Date.parse_date(self,other.sched_date,other.dateFormat)
             return date_self["dt"] > date_other["dt"]
         elif self.sched_date != None:
             return False

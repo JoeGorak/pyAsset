@@ -74,6 +74,20 @@ class AssetFrame(wx.Frame):
         self.CreateParams()
         super(AssetFrame, self).__init__(parent, title=title)
         self.make_widgets()
+
+        if self.assetFile:
+            ext_loc = self.assetFile.find(".")
+            ext = self.assetFile[ext_loc:]
+            if ext == ".qif":
+                latest_assets = qif.load_file(self, self.assetFile)
+                self.process_asset_list(latest_assets, 'add')
+            elif ext == ".xlsx":
+                self.process_XLSX_file(self.assetFile)
+            else:
+                error = "Can't determine type of assetFile: " + self.assetFile + " - skipping"
+                self.MsgBox(error)
+        self.redraw_all()
+
         if self.readConfigFile(cfgFile):
             self.curr_date = Date.set_curr_date(Date)
             self.proj_date = self.curr_date                          # JJG 5/13/2024 Set proj date to curr date initially
@@ -84,13 +98,11 @@ class AssetFrame(wx.Frame):
             oldDateFormat = ""                                       # JJG 1/1/2024 Force date format to be set the first time
             newDateFormat = Date.get_global_date_format(Date)
             self.update_date_dates(oldDateFormat, newDateFormat)
+            self.update_all_Date_Formats(oldDateFormat, newDateFormat)
             oldDateFormat = newDateFormat
             oldRefDate = self.ref_date
             oldDateSep = Date.get_global_date_sep(self)
  
-            if self.assetFile:
-                latest_assets = qif.load_file(self, self.assetFile)
-                self.process_asset_list(latest_assets, 'add')
         else:
             curr_date = Date(parent)
             self.curr_date = curr_date.curr_date["str"]
@@ -111,12 +123,6 @@ class AssetFrame(wx.Frame):
         self.projDate = currDate
         self.properties(self, oldDateFormat, oldPayType, oldRefDate, oldNetPay, oldPayDepositAcct)
         self.edited = False
-
-    def get_display_date(self, in_date):
-        if type(in_date) is not str:
-            return in_date["str"]
-        else:
-            return in_date
 
     def get_date_format(self):
         return Date.get_global_date_format(Date)
@@ -212,7 +218,7 @@ class AssetFrame(wx.Frame):
             if incr != None:
                 ref_date_parsed = Date.parse_date(self, self.ref_date, dateFormat)
                 if ref_date_parsed != None:
-                    test_paydate = wx.DateTime.FromDMY(ref_date_parsed['day'], ref_date_parsed['month']-1, ref_date_parsed['year'])
+                    test_paydate = wx.DateTime.FromDMY(ref_date_parsed['day'], ref_date_parsed['month'], ref_date_parsed['year'])
                     if test_paydate > start_date:
                         while test_paydate > start_date:
                             test_paydate.Subtract(incr)
@@ -289,7 +295,7 @@ class AssetFrame(wx.Frame):
             payTypes = self.get_pay_types()
             file.write("%s\n" % payTypes[payType])
             ref_date = self.getRefDate()
-            ref_date= self.get_display_date(ref_date)
+            ref_date= Date.get_display_date(Date,ref_date)
             file.write("%s\n" % ref_date)
             file.write("%s\n" % self.netpay)
             file.write("%s\n" % self.payDepositAcct)
@@ -858,7 +864,26 @@ class AssetFrame(wx.Frame):
                     pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
             if function == 'delete':
                     self.assetGrid.ClearGrid()
-        self.redraw_all()
+        if function != 'add':
+            self.redraw_all()
+
+    def process_XLSX_file(self, total_filename):
+        self.cur_assets = None
+        xlsm = ExcelToAsset(ignore_sheets=['Assets', 'Bills'])
+        xlsm.OpenXLSMFile(total_filename)
+        latest_assets = xlsm.ProcessAssetsSheet(self)
+        self.process_asset_list(latest_assets, 'add')
+        transaction_sheet_names = xlsm.GetTransactionSheetNames()
+        for sheet in transaction_sheet_names:
+            sheet_index = self.assets.index(sheet)
+            if sheet_index != -1:
+                self.assets[sheet_index].transactions = xlsm.ProcessTransactionSheet(self.assets[sheet_index], sheet)
+                if self.assets[sheet_index].transactions:
+                    proj_value = self.assets[sheet_index].transactions.update_current_and_projected_values()
+                    self.assets[sheet_index].set_value_proj(proj_value)
+            else:
+                print(sheet + " not found in asset list")
+        self.bills = xlsm.ProcessBillsSheet(self.bills)
 
     def import_XLSX_file(self, *args):
         # Appends or Merges as appropriate the records from a .xlsx file to the current Asset
@@ -876,23 +901,7 @@ class AssetFrame(wx.Frame):
                 error = total_name_in + ' does not exist / cannot be opened !!\n'
 
             if error == "":
-                self.cur_assets = None
-                xlsm = ExcelToAsset(ignore_sheets=['Assets', 'Bills'])
-                xlsm.OpenXLSMFile(total_name_in)
-                latest_assets = xlsm.ProcessAssetsSheet(self)
-                self.process_asset_list(latest_assets, 'add')
-                transaction_sheet_names = xlsm.GetTransactionSheetNames()
-                for sheet in transaction_sheet_names:
-                    sheet_index = self.assets.index(sheet)
-                    if sheet_index != -1:
-                        self.assets[sheet_index].transactions = xlsm.ProcessTransactionSheet(self.assets[sheet_index], sheet)
-                        if self.assets[sheet_index].transactions:
-                            proj_value = self.assets[sheet_index].transactions.update_current_and_projected_values()
-                            self.assets[sheet_index].set_value_proj(proj_value)
-                    else:
-                        print(sheet + " not found in asset list")
-
-                self.bills = xlsm.ProcessBillsSheet(self.bills)
+                self.process_XLSX_file(total_name_in)
             else:
                 self.DisplayMsg(error)
 
@@ -979,7 +988,7 @@ class AssetFrame(wx.Frame):
             if self.cfgFile != "":
                 self.writeConfigFile()
             self.pay_dates = self.get_paydates_in_range(self.curr_date, self.proj_date)
-            print("Pay dates in range %s-%s: %s" % (self.get_display_date(self.curr_date), self.get_display_date(self.proj_date), self.pay_dates))
+            print("Pay dates in range %s-%s: %s" % (Date.get_display_date(Date,self.curr_date), Date.get_display_date(Date,self.proj_date), self.pay_dates))
             newDateFormat = Date.get_global_date_format(Date)
             self.update_all_Date_Formats(oldDateFormat, newDateFormat)
             #TO DO: Add logic to update Salary transactions and Bill transactions for pay_dates
@@ -994,7 +1003,7 @@ class AssetFrame(wx.Frame):
     def setRefDate(self, new_ref_date):
         if type(new_ref_date) is str:
             new_ref_date = Date.parse_date(Date, new_ref_date, Date.get_global_date_format(Date))
-            new_ref_date_str = wx.DateTime.FromDMY(new_ref_date['day'], new_ref_date['month']-1, new_ref_date['year'])
+            new_ref_date_str = wx.DateTime.FromDMY(new_ref_date['day'], new_ref_date['month'], new_ref_date['year'])
             new_ref_date["str"] = new_ref_date_str.Format(Date.get_date_format(Date))
         self.ref_date = new_ref_date
 

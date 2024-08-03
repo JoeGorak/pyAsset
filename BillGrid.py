@@ -277,7 +277,7 @@ class BillGrid(grd.Grid):
         else:
             returned_date = Date.parse_date(self, cellValue, Date.get_global_date_format(self))
             if returned_date != None:
-                tableDate = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"]-1, returned_date["year"])
+                tableDate = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"], returned_date["year"])
                 dateFormat = Date.get_global_date_format(self)
                 date_sep = Date.get_global_date_sep(self)
                 dateParts = dateFormat.split(date_sep)

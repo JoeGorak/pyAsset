@@ -21,8 +21,9 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+import wx
 from Date import Date
-from datetime import date
+from datetime import date, datetime
 
 # Bill types
 CHECKINGANDSAVINGS = 0
@@ -125,82 +126,31 @@ class Bill:
     def get_due_date(self):
        return self.due_date
 
+    def get_date_representation(self, in_date):
+        out_date_str = ''
+        if type(in_date) == str:
+            if in_date != '':
+                temp_out_date = Date.guessDateFormat(self, in_date)
+                temp_out_date = date(temp_out_date['year'], temp_out_date['month'], temp_out_date['day'])
+                temp_out_date = Date.parse_date(Date, temp_out_date, Date.get_global_date_format(Date))
+                out_date_str = temp_out_date["str"]
+        elif type(in_date) is dict:
+            out_date_str = in_date["str"]
+        elif type(in_date) is datetime:
+            out_day = in_date.day
+            out_month = in_date.month-1
+            out_year = in_date.year
+            out_date_str = wx.DateTime.FromDMY(out_day, out_month, out_year).Format(Date.get_global_date_format(Date))
+        return out_date_str
+
     def set_due_date(self, due_date):
-        date_str = ''
-        finished = False
-        inc_month = False
-        if type(due_date)==str:
-            if due_date == '':
-                finished = True
-            else:
-                temp_due_date = Date.parse_date(self,due_date,Date.get_global_date_format(Date))
-                temp_due_date = date(temp_due_date['year'],temp_due_date['month'],temp_due_date['day'])
-        else:
-            try:
-                temp_due_date = due_date["dt"]
-                inc_month = True
-            except:
-                temp_due_date = date(due_date.year,due_date.month,due_date.day)
-        if not finished:
-            date_fields = Date.get_global_date_format(Date).split(Date.get_global_date_sep(Date))
-            for i in range(3):
-                if date_fields[i] == "%m":
-                    month = int(temp_due_date.month)
-                    if inc_month:
-                        month += 1
-                    date_str += "%02d" % (month)
-                elif date_fields[i] == "%d":
-                    day = int(temp_due_date.day)
-                    date_str += "%02d" % (day)
-                elif date_fields[i] == "%Y":
-                    year = int(temp_due_date.year)
-                    date_str += "%04d" % (year)
-                elif date_fields[i] == "%y":
-                    year = int(due_date.year)
-                    date_str += "%02d" % (year)
-                if i < 2:
-                    date_str += Date.get_global_date_sep(self)
-        self.due_date = date_str
+        self.due_date = self.get_date_representation(due_date)
 
     def get_sched_date(self):
         return self.sched_date
 
     def set_sched_date(self, sched_date):
-        date_str = ""
-        finished = False
-        inc_month = False
-        if type(sched_date)==str:
-            if sched_date == '':
-                finished = True
-            else:
-                temp_sched_date = Date.parse_date(self,sched_date,Date.get_global_date_format(Date))
-                temp_sched_date = date(temp_sched_date['year'],temp_sched_date['month'],temp_sched_date['day'])
-        else:
-            try:
-                temp_sched_date = sched_date["dt"]
-                inc_month = True
-            except:
-                temp_sched_date = date(sched_date.year,sched_date.month,sched_date.day)
-        if not finished:
-            date_fields = Date.get_global_date_format(Date).split(Date.get_global_date_sep(self))
-            for i in range(3):
-                if date_fields[i] == "%m":
-                    month = int(temp_sched_date.month)
-                    if inc_month:
-                        month += 1
-                    date_str += "%02d" % (month)
-                elif date_fields[i] == "%d":
-                    day = int(temp_sched_date.day)
-                    date_str += "%02d" % (day)
-                elif date_fields[i] == "%Y":
-                    year = int(temp_sched_date.year)
-                    date_str += "%04d" % (year)
-                elif date_fields[i] == "%y":
-                    year = int(temp_sched_date.year)
-                    date_str += "%02d" % (year)
-                if i < 2:
-                    date_str += Date.get_global_date_sep(self)
-        self.sched_date = date_str
+        self.sched_date = self.get_date_representation(sched_date)
 
 #TODO: Modify get_pmt_acct and set_pmt_acct to use AssetList and Asset!  For now just put in and return whatever is typed!
     def get_pmt_acct(self):
