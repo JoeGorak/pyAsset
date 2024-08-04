@@ -55,8 +55,13 @@ class qif(object):
 #        if readmode == 'normal':  # things not to do on 'import':
 #            name = filename.replace('.qif', '')
 #            self.filename = os.path.split(name)[1]
+        try:
+            mffile = open(filename, 'r')
+        except:
+            error = "No such file or directory :" + filename
+            self.MsgBox(error)
+            return None
         Found_assets = AssetList(self)
-        mffile = open(filename, 'r')
         lines = mffile.readlines()
         mffile.close()
         section = UNKNOWN
@@ -335,3 +340,8 @@ class qif(object):
                 return qif.read_qif(self, self.filename)
             else:
                 return None
+
+        def MsgBox(self, message):
+            d = wx.MessageDialog(self.parent, message, "error", wx.OK | wx.ICON_INFORMATION)
+            d.ShowModal()
+            d.Destroy()

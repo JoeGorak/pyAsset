@@ -75,18 +75,25 @@ class AssetFrame(wx.Frame):
         super(AssetFrame, self).__init__(parent, title=title)
         self.make_widgets()
 
+        self.redraw = False
         if self.assetFile:
             ext_loc = self.assetFile.find(".")
             ext = self.assetFile[ext_loc:]
+            self.edited = False
             if ext == ".qif":
                 latest_assets = qif.load_file(self, self.assetFile)
-                self.process_asset_list(latest_assets, 'add')
+                if latest_assets != None:
+                    self.process_asset_list(latest_assets, 'add')
+                    self.redraw = True
             elif ext == ".xlsx":
-                self.process_XLSX_file(self.assetFile)
+                latest_assets = self.process_XLSX_file(self.assetFile)
+                if latest_assets != None:
+                    self.redraw = True
             else:
                 error = "Can't determine type of assetFile: " + self.assetFile + " - skipping"
                 self.MsgBox(error)
-        self.redraw_all()
+        if self.redraw:
+            self.redraw_all()
 
         if self.readConfigFile(cfgFile):
             self.curr_date = Date.set_curr_date(Date)
@@ -511,6 +518,8 @@ class AssetFrame(wx.Frame):
         self.Show()
 
     def redraw_all(self, index=-1):
+        if self.assets == None:
+            return
         nassets = len(self.assets.assets)
         if index == -1:
             start_range = 0
@@ -571,6 +580,8 @@ class AssetFrame(wx.Frame):
         self.assets.assets[row].trans_frame = None
 
     def update_asset_dates(self, oldDateFormat, newDateFormat):
+        if self.assets == None:
+            return
         self.edited = True
         nassets = len(self.assets)
         for row in range(nassets):
@@ -869,7 +880,7 @@ class AssetFrame(wx.Frame):
 
     def process_XLSX_file(self, total_filename):
         self.cur_assets = None
-        xlsm = ExcelToAsset(ignore_sheets=['Assets', 'Bills'])
+        xlsm = ExcelToAsset(self, ignore_sheets=['Assets', 'Bills'])
         xlsm.OpenXLSMFile(total_filename)
         latest_assets = xlsm.ProcessAssetsSheet(self)
         self.process_asset_list(latest_assets, 'add')
@@ -884,6 +895,7 @@ class AssetFrame(wx.Frame):
             else:
                 print(sheet + " not found in asset list")
         self.bills = xlsm.ProcessBillsSheet(self.bills)
+        return latest_assets
 
     def import_XLSX_file(self, *args):
         # Appends or Merges as appropriate the records from a .xlsx file to the current Asset
@@ -901,7 +913,9 @@ class AssetFrame(wx.Frame):
                 error = total_name_in + ' does not exist / cannot be opened !!\n'
 
             if error == "":
-                self.process_XLSX_file(total_name_in)
+                latest_assets = self.process_XLSX_file(total_name_in)
+                if latest_assets != None:
+                    self.redraw_all()
             else:
                 self.DisplayMsg(error)
 

@@ -38,27 +38,33 @@ from AssetList import AssetList
 from TransactionList import TransactionList
 from Transaction import Transaction
 from BillList import BillList
+import wx
 
-class ExcelToAsset:
-    def __init__(self, ignore_sheets=[]):
-        self.wb = ''
+class ExcelToAsset(wx.Frame):
+    def __init__(self, parent, title="ExcelToAsset", ignore_sheets=[]):
+        super(ExcelToAsset, self).__init__(parent, title=title)
+        self.wb = None
         self.ignore_sheets = ignore_sheets
 
     def OpenXLSMFile(self, FileName):
-        self.wb = load_workbook(FileName, read_only=True, data_only=True)
+        try:
+            self.wb = load_workbook(FileName, read_only=True, data_only=True)
+        except:
+            error = "No such file or directory: " + FileName
+            self.MsgBox(error)
 
     def ProcessAssetsSheet(self, parent, ignoredHeadings = ['Who']):
         self.parent = parent
         AssetsFound = AssetList(parent)
-
+        if self.wb == None:
+            return AssetsFound
         ws = self.wb.get_sheet_by_name("Assets")
-
         for row in ws.rows:
             cv = row[0].value
             if cv == None or "Bills" in cv or "Total" in cv or "Cash Flow" in cv:
                 continue
             elif "Accounts" in cv or "Other" in cv:
-#                print(row)
+                print(row)
                 ColumnHeaders = dict()
                 col_num = 1
                 for cell in row:
@@ -74,13 +80,12 @@ class ExcelToAsset:
                         break
                     if len(ColumnHeaders) == 1:
                         continue
-#                print(ColumnHeaders)
+#               print(ColumnHeaders)
             else:
                 col_num = 1
                 for cell in row:
                     cv = cell.value
                     if col_num == 1:
-
                         # First column means this is a new asset... save name and pointer to the new asset location for later
                         # Also set type of asset using clues from the account name
                         new_asset = AssetsFound.get_asset_by_name(cv)
@@ -107,9 +112,8 @@ class ExcelToAsset:
                             new_asset.set_type("Loan")
                         else:
                             new_asset.set_type("Other")
-
                     else:  # 2nd and remaining columns are more data for the current asset...
-                        # determine what field and update the object appropriately
+                           # determine what field and update the object appropriately
 
                         heading = ColumnHeaders.get(col_num, "None")
                         if heading != "None":
@@ -157,12 +161,13 @@ class ExcelToAsset:
                     col_num += 1
                     if col_num > len(ColumnHeaders):
                         break
-
         return AssetsFound
 
     def GetTransactionSheetNames(self):
-        sheets = self.wb.get_sheet_names()
         return_sheets = []
+        if self.wb == None:
+            return return_sheets
+        sheets = self.wb.get_sheet_names()
         for sheet in sheets:
             if sheet in self.ignore_sheets:
                 continue
@@ -172,7 +177,8 @@ class ExcelToAsset:
 
     def ProcessTransactionSheet(self, whichAsset, SheetName):
         TransactionsFound = TransactionList(whichAsset)
-
+        if self.wb == None:
+            return TransactionsFound
         ws = self.wb.get_sheet_by_name(SheetName)
         SheetName = str(SheetName).upper()
         if "CHECKING" in SheetName:
@@ -237,7 +243,8 @@ class ExcelToAsset:
         MAX_COLS_TO_PROCESS = 8             # Only these columns have data we want! JJG 4/1/2023
         BillsFound = BillList()
         BillPlaces = dict()
-
+        if self.wb == None:
+            return BillsFound
         ws = self.wb.get_sheet_by_name("Bills")
 
         row_num = 0
@@ -292,3 +299,8 @@ class ExcelToAsset:
             if Finished:
                 break
         return BillsFound
+
+    def MsgBox(self, message):
+        d = wx.MessageDialog(self, message, "error", wx.OK | wx.ICON_INFORMATION)
+        d.ShowModal()
+        d.Destroy()

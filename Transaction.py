@@ -139,8 +139,12 @@ class Transaction:
 
     def qif_repr(self):
         lines = []
-        lines.append("S%s" % self.get_sched_date())
-        lines.append("D%s" % self.get_due_date())
+        sched_date = self.get_sched_date()
+        if sched_date != None:
+            lines.append("S%s" % sched_date["str"])
+        due_date = self.get_due_date()
+        if due_date != None:
+            lines.append("D%s" % due_date["str"])
         amount = self.get_amount()
         if amount != None:
             lines.append("T%.2f" % amount)
@@ -194,12 +198,22 @@ class Transaction:
 
     def set_sched_date(self, rest):
         if rest != None:
-            self.sched_date = Date.parse_date(self, rest, Date.get_global_date_format(Date))
+            global_date_format = Date.get_global_date_format(Date)
+            if type(rest) is str:
+                in_date_format = Date.guessDateFormat(Date, rest)
+                if in_date_format != global_date_format:
+                    rest = Date.convertDateFormat(Date, rest, in_date_format, global_date_format)
+            self.sched_date = Date.parse_date(self, rest, global_date_format)
         else:
             self.sched_date = None
 
     def set_due_date(self, rest):
         if rest != None:
+            global_date_format = Date.get_global_date_format(Date)
+            if type(rest) is str:
+                in_date_format = Date.guessDateFormat(Date,rest)
+                if in_date_format != gloabl_date_format:
+                    rest = Date.convertDateFormat(Date, rest, in_date_format, global_date_format)
             self.due_date = Date.parse_date(self, rest, Date.get_global_date_format(Date))
         else:
             self.due_date = None
