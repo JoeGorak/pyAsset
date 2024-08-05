@@ -128,7 +128,8 @@ class AssetFrame(wx.Frame):
         self.curr_date = self.proj_date = Date.set_curr_date(self)
         currDate = Date.parse_date(self, self.curr_date, Date.get_global_date_format(Date))
         self.projDate = currDate
-        self.properties(self, oldDateFormat, oldPayType, oldRefDate, oldNetPay, oldPayDepositAcct)
+# JJG 08/04/2024 used next line for debugging!
+#        self.properties(self, oldDateFormat, oldPayType, oldRefDate, oldNetPay, oldPayDepositAcct)
         self.edited = False
 
     def get_date_format(self):
@@ -323,42 +324,43 @@ class AssetFrame(wx.Frame):
 
     def make_filemenu(self):
         self.filemenu = wx.Menu()
+        self.fileMenuItem = {}
         ID_EXPORT_TEXT = wx.NewId()
         ID_ARCHIVE = wx.NewId()
         ID_IMPORT_CSV = wx.NewId()
         ID_IMPORT_XLSX = wx.NewId()
         ID_UPDATE_FROM_NET = wx.NewId()
         ID_PROPERTIES = wx.NewId()
-        self.filemenu.Append(wx.ID_OPEN, "Open\tCtrl-o",
-                             "Open a new transction file", wx.ITEM_NORMAL)
-        self.filemenu.Append(wx.ID_SAVE, "Save\tCtrl-s",
-                             "Save the current transactions in the same file", wx.ITEM_NORMAL)
-        self.filemenu.Append(wx.ID_SAVEAS, "Save As",
-                             "Save the current transactions under a different name", wx.ITEM_NORMAL)
-        self.filemenu.Append(wx.ID_CLOSE, "Close\tCtrl-w",
+        self.fileMenuItem["Open"] = self.filemenu.Append(wx.ID_OPEN, "Open\tCtrl-o",
+                             "Open a new asset file", wx.ITEM_NORMAL)
+        self.fileMenuItem["Save"] = self.filemenu.Append(wx.ID_SAVE, "Save\tCtrl-s",
+                             "Save the current asset in the same file", wx.ITEM_NORMAL)
+        self.fileMenuItem["SaveAs"] = self.filemenu.Append(wx.ID_SAVEAS, "Save As",
+                             "Save the current assets under a different name", wx.ITEM_NORMAL)
+        self.fileMenuItem["Close"] = self.filemenu.Append(wx.ID_CLOSE, "Close\tCtrl-w",
                              "Close the current file", wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_EXPORT_TEXT, "Export Text",
-                             "Export the current transaction register as a text file",
+        self.fileMenuItem["Export"] = self.filemenu.Append(ID_EXPORT_TEXT, "Export Text",
+                             "Export the current assets as a text file",
                              wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_ARCHIVE, "Archive",
-                             "Archive transactions older than a specified date",
+        self.fileMenuItem["Archive"] = self.filemenu.Append(ID_ARCHIVE, "Archive",
+                             "Archive assets older than a specified date",
                              wx.ITEM_NORMAL)
         self.filemenu.AppendSeparator()
-        self.filemenu.Append(ID_IMPORT_CSV, "Import CSV\tCtrl-c",
-                             "Import transactions from a CSV file",
+        self.fileMenuItem["ImportCSV"] = self.filemenu.Append(ID_IMPORT_CSV, "Import CSV\tCtrl-c",
+                             "Import assets and transactions from a CSV file",
                              wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_IMPORT_XLSX, "Import XLSX file\tCtrl-i",
-                             "Import transactions from an EXCEL file",
+        self.fileMenuItem["ImportXLSX"] = self.filemenu.Append(ID_IMPORT_XLSX, "Import XLSX file\tCtrl-i",
+                             "Import assets and transactions from an EXCEL file",
                              wx.ITEM_NORMAL)
-        self.filemenu.Append(ID_UPDATE_FROM_NET, "Update Accounts from Net\tCtrl-u",
-                             "Update accounts using pre-defined iMacros",
+        self.fileMenuItem["Update"] = self.filemenu.Append(ID_UPDATE_FROM_NET, "Update assets from Net\tCtrl-u",
+                             "Update assets using pre-defined iMacros",
                             wx.ITEM_NORMAL)
         self.filemenu.AppendSeparator()
-        self.filemenu.Append(ID_PROPERTIES, "Properties\tCtrl-p",
-                             "Display and/or edit Number and Data/Time display properties, pay frequencies",
+        self.fileMenuItem["Properties"] = self.filemenu.Append(ID_PROPERTIES, "Properties\tCtrl-p",
+                             "Display and/or edit Number and Data/Time display properties, pay frequencies and direct deposit account",
                             wx.ITEM_NORMAL)
         self.filemenu.AppendSeparator()
-        self.filemenu.Append(wx.ID_EXIT, "Quit\tCtrl-q",
+        self.fileMenuItem["Quit"] = self.filemenu.Append(wx.ID_EXIT, "Quit\tCtrl-q",
                              "Exit PyAsset", wx.ITEM_NORMAL)
         self.menubar.Append(self.filemenu, "&File")
         self.Bind(wx.EVT_MENU, self.load_file, None, wx.ID_OPEN)
@@ -473,8 +475,8 @@ class AssetFrame(wx.Frame):
             Date.set_proj_date(self, in_date)
             self.assets.update_proj_values(in_date)
             self.redraw_all()
-            paydates = self.get_paydates_in_range(Date.get_global_curr_date(self), in_date)
-            print("Pay dates in ramge %s-%s: %s" % (Date.get_global_curr_date(self), in_date, paydates))
+            paydates = self.get_paydates_in_range(Date.get_global_curr_date(self), returned_date)
+            print("Pay dates in ramge %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, paydates))
         else:
             self.proj_date = None
             self.DisplayMsg("Bad projected date ignored: %s" % (in_date))
@@ -716,6 +718,17 @@ class AssetFrame(wx.Frame):
         self.bills = None
         self.edited = False
         self.SetTitle("PyAsset: Asset")
+        self.fileMenuItem["Open"].Enable(True)
+        self.fileMenuItem["ImportCSV"].Enable(True)
+        self.fileMenuItem["ImportXLSX"].Enable(True)
+        self.fileMenuItem["Save"].Enable(False)
+        self.fileMenuItem["SaveAs"].Enable(False)
+        self.fileMenuItem["Close"].Enable(False)
+        self.fileMenuItem["Export"].Enable(False)
+        self.fileMenuItem["Archive"].Enable(False)
+        self.assetFile = ""
+        return
+
 
     def quit(self, *args):
         self.close()

@@ -135,8 +135,73 @@ class Asset(object):
         lines.append("T%s" % self.get_type())
         lines.append("$%s" % self.get_value())
         lines.append("L%s" % self.get_limit())
-        memo_line = "P%s;A%s;R%s;Y%s;D%s;S%s;M%s;E%s;O%s;B%s;C%s;U%s" % (self.get_last_pull_date(), self.get_avail(), self.get_rate(), self.get_payment(), self.get_due_date(), self.get_sched_date(), self.get_min_pay(), self.get_est_method(), self.get_amt_over(), self.get_stmt_bal(), self.get_cash_limit(), self.get_cash_used())
-        lines.append("M%s" % memo_line)         # Use Memo field for parsable string of info for this asset
+        memo_line = ""
+        last_pull_date = self.get_last_pull_date()
+        if last_pull_date != None:
+            memo_line += "P%s" % (last_pull_date)
+        avail = self.get_avail()
+        if avail != 0.0:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "A%s" % (str(avail))
+        rate = self.get_rate()
+        if rate != 0.0:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "R%s" % (str(rate))
+        payment = self.get_payment()
+        if payment != 0.0:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "Y%s" % (str(payment))
+        due_date = self.get_due_date()
+        if due_date != None:
+            if type(due_date) is not str:
+                due_date = due_date["str"]
+            if due_date != "":
+                if memo_line != "":
+                    memo_line += ";"
+                memo_line += "D%s" % (due_date)
+        sched_date = self.get_sched_date()
+        if sched_date != None:
+            if type(sched_date) is not str:
+                sched_date = sched_date["str"]
+            if sched_date != "":
+                if memo_line != "":
+                    memo_line += ";"
+                memo_line += "S%s" % (sched_date)
+        min_pay = self.get_min_pay()
+        if min_pay != 0.0:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "M%s" % (str(min_pay))
+        est_method = self.get_est_method()
+        if est_method != None:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "E%s" % (est_method)
+        amt_over = self.get_amt_over()
+        if amt_over != 0.0:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "O%s" % (str(amt_over))
+        stmt_bal = self.get_stmt_bal()
+        if stmt_bal != 0.0:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "B%s" % (str(stmt_bal))
+        cash_limit = self.get_cash_limit()
+        if cash_limit != 0.0:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "C%s" % (str(cash_limit))
+        cash_used = self.get_cash_used()
+        if cash_used != 0.0:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "C%s" % (str(cash_used))
+        if memo_line != "":
+            lines.append("M%s" % memo_line)         # Use Memo field for parsable string of info for this asset
         lines.append("^\n")
         return '\n'.join(lines)
 
@@ -201,7 +266,8 @@ class Asset(object):
                     sec = last_pull_date.second
             time = "%02d:%02d:%02d" % (int(hour), int(min), int(sec))
             last_pull_date = wx.DateTime.FromDMY(day, month, year).Format(Date.get_global_date_format(Date))
-            self.last_pull_date = last_pull_date + " " + time
+            last_pull_date = last_pull_date + " " + time
+        self.last_pull_date = last_pull_date
 
     def get_last_pull_date(self):
         return self.last_pull_date

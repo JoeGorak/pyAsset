@@ -64,7 +64,6 @@ class ExcelToAsset(wx.Frame):
             if cv == None or "Bills" in cv or "Total" in cv or "Cash Flow" in cv:
                 continue
             elif "Accounts" in cv or "Other" in cv:
-                print(row)
                 ColumnHeaders = dict()
                 col_num = 1
                 for cell in row:
@@ -161,6 +160,15 @@ class ExcelToAsset(wx.Frame):
                     col_num += 1
                     if col_num > len(ColumnHeaders):
                         break
+        if AssetsFound != None:
+            self.Parent.fileMenuItem["Open"].Enable(False)
+            self.Parent.fileMenuItem["ImportCSV"].Enable(False)
+            self.Parent.fileMenuItem["ImportXLSX"].Enable(False)
+            self.Parent.fileMenuItem["Save"].Enable(False)              # JJG 08/04/2024 Prevent accidentally overwriting .xlsx if they forget to change filename!
+            self.Parent.fileMenuItem["SaveAs"].Enable(True)
+            self.Parent.fileMenuItem["Close"].Enable(True)
+            self.Parent.fileMenuItem["Export"].Enable(True)
+            self.Parent.fileMenuItem["Archive"].Enable(True)
         return AssetsFound
 
     def GetTransactionSheetNames(self):
@@ -209,6 +217,7 @@ class ExcelToAsset(wx.Frame):
                     new_transaction = Transaction(self)
                     for heading in ColumnHeaders:
                         headingUpper = heading.upper()
+                        if placeIndex[headingUpper] == -1: continue
                         cv =  row[placeIndex[headingUpper]].value
                         if cv == None: continue
                         if "PMT METHOD" == headingUpper:

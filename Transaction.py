@@ -156,11 +156,44 @@ class Transaction:
         comment = self.get_comment()
         if comment:
             lines.append("L%s" % comment)
+        memo_line = "";
+        pmt_method = self.get_pmt_method()
+        if pmt_method != "":
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "P%s" % (pmt_method)
+        action = self.get_action()
+        if action != "":
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "A%s" % (action)
+        current_value = self.get_current_value()
+        if current_value != 0.0:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "V%s" % (str(current_value))
+        projected_value = self.get_projected_value()
+        if projected_value != 0.0:
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "J%s" % (str(projected_value))
+        state = self.get_state()
+        if state != "":
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "S%s" % (state)
+        prev_state = self.get_prev_state()
+        if prev_state != "":
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "T%s" % (prev_state)
         memo = self.get_memo()
-        if memo:
-            lines.append("M%s" % memo)
-        memo_line = "P%s;A%s;V%s;J%s;S%s;T%s;M%s" % (self.get_pmt_method(), self.get_action(), self.get_current_value(), self.get_projected_value(), self.get_state(), self.get_prev_state(), self.get_memo())
-        lines.append("M%s" % memo_line)         # Use Memo field for parsable string of info for this asset
+        if memo != "":
+            if memo_line != "":
+                memo_line += ";"
+            memo_line += "M%s" % (memo)
+        if memo_line != "":
+            lines.append("M%s" % memo_line)         # Use Memo field for parsable string of info for this transaction
         lines.append("^")
         return '\n'.join(lines)
 

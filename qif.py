@@ -42,24 +42,21 @@ DETAIL = 1
 SPLIT = 2
 
 class qif(object):
-    def __init__(self, parent, assetFile="", readmode="normal"):
+    def __init__(self, parent, assetFile=""):
         self.parent = parent
         self.assets = AssetList(self)
         self.filename = assetFile
         self.edited = False
 
         if assetFile:
-            self.read_qif(assetFile, readmode)
+            self.read_qif(assetFile)
 
-    def read_qif(self, filename, readmode="normal"):
-#        if readmode == 'normal':  # things not to do on 'import':
-#            name = filename.replace('.qif', '')
-#            self.filename = os.path.split(name)[1]
+    def read_qif(self, filename):
         try:
             mffile = open(filename, 'r')
         except:
             error = "No such file or directory :" + filename
-            self.MsgBox(error)
+            self.MsgBox(error) 
             return None
         Found_assets = AssetList(self)
         lines = mffile.readlines()
@@ -290,6 +287,15 @@ class qif(object):
                 else:
                     outSection = "unknown"
                 print("in", outSection, "section got unparsable line: ", line[:-1])
+        if Found_assets != None:
+            self.fileMenuItem["Open"].Enable(False)
+            self.fileMenuItem["ImportCSV"].Enable(False)
+            self.fileMenuItem["ImportXLSX"].Enable(False)
+            self.fileMenuItem["Save"].Enable(False)          # JJG 08/04/2024 Prevent accidently overwriting .qif if they forget to change the name!
+            self.fileMenuItem["SaveAs"].Enable(True)
+            self.fileMenuItem["Close"].Enable(True)
+            self.fileMenuItem["Export"].Enable(True)
+            self.fileMenuItem["Archive"].Enable(True)
         return Found_assets
 
     def write_qif(self, filename, function, asset):
