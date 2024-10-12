@@ -32,14 +32,11 @@ from datetime import date, datetime
 from Date import Date
 
 class BillGrid(grd.Grid):
-    def __init__(self, frame, **keywrds):
+    def __init__(self, frame, panel, **keywrds):
         self.dateFormat = Date.get_global_date_format(self)
         self.dateSep = Date.get_global_date_sep(self)
-        self.columnNames = ["Payee", "Amount", "Min Due", "Due Date",
-                            "Sched Date", "Pmt Acct", "Pmt Method", "Frequency"]
-        self.grid = grd.Grid.__init__(self, frame, **keywrds)
-        self.minNumRows = frame.BestSize.Height
-        self.CreateGrid(self.minNumRows, len(self.columnNames))
+        self.columnNames = ["Type", "Payee", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Frequency"]
+        self.grid = grd.Grid.__init__(self, panel, **keywrds)
         self.frame = frame
 
         # Define all needed evenent bindings
@@ -68,6 +65,7 @@ class BillGrid(grd.Grid):
 
         # Define the layout of the grid in the frame
         Headers = self.columnNames
+        self.BILL_TYPE_COL = Headers.index("Type")
         self.BILL_PAYEE_COL = Headers.index("Payee")
         self.BILL_AMOUNT_COL = Headers.index("Amount")
         self.BILL_MIN_DUE_COL = Headers.index("Min Due")
@@ -78,6 +76,7 @@ class BillGrid(grd.Grid):
         self.BILL_FREQUENCY_COL = Headers.index("Frequency")
 
         # Define the widths of the columns in the grid
+        BILL_TYPE_COL_WIDTH = 150
         BILL_PAYEE_COL_WIDTH = 300
         BILL_AMOUNT_COL_WIDTH = 75
         BILL_MIN_DUE_COL_WIDTH = 75
@@ -112,6 +111,7 @@ class BillGrid(grd.Grid):
 
         # Grid layout array
         self.col_info = [
+            [self.BILL_TYPE_COL, BILL_TYPE_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
             [self.BILL_PAYEE_COL, BILL_PAYEE_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
             [self.BILL_AMOUNT_COL, BILL_AMOUNT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
             [self.BILL_MIN_DUE_COL, BILL_MIN_DUE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
@@ -155,7 +155,9 @@ class BillGrid(grd.Grid):
 
     def getColMethod(self, row, i):
         currBill = self.getFrame().bills[row]
-        if i == self.BILL_PAYEE_COL:
+        if i == self.BILL_TYPE_COL:
+            return currBill.get_type()
+        elif i == self.BILL_PAYEE_COL:
             return currBill.get_payee()
         elif i == self.BILL_AMOUNT_COL:
             return currBill.get_amount()
@@ -484,6 +486,33 @@ class BillGrid(grd.Grid):
                                     self.assetGrid.GridCellDateRenderer(row, col)
                             else:
                                 print("update_bill_grid_dates: Warning: unknown method for cell! row, ", row, " col ", col, " Skipping!")
+
+    def close(self, *args):
+        self.Unbind(grd.EVT_GRID_CELL_CHANGING)
+
+        # Unbind all the events
+        self.Unbind(grd.EVT_GRID_CELL_LEFT_CLICK)
+        self.Unbind(grd.EVT_GRID_CELL_RIGHT_CLICK)
+        self.Unbind(grd.EVT_GRID_CELL_LEFT_DCLICK)
+        self.Unbind(grd.EVT_GRID_CELL_RIGHT_DCLICK)
+
+        self.Unbind(grd.EVT_GRID_LABEL_LEFT_CLICK)
+        self.Unbind(grd.EVT_GRID_LABEL_RIGHT_CLICK)
+        self.Unbind(grd.EVT_GRID_LABEL_LEFT_DCLICK)
+        self.Unbind(grd.EVT_GRID_LABEL_RIGHT_DCLICK)
+
+        self.Unbind(grd.EVT_GRID_ROW_SIZE)
+        self.Unbind(grd.EVT_GRID_COL_SIZE)
+
+        self.Unbind(grd.EVT_GRID_RANGE_SELECT)
+        #self.Unbind(grd.EVT_GRID_CELL_CHANGE)
+        #self.Unbind(grd.EVT_GRID_SELECT_CELL)
+
+        self.Unbind(grd.EVT_GRID_EDITOR_SHOWN)
+        self.Unbind(grd.EVT_GRID_EDITOR_HIDDEN)
+        self.Unbind(grd.EVT_GRID_EDITOR_CREATED)
+
+        del self.grid
 
     def OnCellLeftClick(self, evt):
         row = evt.GetRow()

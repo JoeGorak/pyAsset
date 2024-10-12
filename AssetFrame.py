@@ -75,6 +75,30 @@ class AssetFrame(wx.Frame):
         super(AssetFrame, self).__init__(parent, title=title)
         self.make_widgets()
 
+        if self.readConfigFile(cfgFile):
+            self.curr_date = Date.set_curr_date(Date)
+            self.proj_date = self.curr_date                          # JJG 5/13/2024 Set proj date to curr date initially
+            Date.set_global_curr_date(self, self.curr_date)
+            Date.set_global_proj_date(self, self.proj_date)
+            self.set_curr_paydate()
+            self.set_next_paydate()
+            oldDateFormat = ""                                       # JJG 1/1/2024 Force date format to be set the first time
+            newDateFormat = Date.get_global_date_format(Date)
+            self.update_date_dates(oldDateFormat, newDateFormat)
+            self.update_all_Date_Formats(oldDateFormat, newDateFormat)
+            oldDateFormat = newDateFormat
+            oldRefDate = self.ref_date
+            oldDateSep = Date.get_global_date_sep(self) 
+        else:
+            curr_date = Date(parent)
+            self.curr_date = curr_date.curr_date["str"]
+            self.proj_date = self.curr_date
+            self.dateFormat = Date.get_global_date_format(Date)
+            Date.set_global_curr_date(self, self.curr_date)
+            Date.set_global_proj_date(self, self.proj_date)
+            if self.payType == "" or self.payType == None:
+                self.payType = "every 2 weeks"                                 # JJG 12/23/2023   added default if no payType given
+
         self.redraw = False
         if self.assetFile:
             ext_loc = self.assetFile.find(".")
@@ -95,36 +119,12 @@ class AssetFrame(wx.Frame):
         if self.redraw:
             self.redraw_all()
 
-        if self.readConfigFile(cfgFile):
-            self.curr_date = Date.set_curr_date(Date)
-            self.proj_date = self.curr_date                          # JJG 5/13/2024 Set proj date to curr date initially
-            Date.set_global_curr_date(self, self.curr_date)
-            Date.set_global_proj_date(self, self.proj_date)
-            self.set_curr_paydate()
-            self.set_next_paydate()
-            oldDateFormat = ""                                       # JJG 1/1/2024 Force date format to be set the first time
-            newDateFormat = Date.get_global_date_format(Date)
-            self.update_date_dates(oldDateFormat, newDateFormat)
-            self.update_all_Date_Formats(oldDateFormat, newDateFormat)
-            oldDateFormat = newDateFormat
-            oldRefDate = self.ref_date
-            oldDateSep = Date.get_global_date_sep(self)
- 
-        else:
-            curr_date = Date(parent)
-            self.curr_date = curr_date.curr_date["str"]
-            self.proj_date = self.curr_date
-            self.dateFormat = Date.get_global_date_format(Date)
-            Date.set_global_curr_date(self, self.curr_date)
-            Date.set_global_proj_date(self, self.proj_date)
-            if self.payType == "" or self.payType == None:
-                self.payType = "every 2 weeks"                                 # JJG 12/23/2023   added default if no payType given
         oldDateFormat = Date.get_global_date_format(Date)
         oldPayType = self.getPayType()
         oldRefDate = self.getRefDate()
         oldNetPay = self.getNetPay()
         oldPayDepositAcct = self.getPayDepositAcct()
-        print(oldNetPay, oldPayType, oldDateFormat, oldRefDate["str"], oldPayDepositAcct)
+#        print(oldNetPay, oldPayType, oldDateFormat, oldRefDate["str"], oldPayDepositAcct)
         self.curr_date = self.proj_date = Date.set_curr_date(self)
         currDate = Date.parse_date(self, self.curr_date, Date.get_global_date_format(Date))
         self.projDate = currDate
@@ -413,8 +413,12 @@ class AssetFrame(wx.Frame):
         else:
             self.bills_frame = BillFrame(None, self, -1, self.frame.bills)
 
-    def get_bills_frame(self):
+    def getBillFrame(self):
         return self.bills_frame
+
+    def removeBillFrame(self):
+        self.bills_frame.Destroy()
+        self.bills_frame = None
 
     def make_date_grid(self, panel):
         self.currDateLabel = wx.StaticText(panel, label="Curr Date")
@@ -728,7 +732,6 @@ class AssetFrame(wx.Frame):
         self.fileMenuItem["Archive"].Enable(False)
         self.assetFile = ""
         return
-
 
     def quit(self, *args):
         self.close()

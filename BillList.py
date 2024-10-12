@@ -59,7 +59,58 @@ class BillList:
     def __delitem__(self, i):
         del self.bills[i]
 
-    def append(self, payee):
-        bill = Bill(payee)
+    def index(self, payee):
+        ret_index = -1
+        for i in range(len(self.bills)):
+            if (self.bills[i].get_payee() == payee):
+                ret_index = i
+                break
+        return ret_index
+
+    def append(self, bill):
         self.bills.append(bill)
         return bill
+
+    def __get_partition__(self, bills):
+        payment_frequencies = Bill.get_payment_frequencies()
+        partition = []
+        for i in range(len(payment_frequencies)):
+            partition.append(BillList())
+        for i in range(len(bills)):
+            partition[payment_frequencies.index(bills[i].get_pmt_frequency())].append(bills[i])
+        return partition
+
+    def sort_by_due_date(self):
+        print("sort by due date called")
+        bill_list_partition = self.__get_partition__(self.bills)
+        for i in range(len(bill_list_partition)):
+            if len(bill_list_partition[i]) != 0:
+                print("Will sort partiton", i, "elements:", bill_list_partition[i] )
+        return self                                 # JJG 8/16/24    For debugging!
+     
+    def insert(self, new_bill):
+        if new_bill.empty():
+            return
+
+        #  Note that field to sort on is not specified here.
+        #  It is controlled by the Bill itself and how operators are defined in Bill.py
+        # To do a two level sort, call either the sort or the sort_by_due_date method after insert is finished.
+        # Like this method, sort uses the operators in Bill.py
+        # TODO: generalize the sort method to depracate the need for sort_by_due_date     JJG 8/16/24
+
+        before  = -1
+        after = 0
+        while after < len(self.bills):
+            if self.bills[after] > new_bill:
+                break
+            else:
+                before = after
+                after = after + 1
+        if after == len(self.bills):
+            self.bills.append(new_bill)
+        else:
+            self.bills[after+1:] = self.bills[after:len(self.bills)]
+            self.bills[after] = new_bill
+
+    def sort(self):
+        return self.bills.sort()

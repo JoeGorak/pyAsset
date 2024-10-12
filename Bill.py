@@ -2,7 +2,7 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2022 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
 comments, patches, complaints to joe.gorak@gmail.com
 
@@ -33,7 +33,7 @@ EXPENSE = 3
 UNKNOWN = 4
 
 # Payment Methods
-MYCHECKFREE = 1
+DIRECT_DEPOSIT = 1
 SCHED_ONLINE = 2
 SCHED_HICKAM = 3
 CHECK = 4
@@ -44,6 +44,7 @@ MANUAL = 8
 OTHER = 9
 
 # Payment_Frequency
+BIWEEKLY = 0
 MONTHLY = 1
 QUARTERLY = 4
 SEMI_YEARLY = 6
@@ -51,6 +52,19 @@ YEARLY = 12
 MANUAL = -1
 
 class Bill:
+    bill_types = [ "Checking and Savings", "Credit Cards", "Loans", "Expenses", "Unknown" ]
+    payment_methods = [ "Direct deposit", "sched online", "sched Hickam", "Check", "AutoPay", "Cash", "TBD", "Manual", "Other" ]
+    payment_frequencies = [ "Bi-weekly", "monthly", "quarterly", "semi-yearly", "yearly", "manual" ]
+
+    def get_bill_types():
+        return Bill.bill_types
+
+    def get_payment_methods():
+        return Bill.payment_methods
+
+    def get_payment_frequencies():
+        return Bill.payment_frequencies
+
     def __init__(self, payee = None, type = "Unknown", amount = 0.0, min_due = 0.0, due_date = None, sched_date = None,
                  pmt_acct = "Other", pmt_method = "TBD", check_number = 0, pmt_freq = "Manual" ):
         self.payee = payee
@@ -65,9 +79,49 @@ class Bill:
         self.check_number = check_number
         return
 
+    bill_fields = [ "Payee", "Type", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Frequency", "Check Number" ]
+
+    def get_bill_fields():
+        return Bill.bill_fields
+
+    def __gt__(self, other):
+        spf = self.payment_frequencies.index(self.get_pmt_frequency())
+        opf = self.payment_frequencies.index(other.get_pmt_frequency())
+        if spf != opf:
+            return spf > opf
+        else:
+            return False
+    
+    def __ge__(self, other):
+        spf = self.payment_frequencies.index(self.get_pmt_frequency())
+        opf = self.payment_frequencies.index(other.get_pmt_frequency())
+        if spf != opf:
+            return spf >= opf
+        else:
+            return True
+
+    def __lt__(self, other):
+        spf = self.payment_frequencies.index(self.get_pmt_frequency())
+        opf = self.payment_frequencies.index(other.get_pmt_frequency())
+        if spf != opf:
+            return spf < opf
+        else:
+            return False
+    
+    def __le__(self, other):
+        spf = self.payment_frequencie.index(self.get_pmt_frequency())
+        opf = self.payment_frequencies.index(other.get_pmt_frequency())
+        if spf != opf:
+            return spf <= opf
+        else:
+            return True
+    
     def __str__(self):
-        return " %-10s %-20s $%8.2f $%8.2f %10s %10s %s %s %s\n" %\
+        return " %-10s %-20s $%8.2f $%8.2f %10s %10s %s %s %s" %\
                (self.payee, self.type, self.amount, self.min_due, self.due_date, self.sched_date, self.pmt_acct, self.pmt_method, self.pmt_frequency)
+
+    def empty(self):
+        return self.get_payee() == None or self.get_pmt_frequency() == None
 
     def get_check_number(self):
         return self.check_number
@@ -91,7 +145,7 @@ class Bill:
         elif st == UNKNOWN:
             return "Unknown"
         else:
-            return "Unknown bill type"
+            return "??"
 
     def set_type(self,type):
         tu = type.upper()
@@ -161,8 +215,8 @@ class Bill:
 
     def get_pmt_method(self):
         spm = self.pmt_method
-        if spm == MYCHECKFREE:
-            return "Mycheckfree"
+        if spm == DIRECT_DEPOSIT:
+            return "Direct deposit"
         elif spm == SCHED_ONLINE:
             return "sched online"
         elif spm == SCHED_HICKAM:
@@ -184,8 +238,8 @@ class Bill:
 
     def set_pmt_method(self, pmt_method):
         pmu = pmt_method.upper()
-        if pmu == "MYCHECKFREE":
-            self.pmt_method = MYCHECKFREE
+        if pmu == "DIRECT DEPOSIT":
+            self.pmt_method = DIRECT_DEPOSIT
         elif pmu == "SCHED ONLINE":
             self.pmt_method = SCHED_ONLINE
         elif pmu == "SCHED HICKAM":
@@ -208,7 +262,9 @@ class Bill:
 
     def get_pmt_frequency(self):
         spf = self.payment_frequency
-        if spf == MONTHLY:
+        if spf == BIWEEKLY:
+            return "Bi-weekly"
+        elif spf == MONTHLY:
             return "monthly"
         elif spf == QUARTERLY:
             return "quarterly"
@@ -223,7 +279,9 @@ class Bill:
 
     def set_pmt_frequency(self, payment_freq):
         pfu = payment_freq.upper()
-        if pfu == "MONTHLY":
+        if pfu == "BI_WEEKLY":
+            self.payment_frequency = BIWEEKLY
+        elif pfu == "MONTHLY":
             self.payment_frequency = MONTHLY
         elif pfu == "QUARTERLY":
             self.payment_frequency = QUARTERLY

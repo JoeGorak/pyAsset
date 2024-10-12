@@ -90,7 +90,7 @@ class AssetGrid(grd.Grid):
         self.ACCT_CASH_AVAIL_COL = Headers.index("Cash avail")
 
         # Define the widths of the columns in the grid
-        ACCT_NAME_COL_WIDTH = 150
+        ACCT_NAME_COL_WIDTH = 190
         ACCT_CURR_VAL_COL_WIDTH = 75
         ACCT_PROJ_VAL_COL_WIDTH = 75
         ACCT_LAST_PULL_COL_WIDTH = 120

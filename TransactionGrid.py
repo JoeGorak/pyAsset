@@ -566,8 +566,6 @@ class TransactionGrid(grd.Grid):
 
         del self.grid
 
-#        self.Destroy()
-
     def OnCellLeftClick(self, evt):
         print("OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
                                                  evt.GetCol(),

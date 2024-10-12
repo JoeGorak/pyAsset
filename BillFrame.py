@@ -63,13 +63,14 @@ class BillFrame(wx.Frame):
             style = wx.DEFAULT_FRAME_STYLE
         kwds["style"] = wx.DEFAULT_FRAME_STYLE
         wx.Frame.__init__(self, parent, my_id, title, **kwds)
+        self.Bind(wx.EVT_CLOSE,self.close)
 
         self.make_widgets()
 
         if myfile:
             self.cur_bill.read_qif(myfile)
 
-        self.SetTitle("PyAsset:Bills for %s" % title)
+        self.SetTitle(title)
         self.redraw_all()
 
     def make_widgets(self):
@@ -164,20 +165,24 @@ class BillFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.gethelp, None, ID_HELP)
 
     def make_bill_grid(self):
-        self.bill_grid = BillGrid(self)
+        self.panel = wx.Panel(self)
+        self.bill_grid = BillGrid(self, self.panel)
+        self.rowSize = 150
+        self.colSize = self.bill_grid.getNumColumns()
+        self.bill_grid.CreateGrid(self.rowSize, self.colSize) 
+        return self.bill_grid
+
+    def get_bill_grid(self):
+        return self.bill_grid
 
     def set_properties(self):
         self.total_width = self.bill_grid.set_properties(self)
 
     def do_layout(self):
-        sizer_1 = wx.BoxSizer(wx.VERTICAL)
-        sizer_1.Add(self.bill_grid, 1, wx.EXPAND, 0)
-        self.SetAutoLayout(1)
-        self.SetSizer(sizer_1)
-        sizer_1.Fit(self)
-        sizer_1.SetSizeHints(self)
+        sizer = wx.BoxSizer(wx.VERTICAL)
+        sizer.Add(self.bill_grid, 1, wx.EXPAND)
+        self.panel.SetSizer(sizer)
         self.Layout()
-        self.Show()
 
     def DisplayMsg(self, str):
         d = wx.MessageDialog(self, str, "Error", wx.OK | wx.ICON_INFORMATION)
@@ -205,7 +210,7 @@ class BillFrame(wx.Frame):
 
         # Display the bills
         for row in range(start_range, end_range):
-            for col in range(self.bill_grid.getNumLayoutCols()):
+            for col in range(self.bill_grid.getNumColumns()):
                 ret_val = wx.OK
                 if row < 0 or row >= nbills:
                     str = "Warning: skipping redraw on bad cell %d %d!" % (row, col)
@@ -226,6 +231,11 @@ class BillFrame(wx.Frame):
                     self.bill_grid.GridCellStringRenderer(row, col)
                 else:
                     self.bill_grid.GridCellErrorRenderer(row, col)
+
+        win_height = (nbills+3) * self.rowSize + 150                 # +3 for header lines + 150 for borders
+        self.SetSize(self.total_width + 150, win_height)
+        self.Show()
+
         cursorCell = index
         if index == -1:
             if nbills > 0:
@@ -239,11 +249,6 @@ class BillFrame(wx.Frame):
                 cursorCell = index
         self.bill_grid.SetGridCursor(cursorCell, 0)
         self.bill_grid.MakeCellVisible(cursorCell, True)
-
-#        win_height = len(self.bills)*self.rowSize
-#        self.SetSize(size=(self.total_width, win_height))
-#        self.Show()
-#        self.parent.redraw_all(-1)      # Make sure balances get updated!
 
     def cellchange(self, evt):
         doredraw = 0
@@ -312,12 +317,19 @@ class BillFrame(wx.Frame):
             d = wx.MessageDialog(self, 'Save file before closing', 'Question',
                                  wx.YES_NO)
             if d.ShowModal() == wx.ID_YES: self.save_file()
+        self.get_bill_grid().close()
+        del self.bill_grid
+        del self.panel
+        bill_frame = self.parent.getBillFrame()
+        if bill_frame != None:
+            self.parent.removeBillFrame()
         return
 
     def quit(self, *args):
         self.close()
         self.Close()
 
+    def write_file(self, date_, amount_, memo_, payee_, filelocation_):
     #
     #     @brief Receives data to be written to and its location
     #
@@ -335,8 +347,6 @@ class BillFrame(wx.Frame):
     #
     # https://en.wikipedia.org/wiki/Quicken_Interchange_Format
     #
-
-    def write_file(self, date_, amount_, memo_, payee_, filelocation_):
         outFile = open(filelocation_, "a")  # Open file to be appended
         outFile.write("!Type:Cash\n")  # Header of bill, Currently all set to cash
         outFile.write("D")  # Date line starts with the capital D
@@ -359,6 +369,7 @@ class BillFrame(wx.Frame):
         outFile.write("^\n")  # The last line of each bill starts with a Caret to mark the end
         outFile.close()
 
+    def read_csv(self, inf_, outf_, deff_):  # will need to receive input csv and def file
     #
     #     @brief  Takes given CSV and parses it to be exported to a QIF
     #
@@ -370,9 +381,6 @@ class BillFrame(wx.Frame):
     #     File with the settings for converting CSV
     #
     #
-
-    def read_csv(self, inf_, outf_, deff_):  # will need to receive input csv and def file
-
         csvdeff = csv.reader(deff_, delimiter=',')
         next(csvdeff, None)
 
@@ -509,7 +517,7 @@ class BillFrame(wx.Frame):
 
     def sort(self, *args):
         self.edited = True
-        self.cur_bill.sort()
+        self.bills.sort()
         self.redraw_all(-1)
 
     def voidentry(self, *args):
@@ -614,9 +622,7 @@ class BillFrame(wx.Frame):
     def about(self, *args):
         d = wx.MessageDialog(self,
                              "Python Asset Manager\n"
-                             "Copyright (c) 2016-2023 Joseph J. Gorak\n"
-                             "Extended from ideas in Python Checkbook (pyCheckbook)\n"
-                             "written by Richard P. Muller\n"
+                             "Copyright (c) 2016-2024 Joseph J. Gorak\n"
                              "Released under the Gnu GPL\n",
                              "About PyAsset",
                              wx.OK | wx.ICON_INFORMATION)

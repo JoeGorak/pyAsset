@@ -38,6 +38,7 @@ from AssetList import AssetList
 from TransactionList import TransactionList
 from Transaction import Transaction
 from BillList import BillList
+from Bill import Bill
 import wx
 
 class ExcelToAsset(wx.Frame):
@@ -260,6 +261,7 @@ class ExcelToAsset(wx.Frame):
         Finished = False
         cur_type = "Unknown"
         for row in ws.rows:
+            new_bill = Bill()
             row_num += 1
             if row_num == 1:
                 continue
@@ -282,31 +284,34 @@ class ExcelToAsset(wx.Frame):
                     if row_num == 2:
                         BillPlaces[col_num] = cv
                     else:
-                        if col_num == 1:
-                            new_bill = BillsFound.append(cv)
-                        if new_bill != None:
-                            heading = BillPlaces.get(col_num, "None")
-                            new_bill.set_type(cur_type)
-                            if heading != None and cv != None:
-                                heading = heading.upper()
-                                if heading == "PAYEE":
-                                    new_bill.set_payee(cv)
-                                elif heading == "AMOUNT":
-                                    new_bill.set_amount(cv)
-                                elif heading == "MIN DUE":
-                                    new_bill.set_min_due(cv)
-                                elif heading == "DUE DATE":
-                                    new_bill.set_due_date(cv)
-                                elif heading == "SCHED DATE":
-                                    new_bill.set_sched_date(cv)
-                                elif heading == "PMT ACCT":
-                                    new_bill.set_pmt_acct(cv)
-                                elif heading == "PMT METHOD":
-                                    new_bill.set_pmt_method(cv)
-                                elif heading == "FREQUENCY":
-                                    new_bill.set_pmt_frequency(cv)
+                        heading = BillPlaces.get(col_num, "None")
+                        new_bill.set_type(cur_type)
+                        if heading != None and cv != None:
+                            heading = heading.upper()
+                            if heading == "PAYEE":
+                                new_bill.set_payee(cv)
+                            elif heading == "AMOUNT":
+                                new_bill.set_amount(cv)
+                            elif heading == "MIN DUE":
+                                new_bill.set_min_due(cv)
+                            elif heading == "DUE DATE":
+                                new_bill.set_due_date(cv)
+                            elif heading == "SCHED DATE":
+                                new_bill.set_sched_date(cv)
+                            elif heading == "PMT ACCT":
+                                new_bill.set_pmt_acct(cv)
+                            elif heading == "PMT METHOD":
+                                new_bill.set_pmt_method(cv)
+                            elif heading == "FREQUENCY":
+                                new_bill.set_pmt_frequency(cv)
             if Finished:
                 break
+            else:
+                BillsFound.insert(new_bill)
+
+        # This point bills are inserted sorted by frequency they are paid.
+        # Now do a seconary sort within this by due date
+        BillsFound = BillsFound.sort_by_due_date()
         return BillsFound
 
     def MsgBox(self, message):

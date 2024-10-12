@@ -213,11 +213,13 @@ class Date:
                     error = True
             if not error:
                 year = dt.year
-                month = dt.month
+                month = dt.month+1
                 day = dt.day
         elif type(in_date) is dict:
             dt = in_date["dt"]
-            [ year, month, day ] = [dt.year, dt.month, dt.day]
+            year = dt.year
+            month = dt.month + 1
+            day = dt.day
         elif type(in_date) is DateTime or type(in_date) is datetime:
             dt = in_date
             year = dt.year
@@ -236,8 +238,10 @@ class Date:
             pass                                # Leave error message display to the caller!  We just return None!
         else:
             retVal = { "year" : year, "month" : month, "day" : day, "dt" : dt }
-            out_year, out_month, out_day = year, month, day
-            retVal["str"] = wx.DateTime.FromDMY(out_day, out_month, out_year).Format(Date.get_global_date_format(Date))
+            out_month = month
+            if type(in_date) is str or type(in_date) is dict or type(in_date) is datetime:
+                out_month -= 1
+            retVal["str"] = wx.DateTime.FromDMY(day, out_month, year).Format(Date.get_global_date_format(Date))
         return retVal
 
     def get_today_date(self):

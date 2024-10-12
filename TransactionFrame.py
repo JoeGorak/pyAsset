@@ -256,7 +256,7 @@ class TransactionFrame(wx.Frame):
                     self.trans_grid.GridCellErrorRenderer(row, col)
 
         win_height = (ntransactions+3) * self.rowSize + 120                 # +3 for header lines + 120 for borders
-        self.SetSize(self.total_width, win_height)
+        self.SetSize(self.total_width + 120, win_height)
         self.Show()
 
         cursorCell = index
@@ -570,7 +570,7 @@ class TransactionFrame(wx.Frame):
 
     def sort(self, *args):
         self.edited = True
-        self.cur_transaction.sort()
+        self.transactions.sort()
         self.redraw_all(-1)
 
     def voidentry(self, *args):

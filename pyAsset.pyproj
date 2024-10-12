@@ -13,7 +13,7 @@
     <Name>pyAsset</Name>
     <RootNamespace>pyAsset2.0</RootNamespace>
     <LaunchProvider>Standard Python launcher</LaunchProvider>
-    <CommandLineArguments>E:\Dropbox\Private\Programming\Python\pyAsset\pyAsset.cfg C:\Users\joego\OneDrive\Desktop\Finances.qif</CommandLineArguments>
+    <CommandLineArguments>E:\Dropbox\Private\Programming\Python\pyAsset\pyAsset.cfg C:\Users\joego\Desktop\Finances.xlsx</CommandLineArguments>
     <EnableNativeCodeDebugging>False</EnableNativeCodeDebugging>
     <IsWindowsApplication>False</IsWindowsApplication>
     <InterpreterId>Global|PythonCore|3.11</InterpreterId>
