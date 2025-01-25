@@ -2,9 +2,9 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2025 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
-comments, patches, complaints to joe.gorak@gmail.com
+comments, patches, complaints to joegorak808@outlook.com
 
 This program is free software you can redistribute it and/or
 modify it under the terms of the GNU General Public License

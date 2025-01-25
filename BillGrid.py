@@ -2,9 +2,9 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2025 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
-comments, patches, complaints to joe.gorak@gmail.com
+comments, patches, complaints to joegorak808@outlook.com
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -279,7 +279,7 @@ class BillGrid(grd.Grid):
         else:
             returned_date = Date.parse_date(self, cellValue, Date.get_global_date_format(self))
             if returned_date != None:
-                tableDate = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"], returned_date["year"])
+                tableDate = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"]-1, returned_date["year"])
                 dateFormat = Date.get_global_date_format(self)
                 date_sep = Date.get_global_date_sep(self)
                 dateParts = dateFormat.split(date_sep)

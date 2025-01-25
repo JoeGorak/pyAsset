@@ -2,9 +2,9 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2025 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
-comments, patches, complaints to joe.gorak@gmail.com
+comments, patches, complaints to joegorak808@outlook.com
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -109,16 +109,18 @@ class TransactionList:
                 current_value = self.transactions[trans_number].get_current_value()
             ret_proj_value= proj_value = current_value
             while trans_number < len(self.transactions):
-                trans_pmt_method = self.transactions[trans_number].get_pmt_method
+                trans_pmt_method = self.transactions[trans_number].get_pmt_method()
                 process_transaction = True
+                new_current_value = current_value
+                new_proj_value = proj_value
                 if trans_pmt_method != "posted":
-                    new_current_value = current_value
-                    new_proj_value = proj_value
                     trans_state = self.transactions[trans_number].get_state()
                     trans_sched_date = self.transactions[trans_number].get_sched_date()
                 else:
                     process_transaction = False
-                if trans_sched_date != None and process_transaction:
+                    self.transactions[trans_number].set_current_value(str(new_current_value))
+                    self.transactions[trans_number].set_projected_value(str(new_proj_value))
+                if process_transaction:
                     trans_action = self.transactions[trans_number].get_action()
                     if trans_action:
 
@@ -143,9 +145,12 @@ class TransactionList:
                     current_value = new_current_value
                     proj_value = new_proj_value
                     DateFormat = Date.get_global_date_format(Date)
-                    trans_sched_date_obj = Date.parse_date(self, trans_sched_date, DateFormat)["dt"]
-                    proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
-                    if trans_sched_date_obj <= proj_date_obj:
+                    if trans_sched_date != None:
+                        trans_sched_date_obj = Date.parse_date(self, trans_sched_date, DateFormat)["dt"]
+                        proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
+                        if trans_sched_date_obj <= proj_date_obj:
+                            ret_proj_value = proj_value
+                    else:
                         ret_proj_value = proj_value
                 trans_number += 1
             trans_number = trans_number + 1

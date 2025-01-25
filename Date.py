@@ -2,9 +2,9 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2025 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
-comments, patches, complaints to joe.gorak@gmail.com
+comments, patches, complaints to joegorak808@outlook.com
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -215,17 +215,19 @@ class Date:
                 year = dt.year
                 month = dt.month+1
                 day = dt.day
-        elif type(in_date) is dict:
-            dt = in_date["dt"]
-            year = dt.year
-            month = dt.month + 1
-            day = dt.day
         elif type(in_date) is DateTime or type(in_date) is datetime:
             dt = in_date
             year = dt.year
             month = dt.month
             if type(in_date) is DateTime:
-                month = month+1
+                month += 1
+            day = dt.day
+        elif type(in_date) is dict:
+            dt = in_date["dt"]
+            year = dt.year
+            month = dt.month
+            if type(dt) is DateTime:
+                month += 1
             day = dt.day
         elif type(in_date) is Date:
             dt = in_date["dt"]
@@ -238,10 +240,7 @@ class Date:
             pass                                # Leave error message display to the caller!  We just return None!
         else:
             retVal = { "year" : year, "month" : month, "day" : day, "dt" : dt }
-            out_month = month
-            if type(in_date) is str or type(in_date) is dict or type(in_date) is datetime:
-                out_month -= 1
-            retVal["str"] = wx.DateTime.FromDMY(day, out_month, year).Format(Date.get_global_date_format(Date))
+            retVal["str"] = wx.DateTime.FromDMY(day, month-1, year).Format(Date.get_global_date_format(Date))
         return retVal
 
     def get_today_date(self):

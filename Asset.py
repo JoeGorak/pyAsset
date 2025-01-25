@@ -2,9 +2,9 @@
 """
 
 COPYRIGHT/LICENSING
-Copyright (c) 2016-2024 Joseph J. Gorak. All rights reserved.
+Copyright (c) 2016-2025 Joseph J. Gorak. All rights reserved.
 This code is in development -- use at your own risk. Email
-comments, patches, complaints to joe.gorak@gmail.com
+comments, patches, complaints to joegorak808@outlook.com
 
 This program is free software; you can redistribute it and/or
 modify it under the terms of the GNU General Public License
@@ -258,14 +258,14 @@ class Asset(object):
                     min = last_pull_date["dt"].minute
                     sec = last_pull_date["dt"].second
                 except:
-                    month = last_pull_date.month-1
+                    month = last_pull_date.month
                     day = last_pull_date.day
                     year = last_pull_date.year
                     hour = last_pull_date.hour
                     min = last_pull_date.minute
                     sec = last_pull_date.second
             time = "%02d:%02d:%02d" % (int(hour), int(min), int(sec))
-            last_pull_date = wx.DateTime.FromDMY(day, month, year).Format(Date.get_global_date_format(Date))
+            last_pull_date = wx.DateTime.FromDMY(day, month-1, year).Format(Date.get_global_date_format(Date))
             last_pull_date = last_pull_date + " " + time
         self.last_pull_date = last_pull_date
 
