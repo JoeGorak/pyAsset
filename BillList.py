@@ -21,7 +21,10 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+from logging import raiseExceptions
+from msvcrt import kbhit
 from Bill import Bill
+from Date import Date
 
 class BillList:
     def __init__(self):
@@ -71,46 +74,56 @@ class BillList:
         self.bills.append(bill)
         return bill
 
-    def __get_partition__(self, bills):
+    def sort_by_fields(self, fields):                                   # A true in-place multi-field sort!    JJG 1/25/25
+        valid_fields = ['due date', 'pmt frequency']
+        for i in range(len(fields)):
+            field = fields[i][0]
+            if field not in valid_fields:
+                print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for bills list" )
+                return self.bills
+        bills = self.bills
         payment_frequencies = Bill.get_payment_frequencies()
-        partition = []
-        for i in range(len(payment_frequencies)):
-            partition.append(BillList())
-        for i in range(len(bills)):
-            partition[payment_frequencies.index(bills[i].get_pmt_frequency())].append(bills[i])
-        return partition
-
-    def sort_by_due_date(self):
-        print("sort by due date called")
-        bill_list_partition = self.__get_partition__(self.bills)
-        for i in range(len(bill_list_partition)):
-            if len(bill_list_partition[i]) != 0:
-                print("Will sort partiton", i, "elements:", bill_list_partition[i] )
-        return self                                 # JJG 8/16/24    For debugging!
+        j = len(bills) - 1
+        while j >= 0:
+            i = 0
+            while i < len(fields):
+                field = fields[i][0]
+                order = fields[i][1]
+                max_index = j
+                current_max = None
+                if field == "pmt frequency":
+                    current_max = payment_frequencies.index(bills[j].get_pmt_frequency())
+                elif field == "due date":
+                    current_max = Date.parse_date(self, bills[j].get_due_date(), Date.get_global_date_format(self))
+                    if current_max != None:
+                        current_max = current_max['dt']
+                    else:
+                        current_max = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank due_dates to top of bill list!
+                test_max = current_max
+                for k in range(j - 1, -1, -1):
+                    if field == "pmt frequency":
+                        test_max = payment_frequencies.index(bills[k].get_pmt_frequency())
+                    elif field == "due date":
+                        test_max = Date.parse_date(self, bills[k].get_due_date(), Date.get_global_date_format(self))
+                        if test_max != None:
+                            test_max = test_max['dt']
+                        else:
+                            test_max = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']        # Force blanks to the top
+                    if test_max > current_max and order == '>':
+                        current_max = test_max
+                        max_index = k
+                if test_max == current_max:                     # Check the next field if this field is equal!
+                    i += 1
+                else:                                           # force while loop checking fields to terminate cause we found the spot!
+                    i = len(fields)                             
+            bills[j], bills[max_index] = bills[max_index], bills[j]
+            j -= 1
+        return self.bills
      
     def insert(self, new_bill):
         if new_bill.empty():
             return
-
-        #  Note that field to sort on is not specified here.
-        #  It is controlled by the Bill itself and how operators are defined in Bill.py
-        # To do a two level sort, call either the sort or the sort_by_due_date method after insert is finished.
-        # Like this method, sort uses the operators in Bill.py
-        # TODO: generalize the sort method to depracate the need for sort_by_due_date     JJG 8/16/24
-
-        before  = -1
-        after = 0
-        while after < len(self.bills):
-            if self.bills[after] > new_bill:
-                break
-            else:
-                before = after
-                after = after + 1
-        if after == len(self.bills):
-            self.bills.append(new_bill)
-        else:
-            self.bills[after+1:] = self.bills[after:len(self.bills)]
-            self.bills[after] = new_bill
+        self.bills.append(new_bill)
 
     def sort(self):
         return self.bills.sort()

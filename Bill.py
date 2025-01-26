@@ -84,38 +84,38 @@ class Bill:
     def get_bill_fields():
         return Bill.bill_fields
 
-    def __gt__(self, other):
-        spf = self.payment_frequencies.index(self.get_pmt_frequency())
-        opf = self.payment_frequencies.index(other.get_pmt_frequency())
-        if spf != opf:
-            return spf > opf
-        else:
-            return False
-    
-    def __ge__(self, other):
-        spf = self.payment_frequencies.index(self.get_pmt_frequency())
-        opf = self.payment_frequencies.index(other.get_pmt_frequency())
-        if spf != opf:
-            return spf >= opf
-        else:
-            return True
+#    def __gt__(self, other):
+#        spf = self.payment_frequencies.index(self.get_pmt_frequency())
+#        opf = self.payment_frequencies.index(other.get_pmt_frequency())
+#        if spf != opf:
+#            return spf > opf
+#        else:
+#            return False
 
-    def __lt__(self, other):
-        spf = self.payment_frequencies.index(self.get_pmt_frequency())
-        opf = self.payment_frequencies.index(other.get_pmt_frequency())
-        if spf != opf:
-            return spf < opf
-        else:
-            return False
-    
-    def __le__(self, other):
-        spf = self.payment_frequencie.index(self.get_pmt_frequency())
-        opf = self.payment_frequencies.index(other.get_pmt_frequency())
-        if spf != opf:
-            return spf <= opf
-        else:
-            return True
-    
+#    def __ge__(self, other):
+#        spf = self.payment_frequencies.index(self.get_pmt_frequency())
+#        opf = self.payment_frequencies.index(other.get_pmt_frequency())
+#        if spf != opf:
+#            return spf >= opf
+#        else:
+#            return True
+
+#    def __lt__(self, other):
+#        spf = self.payment_frequencies.index(self.get_pmt_frequency())
+#        opf = self.payment_frequencies.index(other.get_pmt_frequency())
+#        if spf != opf:
+#            return spf < opf
+#        else:
+#            return False
+
+#    def __le__(self, other):
+#        spf = self.payment_frequencie.index(self.get_pmt_frequency())
+#        opf = self.payment_frequencies.index(other.get_pmt_frequency())
+#        if spf != opf:
+#            return spf <= opf
+#        else:
+#            return True
+
     def __str__(self):
         return " %-10s %-20s $%8.2f $%8.2f %10s %10s %s %s %s" %\
                (self.payee, self.type, self.amount, self.min_due, self.due_date, self.sched_date, self.pmt_acct, self.pmt_method, self.pmt_frequency)
