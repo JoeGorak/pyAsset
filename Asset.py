@@ -94,7 +94,7 @@ class Asset(object):
 
     def __gt__(self, other):
         if self.due_date != None and other.due_date != None:
-            return self.due_date > other.due_date
+            return self.due_date['dt'] > other.due_date['dt']
         elif self.due_date != None:
             return False
         else:
@@ -102,7 +102,7 @@ class Asset(object):
 
     def __lt__(self, other):
         if self.due_date != None and other.due_date != None:
-            return self.due_date < other.due_date
+            return self.due_date['dt'] < other.due_date['dt']
         elif self.due_date != None:
             return False
         else:

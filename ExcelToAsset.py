@@ -251,7 +251,7 @@ class ExcelToAsset(wx.Frame):
 
     def ProcessBillsSheet(self, bills):
         MAX_COLS_TO_PROCESS = 8             # Only these columns have data we want! JJG 4/1/2023
-        BillsFound = BillList()
+        BillsFound = BillList([])
         BillPlaces = dict()
         if self.wb == None:
             return BillsFound

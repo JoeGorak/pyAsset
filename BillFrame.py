@@ -584,7 +584,7 @@ class BillFrame(wx.Frame):
         d.Destroy()
         if not current_balance: return
 
-        _balance = self.get_celared_balance()
+        cleared_balance = self.get_cleared_balance()
         difference = current_balance - cleared_balance
         if abs(difference) < 0.01:
             d = wx.MessageDialog(self,
@@ -603,7 +603,7 @@ class BillFrame(wx.Frame):
 
     def adjust_balance(self, diff):
         self.edited = True
-        #bill = bill()
+        bill = bill()
         bills = self.bills.append()
         bill.payee = "Balance Adjustment"
         bill.amount = diff

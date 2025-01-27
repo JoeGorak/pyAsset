@@ -411,7 +411,10 @@ class AssetFrame(wx.Frame):
         if self.bills == None:
             self.DisplayMsg("No bills in the system yet")
         else:
-            self.bills_frame = BillFrame(None, self, -1, self.frame.bills)
+            if self.bills_frame == None:
+                self.bills_frame = BillFrame(None, self, -1, self.bills)
+            else:
+                pass                                # TODO: Add code to bring frame into focus on top! JJG 1/26/2025
 
     def getBillFrame(self):
         return self.bills_frame

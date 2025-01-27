@@ -22,13 +22,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
 from logging import raiseExceptions
-from msvcrt import kbhit
+#from msvcrt import kbhit
 from Bill import Bill
 from Date import Date
 
-class BillList:
-    def __init__(self):
-        self.bills = []
+class BillList(list):
+    def __init__(self, bills):
+        self.bills = list(bills)
 
     def __len__(self):
         return len(self.bills)
@@ -74,14 +74,14 @@ class BillList:
         self.bills.append(bill)
         return bill
 
-    def sort_by_fields(self, fields):                                   # A true in-place multi-field sort!    JJG 1/25/25
+    def sort_by_fields(self, fields):                                   # A true multi-field sort!    JJG 1/25/25
         valid_fields = ['due date', 'pmt frequency']
         for i in range(len(fields)):
             field = fields[i][0]
             if field not in valid_fields:
                 print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for bills list" )
                 return self.bills
-        bills = self.bills
+        bills = BillList(self.bills)
         payment_frequencies = Bill.get_payment_frequencies()
         j = len(bills) - 1
         while j >= 0:
@@ -118,12 +118,12 @@ class BillList:
                     i = len(fields)                             
             bills[j], bills[max_index] = bills[max_index], bills[j]
             j -= 1
-        return self.bills
+        return bills
      
     def insert(self, new_bill):
-        if new_bill.empty():
+        if new_bill == None:
             return
-        self.bills.append(new_bill)
+        self.append(new_bill)
 
     def sort(self):
-        return self.bills.sort()
+        return self.sort_by_fields([('due date', '>'), ('pmt frequency', '<')])
