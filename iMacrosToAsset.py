@@ -70,27 +70,29 @@ class iMacrosToAsset:
         import win32com.client
         self.iim = win32com.client.Dispatch("imacros")
         self.iim.iimInit("-cr", 1)              # -cr starts Chrome, -ie starts Internet Explorer, -fx starts Firefox, more flags at https://wiki.imacros.net/iimInit()
+        self.macro_path = 'E:\\Dropbox\\Private\\Programming\\iMacros'          # TODO: Eliminate hard-coded path! JJG 1/25/2025
 
     def GetNetInfo(self, net_asset_code):
         from datetime import datetime
         AssetsFound = AssetList(self)
-        net_asset_macro_name = "Retrieve_" + net_asset_code[0] + "_balances"
+        net_asset_macro_name = "Retrieve_" + net_asset_code[0] + "_balances.iim"
         print("Running " + net_asset_macro_name)
+        net_asset_macro_name = self.macro_path + net_asset_macro_name
         iret = self.iim.iimPlay(net_asset_macro_name)
 
         # JJG 3/31/24 For some reason. extract isn't working so parse the .csv file that is created.
-
-        LastExtract = []
-        with open('E:\\joego\\Dropbox\\Private\\Programming\\iMacros\\Downloads\\' + net_asset_code[0] +'.csv', 'r') as f:
-            reader = csv.reader(f)
-            LastExtract = list(reader)
+#
+#        LastExtract = []
+#        with open(self.macro_path + net_asset_code[0] +'.csv', 'r') as f:
+#            reader = csv.reader(f)
+#            LastExtract = list(reader)
 #        print(LastExtract)
  
-        LastExtract = LastExtract[0]
-        extract_index = -1                                          # Must initialize all variables! JJG 3/31/24
         if (iret != 1):
             print("Bad status", iret, "returned from", net_asset_macro_name, "Error text:", self.iim.iimGetErrorText())
         else:
+            LastExtract = LastExtract[0]
+            extract_index = -1                                          # Must initialize all variables! JJG 3/31/24
             date_pat = r"(\d{8,14} ?(\d{0,6}))([aApP}mM])?"
             if net_asset_code[1] != -1:
                 date = re.search(date_pat, LastExtract[0])

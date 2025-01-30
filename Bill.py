@@ -132,8 +132,8 @@ class Bill:
     def get_payee(self):
         return self.payee
 
-    def get_type(selt):
-        st = selt.type
+    def get_type(self):
+        st = self.type
         if st == CHECKINGANDSAVINGS:
             return "Checking and saving"
         elif st == CREDITCARD:

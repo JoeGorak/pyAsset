@@ -306,7 +306,7 @@ class ExcelToAsset(wx.Frame):
                                 new_bill.set_pmt_frequency(cv)
             if Finished:
                 break
-            else:
+            if new_bill.get_type() != "??":
                 BillsFound.insert(new_bill)
 
         # At this point bills are inserted as they were found in the Bill sheet.
