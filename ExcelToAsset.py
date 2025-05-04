@@ -310,8 +310,8 @@ class ExcelToAsset(wx.Frame):
                 BillsFound.insert(new_bill)
 
         # At this point bills are inserted as they were found in the Bill sheet.
-        # Now do a two level sort by due date and frewuency of payment
-        BillsFound = BillsFound.sort_by_fields([('due date', '>'), ('pmt frequency', '<')])
+        # Now do a multi-level sort on the list of bills.  JJG 1/25/2025
+        BillsFound = BillsFound.sort_by_fields(BillList.getSortOrder(self))
         return BillsFound
 
     def MsgBox(self, message):

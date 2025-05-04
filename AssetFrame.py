@@ -566,7 +566,7 @@ class AssetFrame(wx.Frame):
             self.assetGrid.SetGridCursor(index, 0)
             self.assetGrid.MakeCellVisible(index, True)
 
-    def addTransactionFrame(self, row, autoCreate):
+    def addTransactionFrame(self, row, autoCreate=True):
         retVal = None
         name = self.assets.assets[row].name
         transactions = self.assets[row].transactions

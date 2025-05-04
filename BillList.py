@@ -30,6 +30,16 @@ class BillList(list):
     def __init__(self, bills):
         self.bills = list(bills)
 
+    def getSortOrder(self):
+        sortFields = [('Due Date', '>'), ('Frequency', '<')]                             # Default sort order for bills list
+        valid_fields = Bill.get_bill_fields()
+        for i in range(len(sortFields)):
+            field = sortFields[i][0]
+            if field not in valid_fields:
+                print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for bills list" )
+                return []
+        return sortFields
+
     def __len__(self):
         return len(self.bills)
 
@@ -75,12 +85,12 @@ class BillList(list):
         return bill
 
     def sort_by_fields(self, fields):                                   # A true multi-field sort!    JJG 1/25/25
-        valid_fields = ['due date', 'pmt frequency']
+        valid_fields = Bill.get_bill_fields()                           # ['due date', 'pmt frequency']
         for i in range(len(fields)):
             field = fields[i][0]
             if field not in valid_fields:
                 print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for bills list" )
-                return self.bills
+                return []
         bills = BillList(self.bills)
         payment_frequencies = Bill.get_payment_frequencies()
         j = len(bills) - 1
@@ -91,31 +101,35 @@ class BillList(list):
                 order = fields[i][1]
                 max_index = j
                 current_max = None
-                if field == "pmt frequency":
+                if field == "Frequency":
                     current_max = payment_frequencies.index(bills[j].get_pmt_frequency())
-                elif field == "due date":
+                elif field == "Due Date":
                     current_max = Date.parse_date(self, bills[j].get_due_date(), Date.get_global_date_format(self))
                     if current_max != None:
                         current_max = current_max['dt']
                     else:
                         current_max = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank due_dates to top of bill list!
+                elif field == "Type":
+                    current_max = bills[j].get_type()
                 test_max = current_max
                 for k in range(j - 1, -1, -1):
-                    if field == "pmt frequency":
+                    if field == "Frequency":
                         test_max = payment_frequencies.index(bills[k].get_pmt_frequency())
-                    elif field == "due date":
+                    elif field == "Due Date":
                         test_max = Date.parse_date(self, bills[k].get_due_date(), Date.get_global_date_format(self))
                         if test_max != None:
                             test_max = test_max['dt']
                         else:
                             test_max = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']        # Force blanks to the top
-                    if test_max > current_max and order == '>':
+                    elif field == 'Type':
+                        test_max = bills[k].get_type()
+                    if (test_max > current_max and order == '>') or (test_max < current_max and order == '<'):
                         current_max = test_max
                         max_index = k
                 if test_max == current_max:                     # Check the next field if this field is equal!
                     i += 1
                 else:                                           # force while loop checking fields to terminate cause we found the spot!
-                    i = len(fields)                             
+                    i = len(fields)
             bills[j], bills[max_index] = bills[max_index], bills[j]
             j -= 1
         return bills
@@ -126,4 +140,4 @@ class BillList(list):
         self.append(new_bill)
 
     def sort(self):
-        return self.sort_by_fields([('due date', '>'), ('pmt frequency', '<')])
+        return self.sort_by_fields(self.getSortOrder(self))

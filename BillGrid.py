@@ -524,7 +524,7 @@ class BillGrid(grd.Grid):
                 asset_frame = self.getFrame().parent
                 pmt_asset_index = asset_frame.assets.index(asset_name)
                 if pmt_asset_index != -1:
-                    asset_frame.add_transaction_frame(pmt_asset_index)
+                    asset_frame.addTransactionFrame(pmt_asset_index,False)
             else:
                 print("OnCellLeftClick: bill_grid (%d,%d) %s\n" % (row, col, pos))
             evt.Skip()
