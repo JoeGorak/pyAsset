@@ -245,7 +245,7 @@ class Transaction:
             global_date_format = Date.get_global_date_format(Date)
             if type(rest) is str:
                 in_date_format = Date.guessDateFormat(Date,rest)
-                if in_date_format != gloabl_date_format:
+                if in_date_format != global_date_format:
                     rest = Date.convertDateFormat(Date, rest, in_date_format, global_date_format)
             self.due_date = Date.parse_date(self, rest, Date.get_global_date_format(Date))
         else:

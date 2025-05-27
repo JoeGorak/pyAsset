@@ -562,11 +562,16 @@ class TransactionFrame(wx.Frame):
 
     def newentry(self, *args):
         self.edited = True
-        self.transactions.append()
+        index = self.trans_grid.GetGridCursorRow()
+        ntransactions = len(self.transactions)
+        new_transaction = self.transactions.append(Transaction(self))
         self.trans_grid.AppendRows()
-        ntransactions = self.trans_grid.GetNumberRows()
-        self.trans_grid.SetGridCursor(ntransactions - 1, 0)
-        self.trans_grid.MakeCellVisible(ntransactions - 1, 1)
+        for i in range(ntransactions, index, -1):
+            self.transactions[i] = self.transactions[i-1]
+        self.transactions[index] = new_transaction
+        self.trans_grid.SetGridCursor(index, 0)
+        self.trans_grid.MakeCellVisible(index, 1)
+        self.redraw_all(-1)
 
     def sort(self, *args):
         self.edited = True
@@ -624,6 +629,7 @@ class TransactionFrame(wx.Frame):
                                  "Really delete?", wx.YES_NO)
             if d.ShowModal() == wx.ID_YES:
                 del self.transactions[index]
+                self.trans_grid.DeleteRows()
             self.redraw_all()  # only redraw cells [index-1:]
  
     def reconcile(self, *args):
