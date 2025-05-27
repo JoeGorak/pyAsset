@@ -1114,9 +1114,13 @@ class AssetFrame(wx.Frame):
 
     def newentry(self, *args):
         self.edited = True
-        self.assets.assets.append("New Asset")
+        index = self.assetGrid.GetGridCursorRow()
+        nassets = len(self.assets)
+        new_asset = self.assets.append_by_name("")
         self.assetGrid.AppendRows()
-        nassets = self.assetGrid.GetNumberRows()
+        for i in range(nassets, index, -1):
+            self.assets[i] = self.assets[i-1]
+        self.assets[index] = new_asset
         self.assetGrid.SetGridCursor(nassets - 1, 0)
         self.assetGrid.MakeCellVisible(nassets - 1, 1)
         self.redraw_all()
@@ -1135,6 +1139,7 @@ class AssetFrame(wx.Frame):
                                  "Really delete?", wx.YES_NO)
             if d.ShowModal() == wx.ID_YES:
                 del self.assets[index]
+                self.assetGrid.DeleteRows()
             self.redraw_all()  # TODO: Can we make a self.redraw(index-1)  so that only the assets[index-1:] get updated?  JJG 07/09/2021
 
     def about(self, *args):
