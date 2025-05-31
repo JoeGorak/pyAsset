@@ -681,7 +681,7 @@ class TransactionFrame(wx.Frame):
     def about(self, *args):
         d = wx.MessageDialog(self,
                              "Python Asset Manager\n"
-                             "Copyright (c) 2016-2024 Joseph J. Gorak\n"
+                             "Copyright (c) 2016-2025 Joseph J. Gorak\n"
                              "Released under the Gnu GPL\n",
                              "About PyAsset",
                              wx.OK | wx.ICON_INFORMATION)

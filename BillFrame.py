@@ -283,7 +283,7 @@ class BillFrame(wx.Frame):
 
     def load_file(self, *args):
         self.close()
-        self.cur_bill = bill()
+        self.cur_bill = Bill()
         self.edited = False
         d = wx.FileDialog(self, "Open", "", "", "*.qif", wx.OPEN)
         if d.ShowModal() == wx.ID_OK:
