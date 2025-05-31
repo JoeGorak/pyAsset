@@ -309,7 +309,7 @@ class Date:
                 out_date_str = in_date["str"]
             else:
                 year, month, day = Date.get_date_fields(Date, in_date)
-                out_date_dt = wx.DateTime.FromDMY(day, month, year)
+                out_date_dt = wx.DateTime.FromDMY(day, month-1, year)
                 out_date_str = out_date_dt.Format(out_dateFormat)
         else:
             if type(in_date) is str:
