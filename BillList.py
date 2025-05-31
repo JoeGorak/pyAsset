@@ -84,7 +84,9 @@ class BillList(list):
         self.bills.append(bill)
         return bill
 
-    def sort_by_fields(self, fields):                                   # A true multi-field sort!    JJG 1/25/25
+    def sort_by_fields(self, fields = None):                                   # A true multi-field sort!    JJG 1/25/25
+        if fields == None:
+            fields = self.getSortOrder()
         valid_fields = Bill.get_bill_fields()                           # ['due date', 'pmt frequency']
         for i in range(len(fields)):
             field = fields[i][0]

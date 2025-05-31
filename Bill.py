@@ -169,7 +169,7 @@ class Bill:
         return self.amount
 
     def set_amount(self, amount):
-        self.amount = amount
+        self.amount = round(amount,2)
 
     def get_min_due(self):
         return self.min_due

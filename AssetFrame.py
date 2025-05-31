@@ -245,6 +245,25 @@ class AssetFrame(wx.Frame):
                         test_paydate.Add(incr)
         return paydates
 
+    def get_bills_due_in_range(self, start_date, end_date):
+        bills_due = None
+        if self.bills != None:
+            dateFormat = self.get_date_format()
+            start_date = Date.parse_date(self, start_date, dateFormat)["dt"]
+            end_date = Date.parse_date(self, end_date, dateFormat)["dt"]
+            bills_due = []
+            if end_date < start_date:
+                start_date, end_date = end_date, start_date
+            for bill in self.bills.bills:
+                due_date = bill.get_due_date()
+                if due_date != None:
+                    due_date_parsed = Date.parse_date(self, due_date, dateFormat)
+                    if due_date_parsed != None:
+                        due_dt = wx.DateTime.FromDMY(due_date_parsed['day'], due_date_parsed['month'] - 1, due_date_parsed['year'])
+                        if start_date <= due_dt <= end_date:
+                            bills_due.append(bill)
+        return BillList(bills_due).sort_by_fields()
+
     def updatePayDates(self):
         self.set_curr_paydate()
         self.set_next_paydate()
@@ -453,7 +472,7 @@ class AssetFrame(wx.Frame):
         if type(self.proj_date) is str:
             proj_date_label = self.curr_date
             if proj_date_label == "":
-                proj_date_label =  Date.get_global_date_format(Date).replace("%m", "mm").replace("%d", "dd").replace("%y","yy").replace("%Y", "yyyy")
+                proj_date_label = Date.get_global_date_format(Date).replace("%m", "mm").replace("%d", "dd").replace("%y","yy").replace("%Y", "yyyy")
         else:
             proj_date_label = self.proj_date["str"]
         self.projDateInput.LabelText = proj_date_label
@@ -471,19 +490,21 @@ class AssetFrame(wx.Frame):
     def onProjDateEntered(self, evt):
         in_date = evt.String
         date_format = Date.get_global_date_format(Date)
-        returned_date = Date.parse_date(self, in_date, date_format)
-        if returned_date != None:
-            self.proj_date = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"] - 1, returned_date["year"])
-            self.proj_year = returned_date["year"]
-            self.proj_month = returned_date["month"]
-            self.proj_day = returned_date["day"]
+        parsed_proj_date = Date.parse_date(self, in_date, date_format)
+        if parsed_proj_date != None:
+            self.proj_date = wx.DateTime.FromDMY(parsed_proj_date["day"], parsed_proj_date["month"] - 1, parsed_proj_date["year"])
+            self.proj_year = parsed_proj_date["year"]
+            self.proj_month = parsed_proj_date["month"]
+            self.proj_day = parsed_proj_date["day"]
             print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
                   (self.proj_date.Format(self.dateFormat), self.proj_month, self.proj_day, self.proj_year))
             Date.set_proj_date(self, in_date)
+            paydates = self.get_paydates_in_range(Date.get_global_curr_date(self), parsed_proj_date)
+            print("Pay dates in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, paydates))
+            billsdue = self.get_bills_due_in_range(Date.get_global_curr_date(self), parsed_proj_date)
+            print("Bills due in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, billsdue))
             self.assets.update_proj_values(in_date)
             self.redraw_all()
-            paydates = self.get_paydates_in_range(Date.get_global_curr_date(self), returned_date)
-            print("Pay dates in ramge %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, paydates))
         else:
             self.proj_date = None
             self.DisplayMsg("Bad projected date ignored: %s" % (in_date))

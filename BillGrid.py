@@ -277,23 +277,23 @@ class BillGrid(grd.Grid):
         elif self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):
             tableValue = ""
         else:
-            returned_date = Date.parse_date(self, cellValue, Date.get_global_date_format(self))
-            if returned_date != None:
-                tableDate = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"]-1, returned_date["year"])
+            parsed_cell_date = Date.parse_date(self, cellValue, Date.get_global_date_format(self))
+            if parsed_cell_date != None:
+                tableDate = wx.DateTime.FromDMY(parsed_cell_date["day"], parsed_cell_date["month"]-1, parsed_cell_date["year"])
                 dateFormat = Date.get_global_date_format(self)
                 date_sep = Date.get_global_date_sep(self)
                 dateParts = dateFormat.split(date_sep)
                 tableValue = ""
                 for i in range(len(dateParts)):
                     if dateParts[i] == "%m":
-                        tableValue = tableValue + "%02d" % (int(returned_date["month"]))
+                        tableValue = tableValue + "%02d" % (int(parsed_cell_date["month"]))
                     elif dateParts[i] == "%d":
-                        tableValue = tableValue + "%02d" % (int(returned_date["day"]))
+                        tableValue = tableValue + "%02d" % (int(parsed_cell_date["day"]))
                     elif dateParts[i] == "%Y":
-                        tableValue = tableValue + "%04d" % (int(returned_date["year"]))
+                        tableValue = tableValue + "%04d" % (int(parsed_cell_date["year"]))
                     elif dateParts[i] == "%y":
                         # assume all 2 digit years are in the range 2000 <= year < 2099.  Don't expect this software to be used in the year 2100!! JJG 07/08/2021
-                        tableValue = tableValue + "%04d" % (2000 + int(returned_date["year"]))
+                        tableValue = tableValue + "%04d" % (2000 + int(parsed_cell_date["year"]))
                     if i < len(dateParts)-1:
                         tableValue = tableValue + "%s" % (Date.get_global_date_sep(self))
             else:
@@ -308,7 +308,7 @@ class BillGrid(grd.Grid):
             tableValue = ""
         else:
             datePart,timePart = cellValue.split(" ")
-            returned_date = Date.parse_date(self, datePart, Date.get_global_date_format(self))
+            parsed_cell_date = Date.parse_date(self, datePart, Date.get_global_date_format(self))
             self.SetCellAlignment(row, col, wx.ALIGN_CENTER, wx.ALIGN_CENTER)
             dateFormat = Date.get_global_date_format(self)
             date_sep = Date.get_global_date_sep(self)
@@ -316,14 +316,14 @@ class BillGrid(grd.Grid):
             tableValue = ""
             for i in range(len(dateParts)):
                 if dateParts[i] == "%m":
-                    tableValue = tableValue + "%02d" % (int(returned_date["month"]))
+                    tableValue = tableValue + "%02d" % (int(parsed_cell_date["month"]))
                 elif dateParts[i] == "%d":
-                    tableValue = tableValue + "%02d" % (int(returned_date["day"]))
+                    tableValue = tableValue + "%02d" % (int(parsed_cell_date["day"]))
                 elif dateParts[i] == "%Y":
-                    tableValue = tableValue + "%04d" % (int(returned_date["year"]))
+                    tableValue = tableValue + "%04d" % (int(parsed_cell_date["year"]))
                 elif dateParts[i] == "%y":
                     # assume all 2 digit years are in the range 2000 <= year < 2099.  Don't expect this software to be used in the year 2100!! JJG 07/08/2021
-                    tableValue = tableValue + "%04d" % (2000 + int(returned_date["year"]))
+                    tableValue = tableValue + "%04d" % (2000 + int(parsed_cell_date["year"]))
                 if i < len(dateParts)-1:
                     tableValue = tableValue + "%s" % (Date.get_global_date_sep(self))
             tableValue = "%02s/%02s/%04s %s" % (month, day, year, timePart)

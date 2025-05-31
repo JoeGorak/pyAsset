@@ -317,23 +317,23 @@ class TransactionGrid(grd.Grid):
         elif self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):
             tableValue = ""
         else:
-            returned_date = Date.parse_date(self, cellValue, Date.get_global_date_format(Date))
-            if returned_date != None:
-                tableDate = wx.DateTime.FromDMY(returned_date["day"], returned_date["month"] - 1, returned_date["year"])
+            parsed_proj_date = Date.parse_date(self, cellValue, Date.get_global_date_format(Date))
+            if parsed_proj_date != None:
+                tableDate = wx.DateTime.FromDMY(parsed_proj_date["day"], parsed_proj_date["month"] - 1, parsed_proj_date["year"])
                 dateFormat = Date.get_global_date_format(Date)
                 date_sep = Date.get_global_date_sep(self)
                 dateParts = dateFormat.split(date_sep)
                 tableValue = ""
                 for i in range(len(dateParts)):
                     if dateParts[i] == "%m":
-                        tableValue = tableValue + "%02d" % (int(returned_date["month"]))
+                        tableValue = tableValue + "%02d" % (int(parsed_proj_date["month"]))
                     elif dateParts[i] == "%d":
-                        tableValue = tableValue + "%02d" % (int(returned_date["day"]))
+                        tableValue = tableValue + "%02d" % (int(parsed_proj_date["day"]))
                     elif dateParts[i] == "%Y":
-                        tableValue = tableValue + "%04d" % (int(returned_date["year"]))
+                        tableValue = tableValue + "%04d" % (int(parsed_proj_date["year"]))
                     elif dateParts[i] == "%y":
                         # assume all 2 digit years are in the range 2000 <= year < 2099.  Don't expect this software to be used in the year 2100!! JJG 07/08/2021
-                        tableValue = tableValue + "%04d" % (2000 + int(returned_date["year"]))
+                        tableValue = tableValue + "%04d" % (2000 + int(parsed_proj_date["year"]))
                     if i < len(dateParts)-1:
                         tableValue = tableValue + "%s" % (date_sep)
             else:
@@ -435,7 +435,7 @@ class TransactionGrid(grd.Grid):
                             tableValue = tableValue + "%s" % (date_sep)
                 evt.Veto()
                 try:
-                    returned_date = Date.parse_date(self, tableValue, Date.get_global_date_format(Date))
+                    parsed_proj_date = Date.parse_date(self, tableValue, Date.get_global_date_format(Date))
                 except:
                     str = "%s is not a valid date string" % (new_value)
                     ret_val = self.DisplayMsg(str)
