@@ -110,12 +110,12 @@ class TransactionList:
             ret_proj_value= proj_value = current_value
             while trans_number < len(self.transactions):
                 trans_pmt_method = self.transactions[trans_number].get_pmt_method()
+                trans_sched_date = self.transactions[trans_number].get_sched_date()
                 process_transaction = True
                 new_current_value = current_value
                 new_proj_value = proj_value
-                if trans_pmt_method != "posted":
+                if trans_pmt_method != "posted" and trans_sched_date != None:
                     trans_state = self.transactions[trans_number].get_state()
-                    trans_sched_date = self.transactions[trans_number].get_sched_date()
                 else:
                     process_transaction = False
                     self.transactions[trans_number].set_current_value(str(new_current_value))
@@ -128,6 +128,8 @@ class TransactionList:
 
                         if trans_state != "void":
                             trans_amount = self.transactions[trans_number].get_amount()
+                            if trans_amount == None:
+                                trans_amount = 0.00
                         else:
                             trans_amount = 0.00
                         if trans_action == '-':

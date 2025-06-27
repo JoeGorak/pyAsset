@@ -31,6 +31,7 @@ import wx.grid as grd
 import re
 from datetime import date, datetime
 from Date import Date
+from Asset import Asset
 
 class AssetGrid(grd.Grid):
     def __init__(self, frame, **keywrds):
@@ -432,10 +433,13 @@ class AssetGrid(grd.Grid):
         if new_value == "":
             col_type = self.col_info[col][self.TYPE_COL]
             if col_type == self.DOLLAR_TYPE: new_value = "0.00"
-        if row < 0 or row >= len(self.getFrame().assets):
-            str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
-            ret_val = self.DisplayMsg(str)
-        elif self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
+        assetFrame = self.getFrame()
+        if row < 0 or row >= len(assetFrame.assets):
+            assetFrame.assets.assets.append(Asset(type = new_value))            # JJG 6/26/25 Pass in name to determine type of asset
+#            str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
+#            ret_val = self.DisplayMsg(str)
+#        elif self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
+        if self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
             str = "Warning: Changes not allowed for column %s!" % (self.getColName(col))
             ret_val = self.DisplayMsg(str)
         if ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.DOLLAR_TYPE:

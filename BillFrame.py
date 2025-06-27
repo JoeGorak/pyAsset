@@ -42,15 +42,16 @@ from Date import Date
 from HelpDialog import HelpDialog
 from Bill import Bill
 from BillGrid import BillGrid
+from BillList import BillList
 
 class BillFrame(wx.Frame):
     def __init__(self, style, parent, my_id, bills, title="PyAsset:Bill", myfile=None, **kwds):
-        self.bills = bills
+        self.bills = BillList(bills)
         self.parent = parent
         self.dateFormat = Date.get_global_date_format(self)
         self.dateSep = Date.get_global_date_sep(self)
 
-        if len(self.bills) > 0:
+        if self.bills != None:
             self.cur_bill = self.bills[0]
         else:
             self.cur_bill = None
@@ -193,7 +194,9 @@ class BillFrame(wx.Frame):
     def redraw_all(self, index=None):
         if index == None:
             index = -1
-        nbills = len(self.bills)
+        nbills = 0
+        if self.bills != None:
+            nbills = len(self.bills)
         start_range = 0
         end_range = nbills
         if index == -1:
@@ -509,7 +512,7 @@ class BillFrame(wx.Frame):
 
     def newentry(self, *args):
         self.edited = True
-        self.bills.append()
+        self.bills.append(Bill())
         self.bill_grid.AppendRows()
         nbills = self.bill_grid.GetNumberRows()
         self.bill_grid.SetGridCursor(nbills - 1, 0)
@@ -676,7 +679,7 @@ class BillFrame(wx.Frame):
         elif colName == "Pmt Method":
             bill_changed.set_pmt_method(new_value)
         elif colName == "Frequency":
-            bill_changed.set_frequency(new_value)
+            bill_changed.set_pmt_frequency(new_value)
         else:
             self.DisplayMsg("Unknown column " + colName + " ignored!")
             modified = False

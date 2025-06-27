@@ -36,6 +36,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Search functions
 # goto date
 
+from ast import Pass
 import wx
 import csv
 import os
@@ -217,8 +218,10 @@ class AssetFrame(wx.Frame):
         paydates = None
         dateFormat = self.get_date_format()
         if self.ref_date != None:
-            start_date = start_date["dt"]
-            end_date = end_date["dt"]
+            start_date = Date.parse_date(self, start_date, dateFormat)
+            start_date = wx.DateTime.FromDMY(start_date['day'], start_date['month']-1, start_date['year'])
+            end_date = Date.parse_date(self, end_date, dateFormat)
+            end_date = wx.DateTime.FromDMY(end_date['day'], end_date['month']-1, end_date['year'])
             paydates = []
             if end_date < start_date:
                 start_date, end_date = end_date, start_date
@@ -226,7 +229,7 @@ class AssetFrame(wx.Frame):
             if incr != None:
                 ref_date_parsed = Date.parse_date(self, self.ref_date, dateFormat)
                 if ref_date_parsed != None:
-                    test_paydate = wx.DateTime.FromDMY(ref_date_parsed['day'], ref_date_parsed['month'], ref_date_parsed['year'])
+                    test_paydate = wx.DateTime.FromDMY(ref_date_parsed['day'], ref_date_parsed['month']-1, ref_date_parsed['year'])
                     if test_paydate > start_date:
                         while test_paydate > start_date:
                             test_paydate.Subtract(incr)
@@ -427,13 +430,12 @@ class AssetFrame(wx.Frame):
         self.billButton.Bind(wx.EVT_LEFT_DOWN, self.onBillButtonClick)
 
     def onBillButtonClick(self, evt):
-        if self.bills == None:
-            self.DisplayMsg("No bills in the system yet")
+        if self.bills != None:
+           self.bills = BillList(self.bills)                               # JJG 1/26/2025 Create a new bill list if none exists
+        if self.bills_frame == None:
+            self.bills_frame = BillFrame(None, self, -1, self.bills)
         else:
-            if self.bills_frame == None:
-                self.bills_frame = BillFrame(None, self, -1, self.bills)
-            else:
-                pass                                # TODO: Add code to bring frame into focus on top! JJG 1/26/2025
+            pass                                # TODO: Add code to bring frame into focus on top! JJG 1/26/2025
 
     def getBillFrame(self):
         return self.bills_frame

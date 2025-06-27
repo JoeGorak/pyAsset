@@ -28,7 +28,10 @@ from Date import Date
 
 class BillList(list):
     def __init__(self, bills):
-        self.bills = list(bills)
+        if bills == None:
+            self.bills = [Bill()]
+        else:
+            self.bills = bills
 
     def getSortOrder(self):
         sortFields = [('Due Date', '>'), ('Frequency', '<')]                             # Default sort order for bills list

@@ -279,7 +279,7 @@ class Bill:
 
     def set_pmt_frequency(self, payment_freq):
         pfu = payment_freq.upper()
-        if pfu == "BI_WEEKLY":
+        if pfu == "BI-WEEKLY":
             self.payment_frequency = BIWEEKLY
         elif pfu == "MONTHLY":
             self.payment_frequency = MONTHLY
@@ -292,5 +292,5 @@ class Bill:
         elif pfu == "MANUAL":
             self.payment_frequency = MANUAL
         else:
-            print("Unknown payment frequency -" + payment_freq + "! Defaulting to MANUAL")
+            print("Unknown payment frequency " + payment_freq + "! Defaulting to MANUAL")
             self.payment_frequency = MANUAL
