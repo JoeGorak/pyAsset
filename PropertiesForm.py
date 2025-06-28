@@ -69,7 +69,7 @@ class PropertyForm(wx.Panel):
         self.payTypes = self.assetFrame.get_pay_types()
         self.payType = in_payType
         if in_payType == "":
-           self.payType = self.assetFrane.get_default_pay_type()
+           self.payType = self.assetFrame.get_default_pay_type()
         else:
            if type(in_payType) is not int:
                 try:

@@ -145,7 +145,7 @@ class Bill:
         elif st == UNKNOWN:
             return "Unknown"
         else:
-            return "??"
+            return ""
 
     def set_type(self,type):
         tu = type.upper()

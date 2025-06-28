@@ -76,29 +76,24 @@ class AssetFrame(wx.Frame):
         super(AssetFrame, self).__init__(parent, title=title)
         self.make_widgets()
 
-        if self.readConfigFile(cfgFile):
-            self.curr_date = Date.set_curr_date(Date)
-            self.proj_date = self.curr_date                          # JJG 5/13/2024 Set proj date to curr date initially
-            Date.set_global_curr_date(self, self.curr_date)
-            Date.set_global_proj_date(self, self.proj_date)
-            self.set_curr_paydate()
-            self.set_next_paydate()
-            oldDateFormat = ""                                       # JJG 1/1/2024 Force date format to be set the first time
-            newDateFormat = Date.get_global_date_format(Date)
-            self.update_date_dates(oldDateFormat, newDateFormat)
-            self.update_all_Date_Formats(oldDateFormat, newDateFormat)
-            oldDateFormat = newDateFormat
-            oldRefDate = self.ref_date
-            oldDateSep = Date.get_global_date_sep(self) 
-        else:
-            curr_date = Date(parent)
-            self.curr_date = curr_date.curr_date["str"]
-            self.proj_date = self.curr_date
-            self.dateFormat = Date.get_global_date_format(Date)
-            Date.set_global_curr_date(self, self.curr_date)
-            Date.set_global_proj_date(self, self.proj_date)
-            if self.payType == "" or self.payType == None:
-                self.payType = "every 2 weeks"                                 # JJG 12/23/2023   added default if no payType given
+        self.curr_date = Date.set_curr_date(Date)
+        self.proj_date = self.curr_date                          # JJG 5/13/2024 Set proj date to curr date initially
+        Date.set_global_curr_date(self, self.curr_date)
+        Date.set_global_proj_date(self, self.proj_date)
+
+        self.checkForConfigFile(self.cfgFile)
+        oldDateFormat = ""                                       # JJG 1/1/2024 Force date format to be set the first time
+
+        self.processConfigFile(self.cfgFile)
+        self.set_curr_paydate()
+        self.set_next_paydate()
+#        self.update_all_Date_Formats(oldDateFormat, newDateFormat)
+#        oldDateFormat = newDateFormat
+#        oldRefDate = self.ref_date
+#        oldDateSep = Date.get_global_date_sep(self)
+
+        newDateFormat = Date.get_global_date_format(Date)
+        self.update_date_dates(oldDateFormat, newDateFormat)
 
         self.redraw = False
         if self.assetFile:
@@ -282,22 +277,27 @@ class AssetFrame(wx.Frame):
         self.assets = AssetList(self)
         self.redraw_all(-1)
 
-    def readConfigFile(self, cfgFile):
+    def checkForConfigFile(self, cfgFile):
         if cfgFile == "":
-            d = wx.FileDialog(self, "", "", "", "*.cfg", wx.FD_OPEN)
-            if d.ShowModal() == wx.ID_OK:
-                fname = d.GetFilename()
-                dir = d.GetDirectory()
+#            d = wx.FileDialog(self, "", "", "", "*.cfg", wx.FD_OPEN)
+#            if d.ShowModal() == wx.ID_OK:
+                fname = "pyAsset.cfg"                       # JJG 6/28/2025  Force a known name for testing
+#                dir = d.GetDirectory()
+                dir = os.getcwd()                           # JJG 6/28/2025 Store cfg in current working directory for testing
                 total_name_in = os.path.join(dir, fname)
                 self.cfgFile = total_name_in
         else:
             self.cfgFile = cfgFile
+
+    def processConfigFile(self, cfgFile):
         try:
             file = open(self.cfgFile, 'r')
             lines = file.readlines()
             self.dateFormat = lines.pop(0).replace('\n', '')
             Date.set_global_date_format(Date, self.dateFormat)
             self.payType = self.get_pay_types().index(lines.pop(0).replace('\n', ''))
+            if self.payType == "" or self.payType == None:
+                self.payType = "every 2 weeks"                                 # JJG 12/23/2023   added default if no payType given
             in_ref_date = lines.pop(0).replace('\n', '')
             ref_date = Date.parse_date(self, in_ref_date, self.dateFormat)
             self.setRefDate(ref_date)
@@ -305,9 +305,19 @@ class AssetFrame(wx.Frame):
             payDepositAcct = lines.pop(0).replace('\n', '')
             self.payDepositAcct = payDepositAcct
             file.close()
-            return True
+
+# Note: Not sure if any of this is needed after refactor 6/28/2025   JJG
+#            curr_date = Date(parent)
+#            self.curr_date = curr_date.curr_date["str"]
+#            self.proj_date = self.curr_date
+#            self.dateFormat = Date.get_global_date_format(Date)
+#            oldDateFormat = ""                                       # JJG 1/1/2024 Force date format to be set the first time
+#            Date.set_global_curr_date(self, self.curr_date)
+#            Date.set_global_proj_date(self, self.proj_date)
+#            if self.payType == "" or self.payType == None:
+#                self.payType = "every 2 weeks"                                 # JJG 12/23/2023   added default if no payType given
         except:
-            return False
+            self.properties()
 
     def writeConfigFile(self):
         if self.cfgFile == "":

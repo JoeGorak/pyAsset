@@ -320,8 +320,10 @@ class BillFrame(wx.Frame):
             d = wx.MessageDialog(self, 'Save file before closing', 'Question',
                                  wx.YES_NO)
             if d.ShowModal() == wx.ID_YES: self.save_file()
-        self.get_bill_grid().close()
-        del self.bill_grid
+        bill_grid = self.get_bill_grid()
+        if bill_grid != None:
+            bill_grid.close()
+            del bill_grid
         del self.panel
         bill_frame = self.parent.getBillFrame()
         if bill_frame != None:
