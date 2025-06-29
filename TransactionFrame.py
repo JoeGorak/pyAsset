@@ -518,7 +518,7 @@ class TransactionFrame(wx.Frame):
 
     def archive(self, *args):
         d = wx.TextEntryDialog(self,
-                               "Archive transactions before what date (mm/dd/yy)?",
+                               "Archive transactions before what date?",
                                "Archive Date")
         if d.ShowModal() == wx.ID_OK:
             date = Date(d.GetValue())

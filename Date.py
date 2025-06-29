@@ -33,7 +33,7 @@ from wx.core import DateTime
 from datetime import datetime
 
 class Date:
-    global_date_format = "mm/dd/YYYY"
+    global_date_format = "%m/%d/%Y"
     global_date_sep = "/"
     global_curr_date = wx.DateTime.Today()
     global_proj_date = wx.DateTime.Today()
