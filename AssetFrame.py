@@ -243,15 +243,16 @@ class AssetFrame(wx.Frame):
         return paydates
 
     def get_bills_due_in_range(self, start_date, end_date):
-        bills_due = None
+    #TODO : JJG 6/28/2025 Need to add code to iterate if due_date for a bill foes more than a month, quarter or year
+        bills_due = []
         if self.bills != None:
+            bills = copy.deepcopy(self.bills.bills)
             dateFormat = self.get_date_format()
             start_date = Date.parse_date(self, start_date, dateFormat)["dt"]
             end_date = Date.parse_date(self, end_date, dateFormat)["dt"]
-            bills_due = []
             if end_date < start_date:
                 start_date, end_date = end_date, start_date
-            for bill in self.bills.bills:
+            for bill in bills:
                 due_date = bill.get_due_date()
                 if due_date != None:
                     due_date_parsed = Date.parse_date(self, due_date, dateFormat)
@@ -259,10 +260,8 @@ class AssetFrame(wx.Frame):
                         due_dt = wx.DateTime.FromDMY(due_date_parsed['day'], due_date_parsed['month'] - 1, due_date_parsed['year'])
                         if start_date <= due_dt <= end_date:
                             bills_due.append(bill)
-        if  bills_due == None:
-            bills_due = []
-        else:
-            bills_due = BillList(bills_due).sort_by_fields()
+            if bills_due != []:
+                bills_due = BillList(bills_due).sort_by_fields([['Due Date', '>'], ['Frequency', '>']])
         return bills_due
 
     def updatePayDates(self):
@@ -376,9 +375,10 @@ class AssetFrame(wx.Frame):
         self.fileMenuItem["ImportXLSX"] = self.filemenu.Append(ID_IMPORT_XLSX, "Import XLSX file\tCtrl-i",
                              "Import assets and transactions from an EXCEL file",
                              wx.ITEM_NORMAL)
-        self.fileMenuItem["Update"] = self.filemenu.Append(ID_UPDATE_FROM_NET, "Update assets from Net\tCtrl-u",
-                             "Update assets using pre-defined iMacros",
-                            wx.ITEM_NORMAL)
+# JJG 6/28/2025 Need to determine new way to update asset from net since no more iMacros support
+#        self.fileMenuItem["Update"] = self.filemenu.Append(ID_UPDATE_FROM_NET, "Update assets from Net\tCtrl-u",
+#                             "Update assets using pre-defined iMacros",
+#                            wx.ITEM_NORMAL)
         self.filemenu.AppendSeparator()
         self.fileMenuItem["Properties"] = self.filemenu.Append(ID_PROPERTIES, "Properties\tCtrl-p",
                              "Display and/or edit Number and Data/Time display properties, pay frequencies and direct deposit account",
@@ -395,7 +395,7 @@ class AssetFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.archive, None, ID_ARCHIVE)
         self.Bind(wx.EVT_MENU, self.import_CSV_file, None, ID_IMPORT_CSV)
         self.Bind(wx.EVT_MENU, self.import_XLSX_file, None, ID_IMPORT_XLSX)
-        self.Bind(wx.EVT_MENU, self.update_from_net, None, ID_UPDATE_FROM_NET)
+#        self.Bind(wx.EVT_MENU, self.update_from_net, None, ID_UPDATE_FROM_NET)
         self.Bind(wx.EVT_MENU, self.properties, None, ID_PROPERTIES)
         self.Bind(wx.EVT_MENU, self.quit, None, wx.ID_EXIT)
 

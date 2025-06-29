@@ -22,7 +22,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
 from logging import raiseExceptions
-#from msvcrt import kbhit
 from Bill import Bill
 from Date import Date
 

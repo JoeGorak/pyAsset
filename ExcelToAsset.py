@@ -31,7 +31,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # TO-DOs
 #
 
-
 from openpyxl.reader.excel import load_workbook
 
 from AssetList import AssetList
@@ -306,7 +305,7 @@ class ExcelToAsset(wx.Frame):
                                 new_bill.set_pmt_frequency(cv)
             if Finished:
                 break
-            if new_bill.get_type() != "??":
+            if new_bill.get_type() != "":
                 BillsFound.insert(new_bill)
 
         # At this point bills are inserted as they were found in the Bill sheet.
