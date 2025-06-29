@@ -1040,16 +1040,6 @@ class AssetFrame(wx.Frame):
         self.setRefDate(wx.DateTime.FromDMY(ref_date_dt.day, ref_date_dt.month, ref_date_dt.year).Format(oldDateFormat))
         frame = PropertyFrameWithForm(self, oldDateFormat, self.payType, self.ref_date, self.netpay, self.payDepositAcct)
         frame.ShowModal()
-        if self.update:
-            if self.cfgFile != "":
-                self.writeConfigFile()
-            self.pay_dates = self.get_paydates_in_range(self.curr_date, self.proj_date)
-            print("Pay dates in range %s-%s: %s" % (Date.get_display_date(Date,self.curr_date), Date.get_display_date(Date,self.proj_date), self.pay_dates))
-            newDateFormat = Date.get_global_date_format(Date)
-            if newDateFormat != oldDateFormat:
-                self.update_all_Date_Formats(oldDateFormat, newDateFormat)
-                #TO DO: Add logic to update Salary transactions and Bill transactions for pay_dates
-                Date.set_global_date_format(Date, newDateFormat)
 
     def setDateFormat(self, new_DateFormat):
         self.dateFormat = new_DateFormat
