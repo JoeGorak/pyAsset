@@ -62,7 +62,7 @@ class TransactionList:
     def index(self, payee):
         ret_index = -1
         for i in range(len(self.transactions)):
-            if (self.transactions[i].get_name() == name):
+            if (self.transactions[i].get_name() == payee):
                 ret_index = i
                 break
         return ret_index
