@@ -246,7 +246,7 @@ class AssetFrame(wx.Frame):
     #TODO : JJG 6/28/2025 Need to add code to iterate if due_date for a bill foes more than a month, quarter or year
         bills_due = []
         if self.bills != None:
-            bills = copy.deepcopy(self.bills.bills)
+            bills = copy.deepcopy(self.bills)
             dateFormat = self.get_date_format()
             start_date = Date.parse_date(self, start_date, dateFormat)["dt"]
             end_date = Date.parse_date(self, end_date, dateFormat)["dt"]

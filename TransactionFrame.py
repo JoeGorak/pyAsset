@@ -231,6 +231,8 @@ class TransactionFrame(wx.Frame):
         proj_value = self.transactions.update_current_and_projected_values(start_range)
         self.transactions.parent.set_value_proj(proj_value)
 
+        self.transactions.sort()
+
         # Display the transactions
         for row in range(start_range, end_range):
             for col in range(self.trans_grid.getNumLayoutCols()):

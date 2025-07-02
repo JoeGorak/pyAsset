@@ -89,7 +89,7 @@ class BillList(list):
     def sort_by_fields(self, fields = None):                                   # A true multi-field sort!    JJG 1/25/25
         if fields == None:
             fields = self.getSortOrder()
-        valid_fields = Bill.get_bill_fields()                           # ['due date', 'pmt frequency']
+        valid_fields = Bill.get_bill_fields()
         for i in range(len(fields)):
             field = fields[i][0]
             if field not in valid_fields:
@@ -97,46 +97,56 @@ class BillList(list):
                 return []
         bills = BillList(self.bills)
         payment_frequencies = Bill.get_payment_frequencies()
-        j = len(bills) - 1
-        while j >= 0:
-            i = 0
+        i = 0
+        if fields[i][1] == '>':
+            j = len(bills)-1
+        else:
+            j = 0
+        while (j >= 0 and fields[i][1] == '>') or (j < len(bills) and fields[i][1] == '<'):
+            l = j                                       # remember where we left off in the main sort criteia loop
             while i < len(fields):
                 field = fields[i][0]
                 order = fields[i][1]
-                max_index = j
-                current_max = None
+                stat_index = j
+                current = None
                 if field == "Frequency":
-                    current_max = payment_frequencies.index(bills[j].get_pmt_frequency())
+                    stat = payment_frequencies.index(bills[j].get_pmt_frequency())
                 elif field == "Due Date":
-                    current_max = Date.parse_date(self, bills[j].get_due_date(), Date.get_global_date_format(self))
-                    if current_max != None:
-                        current_max = current_max['dt']
+                    current = Date.parse_date(self, bills[j].get_due_date(), Date.get_global_date_format(self))
+                    if current != None:
+                        stat = current['dt']
                     else:
-                        current_max = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank due_dates to top of bill list!
+                        stat = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank due_dates to top of bill list!
                 elif field == "Type":
-                    current_max = bills[j].get_type()
-                test_max = current_max
-                for k in range(j - 1, -1, -1):
+                    stat = bills[j].get_type()
+                test_stat = stat
+                for k in range(j-1, -1, -1):
                     if field == "Frequency":
-                        test_max = payment_frequencies.index(bills[k].get_pmt_frequency())
+                        test_stat = payment_frequencies.index(bills[k].get_pmt_frequency())
                     elif field == "Due Date":
-                        test_max = Date.parse_date(self, bills[k].get_due_date(), Date.get_global_date_format(self))
-                        if test_max != None:
-                            test_max = test_max['dt']
+                        test = Date.parse_date(self, bills[k].get_due_date(), Date.get_global_date_format(self))
+                        if test != None:
+                            test_stat = test['dt']
                         else:
-                            test_max = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']        # Force blanks to the top
+                            test_stat = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']        # Force blanks to the top
                     elif field == 'Type':
-                        test_max = bills[k].get_type()
-                    if (test_max > current_max and order == '>') or (test_max < current_max and order == '<'):
-                        current_max = test_max
-                        max_index = k
-                if test_max == current_max:                     # Check the next field if this field is equal!
+                        test_stat = bills[k].get_type()
+                    if (test_stat > stat and order == '>') or (test_stat < stat and order == '<'):
+                        stat = test_stat
+                        stat_index = k
+                if test_stat == stat:                           # Check the next field if this field is equal!
+                    l = j                                       # Remember where we left off for later!
                     i += 1
                 else:                                           # force while loop checking fields to terminate cause we found the spot!
                     i = len(fields)
-            bills[j], bills[max_index] = bills[max_index], bills[j]
-            j -= 1
-        return bills
+            bills[j], bills[stat_index] = bills[stat_index], bills[j]
+            j = l                                               # Pick up the main loop!
+            i = 0
+            if fields[i][1] == '>':
+                j -= 1
+            else:
+                j += 1
+        return bills.bills
      
     def insert(self, new_bill):
         if new_bill == None:
