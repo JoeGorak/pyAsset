@@ -31,9 +31,11 @@ from Date import Date
 # Transaction States
 UNKNOWN = 0
 OUTSTANDING = 1
-CLEARED = 2
-VOID = 3
-RECONCILED = 4
+SCHEDULED = 2
+BUDGETED = 3
+CLEARED = 4
+VOID = 5
+RECONCILED = 6
 
 def string_limit(mystr, limit):
     if mystr and len(mystr) > limit:
@@ -41,22 +43,25 @@ def string_limit(mystr, limit):
     return mystr
 
 class Transaction:
-    def __init__(self, parent):
+    def __init__(self, parent, payee=None, action=None, sched_date=None, due_date=None, pmt_method=None, amount=None, state='unknown' ):
         self.parent = parent
-        self.assetFrame = self.parent.parent
+        if self.parent != None:
+            self.assetFrame = self.parent.parent
+        else:
+            self.assetFrame = None
         self.dateFormat = Date.get_global_date_format(self)
         self.dateSep = Date.get_global_date_sep(self)
-        self.pmt_method = None
+        self.set_pmt_method(pmt_method)
         self.check_num = None
-        self.payee = None
-        self.amount = None
-        self.action = None
+        self.set_payee(payee)
+        self.set_amount(amount)
+        self.set_action(action)
         self.current_value = None
         self.projected_value = None
-        self.sched_date = None
-        self.due_date = None
-        self.state = OUTSTANDING
-        self.prev_state = UNKNOWN
+        self.set_sched_date(sched_date)
+        self.set_due_date(due_date)
+        self.set_state(state)
+        self.prev_state = 'unknown'
         self.comment = None
         self.memo = None
 
@@ -77,6 +82,10 @@ class Transaction:
                 lines.append("Curr Value: %4.2f " % self.current_value)
         if self.state == UNKNOWN:
             lines.append("State: Unknown ")
+        elif self.state == SCHEDULED:
+            lines.append("State: Scheduled")
+        elif self.state == BUDGETED:
+            lines.append("State: Budgeted")
         elif self.state == OUTSTANDING:
             lines.append("State: Outstanding ")
         elif self.state == CLEARED:
@@ -276,19 +285,23 @@ class Transaction:
         return
 
     def set_state(self, rest):
-        if type(rest) == "str":
+        if type(rest) is str:
             rest = str(rest).upper()
             if rest == "UNKNOWN":
                 self.state = UNKNOWN
             elif rest == "OUTSTANDING":
                 self.state = OUTSTANDING
+            elif rest == "SCHEDULED":
+                self.state = SCHEDULED
+            elif rest == "BUDGETED":
+                self.state = BUDGETED
             elif rest == "CLEARED":
                 self.state = CLEARED
             elif rest == "VOID":
                 self.state = VOID
             elif rest == "RECONCILED":
                 self.state = RECONCILED
-        elif type(rest) == "int":
+        elif type(rest) is int:
             self.state = rest
         else:
             self.state = UNKNOWN
@@ -300,6 +313,10 @@ class Transaction:
             self.prev_state = UNKNOWN
         elif rest == "OUTSTANDING":
             self.prev_state = OUTSTANDING
+        elif rest == "SCHEDULED":
+            self.prev_state = SCHEDULED
+        elif rest == "BUDGETED":
+            self.prev_state = BUDGETED
         elif rest == "CLEARED":
             self.prev_state = CLEARED
         elif rest == "VOID":
@@ -353,6 +370,10 @@ class Transaction:
             return_value = "unknown"
         elif self.state == OUTSTANDING:
             return_value = "outstanding"
+        elif self.state == SCHEDULED:
+            return_value = "scheduled"
+        elif self.state == BUDGETED:
+            return_value == "budgeted"
         elif self.state == CLEARED:
             return_value = "cleared"
         elif self.state == VOID:
@@ -367,6 +388,10 @@ class Transaction:
             return_value = "unknown"
         elif self.prev_state == OUTSTANDING:
             return_value = "outstanding"
+        elif self.prev_state == SCHEDULED:
+            return_value = "scheduled"
+        elif self.prev_state == BUDGETED:
+            return_value = "budgeted"
         elif self.prev_state == CLEARED:
             return_value = "cleared"
         elif self.prev_state == VOID:
@@ -377,3 +402,4 @@ class Transaction:
 
     def assetchange(self, which_column, new_value):
         print("Transaction: ", self.get_payee(), "Recieved notification that column", which_column, "changed", ", new_value", new_value)
+        

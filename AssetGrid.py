@@ -39,7 +39,7 @@ class AssetGrid(grd.Grid):
         self.dateSep = Date.get_global_date_sep(self)
         self.columnNames = ["Account", "Value (Curr)", "Value (Proj)", "last pulled",
                             "Limit", "Avail (Online)", "Avail (Proj)", "Rate",
-                            "Payment", "Due Date", "Sched", "Min Pmt", "Stmt Bal",
+                            "Payment", "Due Date", "Sched Date", "Min Pmt", "Stmt Bal",
                             "Amt Over", "Cash Limit", "Cash used", "Cash avail"]
         self.grid = grd.Grid.__init__(self, frame, **keywrds)
         self.minNumRows = frame.BestSize.Height
@@ -82,7 +82,7 @@ class AssetGrid(grd.Grid):
         self.ACCT_RATE_COL = Headers.index("Rate")
         self.ACCT_PAYMENT_COL = Headers.index("Payment")
         self.ACCT_DUE_DATE_COL = Headers.index("Due Date")
-        self.ACCT_SCHED_DATE_COL = Headers.index("Sched")
+        self.ACCT_SCHED_DATE_COL = Headers.index("Sched Date")
         self.ACCT_MIN_PMT_COL = Headers.index("Min Pmt")
         self.ACCT_STMT_BAL_COL = Headers.index("Stmt Bal")
         self.ACCT_AMT_OVER_COL = Headers.index("Amt Over")

@@ -111,8 +111,11 @@ class BillList(list):
                 current = None
                 if field == "Frequency":
                     stat = payment_frequencies.index(bills[j].get_pmt_frequency())
-                elif field == "Due Date":
-                    current = Date.parse_date(self, bills[j].get_due_date(), Date.get_global_date_format(self))
+                elif field == "Due Date" or field == "Sched Date":
+                    if field == "Due Date":
+                        current = Date.parse_date(self, bills[j].get_due_date(), Date.get_global_date_format(self))
+                    else:
+                        current = Date.parse_date(self, bills[j].get_sched_date(), Date.get_global_date_format(self))
                     if current != None:
                         stat = current['dt']
                     else:
@@ -123,8 +126,11 @@ class BillList(list):
                 for k in range(j-1, -1, -1):
                     if field == "Frequency":
                         test_stat = payment_frequencies.index(bills[k].get_pmt_frequency())
-                    elif field == "Due Date":
-                        test = Date.parse_date(self, bills[k].get_due_date(), Date.get_global_date_format(self))
+                    elif field == "Due Date" or field == "Sched Date":
+                        if field == "Due Date":
+                           test = Date.parse_date(self, bills[k].get_due_date(), Date.get_global_date_format(self))
+                        else:
+                           test = Date.parse_date(self, bills[k].get_sched_date(), Date.get_global_date_format(self))
                         if test != None:
                             test_stat = test['dt']
                         else:

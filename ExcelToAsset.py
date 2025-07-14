@@ -37,7 +37,7 @@ from AssetList import AssetList
 from TransactionList import TransactionList
 from Transaction import Transaction
 from BillList import BillList
-from Bill import Bill
+from Bill import CHECKINGANDSAVINGS, Bill
 import wx
 
 class ExcelToAsset(wx.Frame):
@@ -245,6 +245,13 @@ class ExcelToAsset(wx.Frame):
                         else:
                            print("ProcessTransactionSheet: Unknown field " + headingUpper + " on sheet " + SheetName + " ignored!")
                     new_transaction.parent = self.parent                # make sure transaction gets attached to asset and not EXCEL object!  JJG 1/15/2023
+                    # JJG 7/15/2025 Determine transaction state since it is not part of spreadsheet
+                    if new_transaction.get_sched_date() != None and new_transaction.get_pmt_method() != "TBD":
+                        new_transaction.set_state("scheduled")
+                    if new_transaction.get_pmt_method() == "processing":
+                        new_transaction.set_state("outstanding")
+                    if new_transaction.get_pmt_method() == "TBD" and new_transaction.get_state() == "unknown" and new_transaction.get_amount() != 0.0:
+                        new_transaction.set_comment("Need to schedule this ASAP!")
                     TransactionsFound.insert(new_transaction)
         return TransactionsFound
 
@@ -305,7 +312,35 @@ class ExcelToAsset(wx.Frame):
                                 new_bill.set_pmt_frequency(cv)
             if Finished:
                 break
-            if new_bill.get_type() != "":
+            if new_bill.get_type() != 'Unknown':
+                # JJG 7/13/2025 Handle transfers and deposits between accounts correctly. HACK!! TODO: Clean up design later
+                if new_bill.get_amount() != 0.0: 
+                    btype = new_bill.get_type()
+                    action = new_bill.get_action()
+                    if btype == 'Checking and saving':
+                        if action == '-':
+                            new_bill.set_payee("xfer to " + new_bill.get_payee())
+                        elif action == '+':
+                            new_bill.set_payee("Deposit from " + new_bill.get_pmt_acct())
+                        else:
+                            print("Should not occur for checking and savings! new_bill: " + new_bill.get_payee() + " type: " + btype + " action: " + action)
+                    elif btype == 'Credit Card':
+                        if action == '-':
+                            new_bill.set_payee("Paydown " + new_bill.get_payee() + " from " + new_bill.get_pmt_acct())
+                        elif action == '+':
+                            print("Will handle + for credit card here")
+                        else:  
+                            print("Should not occur for credit cards! new_bill: " + new_bill.get_payee() + " type: " + btype + " action: " + action)
+                    elif btype == 'Expense':
+                        if action == '-':
+                            new_bill.set_payee("Pay " + new_bill.get_payee() + " from " + new_bill.get_pmt_acct())
+                        elif action == '+':
+                            print("Will handle + for expense here")
+                        else:  
+                            print("Should not occur for credit cards! new_bill: " + new_bill.get_payee() + " type: " + btype + " action: " + action)
+                    else:
+                        print("Unhandled btype: " + btype + " for new_bill: " + new_bill.get_payee())
+
                 BillsFound.insert(new_bill)
 
         # At this point bills are inserted as they were found in the Bill sheet.

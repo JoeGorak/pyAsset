@@ -56,6 +56,15 @@ class Bill:
     payment_methods = [ "Direct deposit", "sched online", "sched Hickam", "Check", "AutoPay", "Cash", "TBD", "Manual", "Other" ]
     payment_frequencies = [ "Bi-weekly", "monthly", "quarterly", "semi-yearly", "yearly", "manual" ]
 
+    inc_values = ["2 weeks", "1 month", "3 months", "6 monthe", "1 year", ""]
+
+    def get_bill_inc_value(payment_freq):
+        which = Bill.payment_frequencies.index(payment_freq)
+        if which == -1:
+            return NONE
+        else:
+            return Bill.inc_values[which]
+
     def get_bill_types():
         return Bill.bill_types
 
@@ -65,19 +74,19 @@ class Bill:
     def get_payment_frequencies():
         return Bill.payment_frequencies
 
-    def __init__(self, payee = None, type = "Unknown", amount = 0.0, min_due = 0.0, due_date = None, sched_date = None,
+    def __init__(self, payee = None, type = "Unknown", action="-", amount = 0.0, min_due = 0.0, due_date = None, sched_date = None,
                  pmt_acct = "Other", pmt_method = "TBD", check_number = 0, pmt_freq = "Manual" ):
-        self.payee = payee
-        self.type = self.set_type(type)
-        self.amount = amount
-        self.min_due = min_due
-        self.due_date = due_date
-        self.sched_date = sched_date
-        self.pmt_acct = self.set_pmt_acct(pmt_acct)
-        self.pmt_method = self.set_pmt_method(pmt_method)
-        self.pmt_frequency = self.set_pmt_frequency(pmt_freq)
-        self.check_number = check_number
-        return
+        self.set_payee(payee)
+        self.set_type(type)
+        self.set_action(action)
+        self.set_amount(amount)
+        self.set_min_due(min_due)
+        self.set_due_date(due_date)
+        self.set_sched_date(sched_date)
+        self.set_pmt_acct(pmt_acct)
+        self.set_pmt_method(pmt_method)
+        self.set_pmt_frequency(pmt_freq)
+        self.set_check_number(check_number)
 
     bill_fields = [ "Payee", "Type", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Frequency", "Check Number" ]
 
@@ -128,6 +137,12 @@ class Bill:
 
     def set_check_number(self, check_number):
         self.check_number = check_number
+
+    def set_action(self, action):
+        self.action = action
+
+    def get_action(self):
+        return self.action
 
     def get_payee(self):
         return self.payee

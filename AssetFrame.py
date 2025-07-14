@@ -48,6 +48,7 @@ from Asset import Asset
 from AssetList import AssetList
 from BillFrame import BillFrame
 from BillList import BillList
+from Bill import Bill
 from AssetGrid import AssetGrid
 from PropertiesForm import PropertyFrameWithForm
 from Date import Date
@@ -208,7 +209,7 @@ class AssetFrame(wx.Frame):
     def get_next_paydate(self):
         return self.global_next_paydate
 
-    def get_paydates_in_range(self, start_date, end_date):
+    def process_paydates_in_range(self, start_date, end_date):
         paydates = None
         dateFormat = self.get_date_format()
         if self.ref_date != None:
@@ -240,29 +241,47 @@ class AssetFrame(wx.Frame):
                         pay_date = test_paydate.Format(dateFormat)
                         paydates.append(pay_date)
                         test_paydate.Add(incr)
+                    if self.getPayDepositAcct() != "":
+                        payDepositAccount = self.assets.get_asset_by_name(self.getPayDepositAcct())
+                        payDepositAccountTransations = payDepositAccount.get_transactions()
+                        for paydate in paydates:
+#                            print("Checking if a salary transaction for " + paydate + " exists in account " + payDepositAccount.get_name())
+                            if not payDepositAccount.transaction_exists("Salary", paydate):
+#                                print("We will insert a new salary transaction for " + paydate + " in accout " + payDepositAccount.get_name() + " here!")
+                                new_transaction = Transaction(self.parent, payee="Salary", action="+", due_date=paydate, sched_date=paydate, pmt_method="Direct Deposit", amount=self.getNetPay(), state="outstanding")
+                                payDepositAccount.transactions.insert(new_transaction)
+
         return paydates
 
-    def get_bills_due_in_range(self, start_date, end_date):
-    #TODO : JJG 6/28/2025 Need to add code to iterate if due_date for a bill foes more than a month, quarter or year
-        bills_due = []
+    def process_bills_sched_in_range(self, start_date, end_date):
+    #TODO : JJG 6/28/2025 Need to add code to iterate if sched_date for a bill that goes more than a month, quarter or year
+        bills_sched = []
         if self.bills != None:
-            bills = copy.deepcopy(self.bills)
+            bills = self.bills
             dateFormat = self.get_date_format()
             start_date = Date.parse_date(self, start_date, dateFormat)["dt"]
             end_date = Date.parse_date(self, end_date, dateFormat)["dt"]
             if end_date < start_date:
                 start_date, end_date = end_date, start_date
             for bill in bills:
-                due_date = bill.get_due_date()
-                if due_date != None:
-                    due_date_parsed = Date.parse_date(self, due_date, dateFormat)
-                    if due_date_parsed != None:
-                        due_dt = wx.DateTime.FromDMY(due_date_parsed['day'], due_date_parsed['month'] - 1, due_date_parsed['year'])
-                        if start_date <= due_dt <= end_date:
-                            bills_due.append(bill)
-            if bills_due != []:
-                bills_due = BillList(bills_due).sort_by_fields([['Due Date', '>'], ['Frequency', '>']])
-        return bills_due
+                sched_date = bill.get_sched_date()
+                if sched_date != None:
+                    sched_date_parsed = Date.parse_date(self, sched_date, dateFormat)
+                    if sched_date_parsed != None:
+                        sched_dt = wx.DateTime.FromDMY(sched_date_parsed['day'], sched_date_parsed['month'] - 1, sched_date_parsed['year'])
+                        if start_date <= sched_dt <= end_date:
+                            bills_sched.append(bill)
+                            inc_value = Bill.get_bill_inc_value(bill.get_pmt_frequency())
+
+            if bills_sched != []:
+                bills_sched = BillList(bills_sched).sort_by_fields([['Sched Date', '>'], ['Frequency', '>']])
+                for bill in bills_sched:
+#                    print("Processing bill: %s, Sched date: %s, Frequency: %s" % (bill.get_payee(), bill.get_sched_date(), bill.get_pmt_frequency()))
+                    pmt_acct = self.assets.get_asset_by_name(bill.get_pmt_acct())
+                    if not pmt_acct.transaction_exists(bill.get_payee(), bill.get_due_date()):
+                        new_transaction = Transaction(self.parent, payee=bill.get_payee(), action=bill.get_action(), due_date=bill.get_due_date(), sched_date=bill.get_sched_date(), pmt_method=bill.get_pmt_method(), amount=bill.get_amount(), state="outstanding")
+                        pmt_acct.transactions.insert(new_transaction)
+        return bills_sched
 
     def updatePayDates(self):
         self.set_curr_paydate()
@@ -501,10 +520,10 @@ class AssetFrame(wx.Frame):
             print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
                   (self.proj_date.Format(date_format), self.proj_month, self.proj_day, self.proj_year))
             Date.set_proj_date(self, in_date)
-            paydates = self.get_paydates_in_range(Date.get_global_curr_date(self), parsed_proj_date)
-            print("Pay dates in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, paydates))
-            billsdue = self.get_bills_due_in_range(Date.get_global_curr_date(self), parsed_proj_date)
-            print("Bills due in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, billsdue))
+            paydates = self.process_paydates_in_range(Date.get_global_curr_date(self), parsed_proj_date)
+#            print("Pay dates in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, paydates))
+            billsdue = self.process_bills_sched_in_range(Date.get_global_curr_date(self), parsed_proj_date)
+#            print("Bills sched in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, BillList(billsdue)))
             self.assets.update_proj_values(in_date)
             self.redraw_all()
         else:

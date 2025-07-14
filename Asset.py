@@ -205,6 +205,12 @@ class Asset(object):
         lines.append("^\n")
         return '\n'.join(lines)
 
+    def get_transactions(self):
+        return self.transactions.transactions
+
+    def transaction_exists(self,payee,date):
+        return self.transactions.index(payee, date) != -1
+
     def get_name(self):
         return self.name
 

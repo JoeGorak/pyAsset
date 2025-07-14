@@ -39,7 +39,6 @@
     <Compile Include="Date.py" />
     <Compile Include="ExcelToAsset.py" />
     <Compile Include="HelpDialog.py" />
-    <Compile Include="iMacrosToAsset.py" />
     <Compile Include="minidatepicker.py" />
     <Compile Include="PropertiesForm.py" />
     <Compile Include="pyAsset.py">

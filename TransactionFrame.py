@@ -227,6 +227,11 @@ class TransactionFrame(wx.Frame):
             start_range = index
             end_range = start_range + 1
 
+        # JJG 7/12/2025 Make sure current window is big enough and increase size if not!
+        trans_grid = self.get_trans_grid()
+        if trans_grid.GetNumberRows() < ntransactions:
+            trans_grid.InsertRows(pos=ntransactions-1, numRows=ntransactions-trans_grid.GetNumberRows()+6)
+
         # Make sure current balances are corrent from the starting range for the rest of the transactions!
         proj_value = self.transactions.update_current_and_projected_values(start_range)
         self.transactions.parent.set_value_proj(proj_value)
@@ -377,6 +382,7 @@ class TransactionFrame(wx.Frame):
         trans_frame = self.parent.getTransactionFrame(self.asset_index, False)
         if trans_frame != None:
             self.parent.removeTransactionFrame(self.asset_index)
+        return
 
     def quit(self, event):
         self.close(event)
@@ -747,7 +753,7 @@ class TransactionFrame(wx.Frame):
             modified = False
 
         if modified == True:
-            transaction_changed.assetchange(which_column, new_value)
+            transaction_changed.assetchange(colName, new_value)
             del self.transactions[which_transaction]
             self.transactions.insert(transaction_changed)
             self.edited = True

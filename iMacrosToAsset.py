@@ -23,6 +23,8 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+# 7/12/25 JJG As iMacros is no longer supported, this code is being removed from the base PyAsset code and will not be included in the PyAsset 1.0 release.
+
 # TO-DOs
 #
 #TODO: Clean up some debugs and add Dialog boxes for production

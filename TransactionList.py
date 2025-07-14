@@ -59,12 +59,20 @@ class TransactionList:
     def __delitem__(self, i):
         del self.transactions[i]
 
-    def index(self, payee):
+    def index(self, payee, date):
+        # Assume the desired transaction is not there
         ret_index = -1
+        date = Date.parse_date(Date, date, Date.get_global_date_format(Date))
+        # Loop over all the transactions
         for i in range(len(self.transactions)):
-            if (self.transactions[i].get_name() == payee):
-                ret_index = i
-                break
+            # if the payee of the current transction matches
+            if self.transactions[i].get_payee() == payee:
+                due_date = self.transactions[i].get_due_date()
+                # Check to make sure the due date also matched
+                if due_date != None and self.transactions[i].get_due_date()['str'] == date['str']:
+                    # We found it! Set the index and get out of the loop!
+                    ret_index = i
+                    break
         return ret_index
 
     def append(self, transaction):
@@ -124,9 +132,10 @@ class TransactionList:
                     trans_action = self.transactions[trans_number].get_action()
                     if trans_action:
 
-#                       Check to make sure transaction hasn't been voided before updaing current value   JJG 07/17/2021
+#                       Check to make sure transaction hasn't been voided before updating current value     JJG 07/17/2021
+#                       Also make sure transaction is not in outstanding state before updaing current value JJG 07/13/2025
 
-                        if trans_state != "void":
+                        if trans_state != "void" and trans_state != 'outstanding':
                             trans_amount = self.transactions[trans_number].get_amount()
                             if trans_amount == None:
                                 trans_amount = 0.00
