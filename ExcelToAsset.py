@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 from openpyxl.reader.excel import load_workbook
 
+from Asset import Asset
 from AssetList import AssetList
 from TransactionList import TransactionList
 from Transaction import Transaction
@@ -88,26 +89,30 @@ class ExcelToAsset(wx.Frame):
                         # First column means this is a new asset... save name and pointer to the new asset location for later
                         # Also set type of asset using clues from the account name
                         new_asset = AssetsFound.get_asset_by_name(cv)
+                        if new_asset == None:
+                            new_asset = Asset(name = cv)
+                            AssetsFound.append_by_object(new_asset)
                         asset_name = new_asset.get_name()
-                        if "HOUSE" in asset_name.upper():
+                        asset_name_upper = asset_name.upper()
+                        if "HOUSE" in asset_name_upper:
                             new_asset.set_type("House")
-                        elif "CAR" in asset_name.upper():
+                        elif "CAR" in asset_name_upper:
                             new_asset.set_type("Car")
-                        elif "Checking" in asset_name:
+                        elif "CHECKING" in asset_name_upper:
                             new_asset.set_type("Checking")
-                        elif "Savings" in asset_name:
+                        elif "SAVINGS" in asset_name_upper:
                             new_asset.set_type("Savings")
-                        elif "Money Market" in asset_name:
+                        elif "MONEY MARKET" in asset_name_upper:
                             new_asset.set_type("Money Market")
-                        elif "Overdraft" in asset_name:
+                        elif "OVERDRAFT" in asset_name_upper:
                             new_asset.set_type("Overdraft")
-                        elif "TSP" in asset_name or "Annuity" in asset_name or "Life" in asset_name:
+                        elif "TSP" in asset_name_upper or "ANNUITY" in asset_name_upper or "LIFE" in asset_name_upper or "ROTH" in asset_name_upper or "IRA" in asset_name_upper:
                             new_asset.set_type("Retirement")
-                        elif "Discover" in asset_name or "Visa" in asset_name or "MC" in asset_name or "Master Card" in asset_name or "Blue" in asset_name or "Credit Card" in asset_name:
+                        elif "DISCOVER" in asset_name_upper or "VISA" in asset_name_upper or "MC" in asset_name_upper or "MASTER CARD" in asset_name_upper or "BLUE" in asset_name_upper or "CREDIT CARD" in asset_name_upper:
                             new_asset.set_type("Credit Card")
-                        elif "Sears" in asset_name or "Macy's" in asset_name:
+                        elif "SEARS" in asset_name_upper or "MACY'S" in asset_name_upper:
                             new_asset.set_type("Store Card")
-                        elif "Loan" in asset_name:
+                        elif "LOAN" in asset_name_upper or "MORTGAGE" in asset_name_upper:
                             new_asset.set_type("Loan")
                         else:
                             new_asset.set_type("Other")
@@ -278,7 +283,10 @@ class ExcelToAsset(wx.Frame):
                 if col_num > MAX_COLS_TO_PROCESS:
                     break
                 if cv == None: continue
-                if col_num == 1 and ("Checking and Savings" in cv or "Credit Card" in cv or "Loans" in cv or "Expenses" in cv):
+                if type(cv) is str:
+                    cvu = cv.upper()
+                # if this is a header line, simply record the fact and go process it accordingly!   JJG 7/25/2025
+                if col_num == 1 and ("CHECKING AND SAVINGS" in cvu or "CREDIT CARDS" in cvu or "LOANS" in cvu or "EXPENSE" in cv):
                     cur_type = cv
                     break
                 else:
@@ -313,37 +321,24 @@ class ExcelToAsset(wx.Frame):
             if Finished:
                 break
             if new_bill.get_type() != 'Unknown':
-                # JJG 7/13/2025 Handle transfers and deposits between accounts correctly. HACK!! TODO: Clean up design later
                 if new_bill.get_amount() != 0.0: 
                     btype = new_bill.get_type()
-                    action = new_bill.get_action()
-                    if btype == 'Checking and saving':
-                        if action == '-':
-                            new_bill.set_payee("xfer to " + new_bill.get_payee())
-                        elif action == '+':
-                            new_bill.set_payee("Deposit from " + new_bill.get_pmt_acct())
+                    btu = btype.upper()
+                    if "LOAN" in btu or "CREDIT CARD" in btu or "EXPENSE" in btu:
+                        payee = new_bill.get_payee()
+                        payee_upper = payee.upper()
+                        if "MORTGAGE" in payee_upper or "LOAN" in payee_upper or "OVERDRAFT" in payee_upper:
+                            new_bill.set_type("Loan")
                         else:
-                            print("Should not occur for checking and savings! new_bill: " + new_bill.get_payee() + " type: " + btype + " action: " + action)
-                    elif btype == 'Credit Card':
-                        if action == '-':
-                            new_bill.set_payee("Paydown " + new_bill.get_payee() + " from " + new_bill.get_pmt_acct())
-                        elif action == '+':
-                            print("Will handle + for credit card here")
-                        else:  
-                            print("Should not occur for credit cards! new_bill: " + new_bill.get_payee() + " type: " + btype + " action: " + action)
-                    elif btype == 'Expense':
-                        if action == '-':
-                            new_bill.set_payee("Pay " + new_bill.get_payee() + " from " + new_bill.get_pmt_acct())
-                        elif action == '+':
-                            print("Will handle + for expense here")
-                        else:  
-                            print("Should not occur for credit cards! new_bill: " + new_bill.get_payee() + " type: " + btype + " action: " + action)
+                            new_bill.set_type("Expense")
+                    elif "CHECKING" in btu or "sAVINGS" in btu:
+                        pass
                     else:
                         print("Unhandled btype: " + btype + " for new_bill: " + new_bill.get_payee())
 
                 BillsFound.insert(new_bill)
 
-        # At this point bills are inserted as they were found in the Bill sheet.
+        # At this point bills were inserted in the order they were found in the Bill sheet.
         # Now do a multi-level sort on the list of bills.  JJG 1/25/2025
         BillsFound = BillsFound.sort_by_fields(BillList.getSortOrder(self))
         return BillsFound

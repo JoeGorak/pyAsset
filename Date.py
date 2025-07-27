@@ -197,7 +197,10 @@ class Date:
 
     def get_display_date(self, in_date):
         if type(in_date) is not str:
-            in_date = in_date["str"]
+            if type(in_date) is DateTime:
+                pass
+            else:
+                in_date = in_date["str"]
         return Date.parse_date(Date,in_date,Date.get_global_date_format(Date))["str"]
 
     def parse_date(self, in_date, date_format):

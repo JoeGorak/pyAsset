@@ -27,7 +27,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 from Asset import Asset
 from Date import Date
-import copy
 
 class AssetList():
     def __init__(self, parent):
@@ -115,8 +114,9 @@ class AssetList():
     def get_asset_by_name(self, name):
         asset_index = self.index(name)
         if asset_index == -1:
-            new_asset = self.append_by_name(name)
-            return new_asset
+#            new_asset = self.append_by_name(name)
+#            return new_asset
+            return None
         else:
             return self.assets[asset_index]
 
@@ -125,8 +125,7 @@ class AssetList():
         sep = Date.get_global_date_sep(self)
         Date.set_global_proj_date(self, proj_date)
         for i in range(len(self.assets)):
-            cur_transactions = self.assets[i].transactions
-            new_proj_value = cur_transactions.update_current_and_projected_values()
+            new_proj_value = self.assets[i].transactions.update_current_and_projected_values()
             self.assets[i].set_value_proj(new_proj_value)
             limit = self.assets[i].get_limit()
             if limit != 0.0:

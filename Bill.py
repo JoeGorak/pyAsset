@@ -29,8 +29,9 @@ from datetime import date, datetime
 CHECKINGANDSAVINGS = 0
 CREDITCARD = 1
 LOAN = 2
-EXPENSE = 3
-UNKNOWN = 4
+OVERDRAFT = 3
+EXPENSE = 4
+UNKNOWN = 5
 
 # Payment Methods
 DIRECT_DEPOSIT = 1
@@ -46,13 +47,13 @@ OTHER = 9
 # Payment_Frequency
 BIWEEKLY = 0
 MONTHLY = 1
-QUARTERLY = 4
+QUARTERLY = 3
 SEMI_YEARLY = 6
 YEARLY = 12
 MANUAL = -1
 
 class Bill:
-    bill_types = [ "Checking and Savings", "Credit Cards", "Loans", "Expenses", "Unknown" ]
+    bill_types = [ "Checking and Savings", "Credit Card", "Loan", "Expense", "Unknown" ]
     payment_methods = [ "Direct deposit", "sched online", "sched Hickam", "Check", "AutoPay", "Cash", "TBD", "Manual", "Other" ]
     payment_frequencies = [ "Bi-weekly", "monthly", "quarterly", "semi-yearly", "yearly", "manual" ]
 
@@ -164,15 +165,15 @@ class Bill:
 
     def set_type(self,type):
         tu = type.upper()
-        if tu == "CHECKING AND SAVINGS ACCOUNTS":
+        if "CHECKING AND SAVINGS ACCOUNTS" in tu:
             self.type = CHECKINGANDSAVINGS
-        elif tu == "CREDIT CARDS":
+        elif "CREDIT CARD" in tu:
             self.type = CREDITCARD
-        elif tu == "LOANS":
+        elif "LOAN" in tu:
             self.type = LOAN
-        elif tu == "EXPENSES":
+        elif "EXPENSE" in tu:
             self.type = EXPENSE
-        elif tu == "UNKNOWN":
+        elif "UNKNOWN" in tu:
             self.type = UNKNOWN
         else:
             print("Unknown type", type, "ignored")

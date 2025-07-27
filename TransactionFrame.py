@@ -328,19 +328,23 @@ class TransactionFrame(wx.Frame):
         filename = self.filename
         for cur_transaction in self.transactions:
             if filename != None or filename != "":
-                self.save_as_file()
+                if not self.save_as_file():
+                    break
             else:
                 qif.write_qif(self, filename)
         self.edited = False
         return
 
     def save_as_file(self, *args):
+        ret_val = True
         d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
             qif.write_qif(self,os.path.join(dir, fname))
-        return
+        else:
+            ret_val = False
+        return ret_val
 
     def process_transaction_list(self, function, transactionList):
         ntransactions = len(transactionList.transactions)

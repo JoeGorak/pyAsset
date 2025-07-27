@@ -286,24 +286,25 @@ class Transaction:
 
     def set_state(self, rest):
         if type(rest) is str:
-            rest = str(rest).upper()
-            if rest == "UNKNOWN":
+            rest = rest.upper()
+            if "UNKNOWN" in rest:
                 self.state = UNKNOWN
-            elif rest == "OUTSTANDING":
+            elif "OUTSTANDING" in rest:
                 self.state = OUTSTANDING
-            elif rest == "SCHEDULED":
+            elif "SCHEDULED" in rest:
                 self.state = SCHEDULED
-            elif rest == "BUDGETED":
+            elif "BUDGETED" in rest:
                 self.state = BUDGETED
-            elif rest == "CLEARED":
+            elif "CLEARED" in rest:
                 self.state = CLEARED
-            elif rest == "VOID":
+            elif "VOID" in rest:
                 self.state = VOID
-            elif rest == "RECONCILED":
+            elif "RECONCILED" in rest:
                 self.state = RECONCILED
         elif type(rest) is int:
             self.state = rest
         else:
+            print("State: " + rest + " not known - setting to UNKNOWN")
             self.state = UNKNOWN
         return self.state
 
@@ -373,7 +374,7 @@ class Transaction:
         elif self.state == SCHEDULED:
             return_value = "scheduled"
         elif self.state == BUDGETED:
-            return_value == "budgeted"
+            return_value = "budgeted"
         elif self.state == CLEARED:
             return_value = "cleared"
         elif self.state == VOID:
