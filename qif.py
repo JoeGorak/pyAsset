@@ -72,6 +72,8 @@ class qif(object):
             if input_type == "!":
                 if rest == 'Account' or rest == 'Clear:AutoSwitch':
                     section = ACCOUNT
+                    cur_asset = None
+                    cur_transaction = None
                 elif rest == 'Option:AutoSwitch':
                     section = DETAIL
                     cur_transaction = Transaction(self)
@@ -84,20 +86,12 @@ class qif(object):
                         outSection = "unknown"
                     print("in", outSection, "section got unknown ! line: ", line[:-1])                   
             elif input_type == "^":
-                if section == DETAIL:
-#                    if len(Found_assets.assets) == 0:
-#                        asset_name_parts = self.filename.split('\\')
-#                        asset_name = asset_name_parts[-1].split('.')[0]
-#                        cur_asset = Found_assets.get_asset_by_name(asset_name)
-#                        cur_asset_name = cur_asset.get_name().upper()
-#                        if cur_asset_name.find("SAVINGS") != -1:
-#                            cur_asset.set_type("savings")
-#                        elif cur_asset_name.find("CHECKING") != -1:
-#                            cur_asset.set_type("checking")
-#                        elif cur_asset_name.find("DISCOVER") != -1 or cur_asset_name.find("CREDIT CARD") != -1 or cur_asset_name.find("MASTERCARD") != -1 or cur_asset_name.find("AM EX") != -1:
-#                            cur_asset.set_type("credit card")
+                if section == ACCOUNT:
+                    if cur_asset != None:
+                        Found_assets.append_by_object(cur_asset)
 #                    else:
-#                        cur_asset.transactions.append(cur_transaction)
+#                        pass
+                elif section == DETAIL:
                     cur_asset.transactions.append(cur_transaction)
                     last_transaction = cur_transaction
                     cur_transaction = Transaction(self)
@@ -142,6 +136,8 @@ class qif(object):
                         asset_name_parts = filename.split('\\')
                         asset_name = asset_name_parts[-1].split('.')[0]
                         cur_asset = Found_assets.get_asset_by_name(asset_name)
+                        if cur_asset == None:
+                            cur_asset = Asset(name=asset_name)
                         cur_asset_name = cur_asset.get_name().upper()
                         if cur_asset_name.find("SAVINGS") != -1:
                             cur_asset.set_type("savings")
@@ -150,7 +146,7 @@ class qif(object):
                         elif cur_asset_name.find("DISCOVER") != -1 or cur_asset_name.find("CREDIT CARD") != -1 or cur_asset_name.find("MASTERCARD") != -1 or cur_asset_name.find("AM EX") != -1:
                             cur_asset.set_type("credit card")
                     cur_transaction.set_memo(rest)
-            elif input_type == "M":                               # 6/26/2024 Pare coded memo lines based on asset or transaction being processed!
+            elif input_type == "M":                               # 6/26/2024 Parse coded memo lines based on asset or transaction being processed!
                 memo_info = rest.split(";")
                 if section == ACCOUNT:
                     for info in memo_info:
@@ -204,6 +200,8 @@ class qif(object):
             elif input_type == "N":
                 if section == ACCOUNT:
                     cur_asset = Found_assets.get_asset_by_name(rest)
+                    if cur_asset == None:
+                        cur_asset = Asset(name=rest)
                 elif section == DETAIL:
                     cur_transaction.set_check_num(rest)
             elif input_type == "P":                # 1/21/2024 merge vice simply copy latest stuff!
@@ -233,7 +231,6 @@ class qif(object):
                 if section == ACCOUNT:
                     cur_asset_name = cur_asset.get_name().upper()
                     if type == "Bank":
-                        cur_asset_name = cur_asset.get_name().upper()
                         if cur_asset.name.find("SAVINGS") != -1:
                             cur_asset.set_type("Savings")
                         elif cur_asset.name.find("CHECKING") != -1:

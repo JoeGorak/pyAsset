@@ -62,7 +62,7 @@ class Bill:
     def get_bill_inc_value(payment_freq):
         which = Bill.payment_frequencies.index(payment_freq)
         if which == -1:
-            return NONE
+            return None
         else:
             return Bill.inc_values[which]
 
