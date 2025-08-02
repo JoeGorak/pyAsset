@@ -668,18 +668,15 @@ class TransactionFrame(wx.Frame):
                                  "Your Asset balance differs by "
                                  "$%.2f. Adjust balance?" % difference,
                                  "Adjust balance?", wx.YES_NO)
-            if d.ShowModal() == wx.ID_YES: self.adjust_balance(difference)
+            if d.ShowModal() == wx.ID_YES:
+                self.adjust_balance(difference)
             d.Destroy()
         return
 
     def adjust_balance(self, diff):
         self.edited = True
-        #transaction = Transaction()
-        transactions = self.transactions.append()
-        transaction.payee = "Balance Adjustment"
-        transaction.amount = diff
-        transaction.state = "cleared"
-        transaction.memo = "Adjustment"
+        transaction = Transaction(payee = "Balance Adjustment", amount = diff, state = "cleared", memo = "Adjustment")
+        transactions = self.transactions.append(transaction)
         self.redraw_all(-1)  # only redraw [-1]?
         return
 

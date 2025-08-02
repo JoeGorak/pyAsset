@@ -128,7 +128,11 @@ class Bill:
 
     def __str__(self):
         return " %-10s %-20s $%8.2f $%8.2f %10s %10s %s %s %s" %\
-               (self.payee, self.type, self.amount, self.min_due, self.due_date, self.sched_date, self.pmt_acct, self.pmt_method, self.pmt_frequency)
+               (self.get_payee(), self.get_type(), self.get_amount(), self.get_min_due(), self.get_due_date(), self.get_sched_date(), self.get_pmt_acct(), self.get_pmt_method(), self.get_pmt_frequency())
+
+    def write_qif(self, qif_file):
+        with open(qif_file, 'a') as f:
+            f.write(str(self))
 
     def empty(self):
         return self.get_payee() == None or self.get_pmt_frequency() == None

@@ -31,14 +31,27 @@ from Transaction import Transaction
 from Date import Date
 
 class TransactionList:
-    def __init__(self, parent, limit = None):
+    def __init__(self, parent, transactions=None, limit=None):
         # type: () -> object
-        self.transactions = []
+        self.transactions = transactions
         self.parent = parent
         self.limit = limit
 
     def __len__(self):
-        return len(self.transactions)
+        if self.transactions == None:
+            return 0
+        else:
+            return len(self.transactions)
+
+    def getSortOrder(self):
+        sortFields = [('Sched Date', '>'), ('Action', '<')]                               # Default sort order for transaction list
+        valid_fields = Transaction.get_transaction_fields()
+        for i in range(len(sortFields)):
+            field = sortFields[i][0]
+            if field not in valid_fields:
+                print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for bills list" )
+                return []
+        return sortFields
 
     def __getitem__(self, i):
         return self.transactions[i]
@@ -62,17 +75,19 @@ class TransactionList:
     def index(self, payee, date):
         # Assume the desired transaction is not there
         ret_index = -1
-        date = Date.parse_date(Date, date, Date.get_global_date_format(Date))
-        # Loop over all the transactions
-        for i in range(len(self.transactions)):
-            # if the payee of the current transction matches
-            if self.transactions[i].get_payee() == payee:
-                due_date = self.transactions[i].get_due_date()
-                # Check to make sure the due date also matched
-                if due_date != None and self.transactions[i].get_due_date()['str'] == date['str']:
-                    # We found it! Set the index and get out of the loop!
-                    ret_index = i
-                    break
+        # if there are transactions
+        if self.transactions != None:
+            date = Date.parse_date(Date, date, Date.get_global_date_format(Date))
+            # Loop over all the transactions
+            for i in range(len(self.transactions)):
+                # if the payee of the current transction matches
+                if self.transactions[i].get_payee() == payee:
+                    due_date = self.transactions[i].get_due_date()
+                    # Check to make sure the due date also matched
+                    if due_date != None and self.transactions[i].get_due_date()['str'] == date['str']:
+                        # We found it! Set the index and get out of the loop!
+                        ret_index = i
+                        break
         return ret_index
 
     def append(self, transaction):
@@ -82,26 +97,95 @@ class TransactionList:
         return transaction
 
     def sort(self):
-        return self.transactions.sort()
+        return self.sort_by_fields()
 
     def insert(self, new_transaction):
         before  = -1
         after = 0
-        while after < len(self.transactions):
-            if self.transactions[after] > new_transaction:
-                break
-            else:
-                before = after
-                after = after + 1
-        if after == len(self.transactions):
-            self.transactions.append(new_transaction)
+        if self.transactions == None:
+            self.transactions = [new_transaction]
         else:
-            self.transactions[after+1:] = self.transactions[after:len(self.transactions)]
-            self.transactions[after] = new_transaction
+            while after < len(self.transactions):
+                if self.transactions[after] > new_transaction:
+                    break
+                else:
+                    before = after
+                    after = after + 1
+            if after == len(self.transactions):
+                self.transactions.append(new_transaction)
+            else:
+                self.transactions[after+1:] = self.transactions[after:len(self.transactions)]
+                self.transactions[after] = new_transaction
         value_proj = self.update_current_and_projected_values()
         self.parent.set_value_proj(value_proj)
 
+    def sort_by_fields(self, fields = None):                                   # A true multi-field sort! Modeled after similar function for BillList    JJG 7/31/25
+        if fields == None:
+            fields = self.getSortOrder()
+        valid_fields = Transaction.get_transaction_fields()
+        for i in range(len(fields)):
+            field = fields[i][0]
+            if field not in valid_fields:
+                print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for transaction list" )
+                return []
+        transactions = TransactionList(self.transactions)
+        i = 0
+        if fields[i][1] == '>':
+            j = len(transactions)-1
+        else:
+            j = 0
+        while (j >= 0 and fields[i][1] == '>') or (j < len(transactions) and fields[i][1] == '<'):
+            l = j                                       # remember where we left off in the main sort criteia loop
+            while i < len(fields):
+                field = fields[i][0]
+                order = fields[i][1]
+                stat_index = j
+                current = None
+                if field == "Due Date" or field == "Sched Date":
+                    if field == "Due Date":
+                        current = Date.parse_date(self, transactions[j].get_due_date(), Date.get_global_date_format(self))
+                    else:
+                        current = Date.parse_date(self, transactions[j].get_sched_date(), Date.get_global_date_format(self))
+                    if current != None:
+                        stat = current['dt']
+                    else:
+                        stat = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank due_dates to top of bill list!
+                elif field == "Action":
+                    stat = transactions[j].get_action()
+                test_stat = stat
+                for k in range(j-1, -1, -1):
+                    if field == "Due Date" or field == "Sched Date":
+                        if field == "Due Date":
+                           test = Date.parse_date(self, transactions[k].get_due_date(), Date.get_global_date_format(self))
+                        else:
+                           test = Date.parse_date(self, transactions[k].get_sched_date(), Date.get_global_date_format(self))
+                        if test != None:
+                            test_stat = test['dt']
+                        else:
+                            test_stat = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']        # Force blanks to the top
+                    elif field == 'Action':
+                        test_stat = transactions[k].get_type()
+                    if (test_stat > stat and order == '>') or (test_stat < stat and order == '<'):
+                        stat = test_stat
+                        stat_index = k
+                if test_stat == stat:                           # Check the next field if this field is equal!
+                    l = j                                       # Remember where we left off for later!
+                    i += 1
+                else:                                           # force while loop checking fields to terminate cause we found the spot!
+                    i = len(fields)
+            transactions[j], transactions[stat_index] = transactions[stat_index], transactions[j]
+            j = l                                               # Pick up the main loop!
+            i = 0
+            if fields[i][1] == '>':
+                j -= 1
+            else:
+                j += 1
+        return transactions.transactions
+     
     def update_current_and_projected_values(self, start_trans_number = 0):
+        transactions = self.transactions
+        if self.transactions == None:
+            return
         trans_number = 0
         trans_sched_date = proj_date = Date.get_proj_date(Date)
         if proj_date == None: return

@@ -254,6 +254,7 @@ class AssetFrame(wx.Frame):
                             print("Inserting a transaction for " + tpayee + " on " + billdate + " in payee account " + payeeAccount.get_name())
                             new_transaction = Transaction(self.parent, payee=tpayee, action=action, due_date=billdate, sched_date=billdate, pmt_method=bill.get_pmt_method(), amount=bill.get_amount(), state="budgeted")
                             payeeAccount.transactions.insert(new_transaction)
+                            payeeAccount.transactions.sort()
                 pat = paymentAccount.get_type()
                 action = bill.get_action()
                 if pat == "Oth L":
@@ -274,7 +275,7 @@ class AssetFrame(wx.Frame):
                     print("Inserting a transaction for " + tpayee + " on " + billdate + " in payment account " + paymentAccount.get_name())
                     new_transaction = Transaction(self.parent, payee=tpayee, action=action, due_date=billdate, sched_date=billdate, pmt_method=bill.get_pmt_method(), amount=bill.get_amount(), state="budgeted")
                     paymentAccount.transactions.insert(new_transaction)
-
+                    paymentAccount.transactions.sort()
         return billdates
 
     def process_paydates_in_range(self, start_date, end_date):
@@ -323,7 +324,7 @@ class AssetFrame(wx.Frame):
         return paydates
 
     def process_bills_sched_in_range(self, start_date, end_date):
-    #TODO : JJG 6/28/2025 Need to add code to iterate if sched_date for a bill that goes more than a month, quarter or year
+    #TODO : JJG 8/1/2025 Need to add code to iterate if sched_date for a bill that goes more than a month, quarter or year
         bills_sched = []
         if self.bills != None:
             bills = self.bills
@@ -521,15 +522,21 @@ class AssetFrame(wx.Frame):
         self.billButton.Bind(wx.EVT_LEFT_DOWN, self.onBillButtonClick)
 
     def onBillButtonClick(self, evt):
+        bill_filename = self.filename.split("\\")                          # JJG 7/29/2025 Start with total asset filname and change last part to Bills.qif for testing
+        bill_filename[len(bill_filename)-1] = "Bills.qif"
+        bill_filename = "\\".join(bill_filename)
         if self.bills != None:
            self.bills = BillList(self.bills)                               # JJG 1/26/2025 Create a new bill list if none exists
         if self.bills_frame == None:
-            self.bills_frame = BillFrame(None, self, -1, self.bills)
+            self.bills_frame = BillFrame(None, self, -1, self.bills, filename=bill_filename)
         else:
             pass                                # TODO: Add code to bring frame into focus on top! JJG 1/26/2025
 
     def getBillFrame(self):
         return self.bills_frame
+
+    def getBills(self):
+        return self.bills.bills
 
     def removeBillFrame(self):
         self.bills_frame.Destroy()
@@ -1052,6 +1059,7 @@ class AssetFrame(wx.Frame):
                         if bill.get_amount() != 0.0 and bill.get_due_date() >= Date.get_today_date(Date)["str"]:
                             billdates = self.process_bill_dates_in_range(bill, Date.get_curr_date(Date), Date.get_proj_date(Date))
                 self.redraw_all()
+                self.filename = total_name_in
             else:
                 self.DisplayMsg(error)
 
@@ -1215,7 +1223,8 @@ class AssetFrame(wx.Frame):
                 fname = d.GetFilename()
                 dir = d.GetDirectory()
             d.Destroy()
-            if fname: break
+            if fname:
+                break
         archive.write_qif(os.path.join(dir, fname))
         self.redraw_all(-1)
         self.edited = True

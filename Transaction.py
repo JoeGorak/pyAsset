@@ -65,6 +65,11 @@ class Transaction:
         self.comment = None
         self.memo = None
 
+    transaction_fields = [ "Payee", "Action", "Amount", "Due Date", "Sched Date", "Pmt Method" ]
+
+    def get_transaction_fields():
+        return Transaction.transaction_fields
+
     def __str__(self):
         lines = []
         lines.append("Sched date: %1s " % self.sched_date)

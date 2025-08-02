@@ -45,7 +45,7 @@ class qif(object):
     def __init__(self, parent, assetFile=""):
         self.parent = parent
         self.assets = AssetList(self)
-        self.filename = assetFile
+        self.assetFname = assetFile
         self.edited = False
 
         if assetFile:

@@ -45,7 +45,7 @@ from BillGrid import BillGrid
 from BillList import BillList
 
 class BillFrame(wx.Frame):
-    def __init__(self, style, parent, my_id, bills, title="PyAsset:Bill", myfile=None, **kwds):
+    def __init__(self, style, parent, my_id, bills, title="PyAsset:Bills", filename="", **kwds):
         self.bills = BillList(bills)
         self.parent = parent
         self.dateFormat = Date.get_global_date_format(self)
@@ -68,8 +68,7 @@ class BillFrame(wx.Frame):
 
         self.make_widgets()
 
-        if myfile:
-            self.cur_bill.read_qif(myfile)
+        self.filename = filename
 
         self.SetTitle(title)
         self.redraw_all()
@@ -94,7 +93,7 @@ class BillFrame(wx.Frame):
         self.filemenu.Append(wx.ID_OPEN, "Open\tCtrl-o",
                              "Open a new bill file", wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_SAVE, "Save\tCtrl-s",
-                             "Save the current bills in the same file", wx.ITEM_NORMAL)
+                             "Save the current bills", wx.ITEM_NORMAL)
         self.filemenu.Append(wx.ID_SAVEAS, "Save As",
                              "Save the current bills under a different name", wx.ITEM_NORMAL)
         self.filemenu.Append(ID_IMPORT_CSV, "Import CSV\tCtrl-c",
@@ -104,7 +103,7 @@ class BillFrame(wx.Frame):
 #                             "Import bills from an EXCEL file with Macros",
 #                             wx.ITEM_NORMAL)
         self.filemenu.Append(ID_EXPORT_TEXT, "Export Text",
-                             "Export the current bill register as a text file",
+                             "Export the current bills as a text file",
                              wx.ITEM_NORMAL)
         self.filemenu.Append(ID_ARCHIVE, "Archive",
                              "Archive bills older than a specified date",
@@ -150,7 +149,6 @@ class BillFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.markcleared, None, ID_MARK_ENTRY)
         self.Bind(wx.EVT_MENU, self.voidentry, None, ID_VOID_ENTRY)
         self.Bind(wx.EVT_MENU, self.deleteentry, None, ID_DELETE_ENTRY)
-        self.Bind(wx.EVT_MENU, self.reconcile, None, ID_RECONCILE)
         return
 
     def make_helpmenu(self):
@@ -281,8 +279,8 @@ class BillFrame(wx.Frame):
         else:
             print("Warning: modifying incorrect cell!")
             return
-        if doredraw: self.redraw_all(row)  # only redraw [row:]
-        return
+        if doredraw:
+            self.redraw_all(row)  # only redraw [row:]
 
     def load_file(self, *args):
         self.close()
@@ -292,27 +290,70 @@ class BillFrame(wx.Frame):
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
-            self.cur_bill.read_qif(os.path.join(dir, fname))
+            self.filname = os.path.join(dir, fname)
+            self.cur_bill.read_qif(self.filename)
             self.redraw_all(-1)
-        if self.cur_bill.name: self.SetTitle("PyAsset: %s" % self.cur_bill.name)
+            self.SetTitle("PyAsset: %s" % self.filename)
         return
 
     def save_file(self, *args):
-        for cur_bill in self.bills:
-            if not cur_bill.filename:
-                self.save_as_file()
-            else:
-                self.edited = False
-            self.cur_bill.write_qif()
+        self.edited = False
+        billList = self.parent.getBills()
+        if self.filename != "" and len(billList) != 0:
+            file = open(self.filename, 'w')                             # Make sure file starts empty! JJG 1/17/2024
+            file.close()
+            lines = ["!Account"]
+            self.process_bill_list(billList, "writeBillsToQIF", lines)
+#            for cur_bill in billList:
+#                print(cur_bill)
+#                cur_bill.write_qif(self.filename)
+            
         return
 
+    def process_bill_list(self, assetList, function, lines = None):
+        #TODO JJG 8/1/2025 Need to rewrite this function to handle bill lists, currently it was copied verbatim from process_account_list
+        print("Need to rewrite process_bill_list function to handle bill list (currently was copied verbatim from process_account_list) ")
+        return
+        if lines != None:
+            with open(self.assetFile, 'a') as file:
+                fileLines = '\n'.join(lines)
+                file.writelines("%s" % fileLines)
+                file.write('\n')
+        nassets = len(assetList.assets)
+        if nassets > 0:
+            for i in range(nassets):
+                if function == 'writeAccountsToQIF':
+                    qif.write_qif(self, self.assetFile, "writeAccountHeader", assetList.assets[i])
+                    qif.write_qif(self, self.assetFile, "writeAccountDetail", assetList.assets[i])
+                elif function == 'add':
+                    cur_asset = assetList.assets[i]
+                    cur_name = cur_asset.get_name()
+                    j = self.assets.index(cur_name)
+                    if j != -1:
+                        self.assets.assets[j] = cur_asset           # For now, just replace, when dates are working, save later date JJG 1/22/2022
+                    else:            
+                        self.assets.append_by_object(cur_asset)
+                elif function == 'delete':
+                    try:
+                        transFrame = assetList.assets.assets[0].trans_frame
+                    except:
+                        transFrame = None
+                    if transFrame != None:
+                        transFrame.Destroy()
+                    del assetList.assets[0]                         # Since we are deleting the entire list, we can just delete the first one each time!
+                else:
+                    pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
+            if function == 'delete':
+                    self.assetGrid.ClearGrid()
+        if function != 'add':
+            self.redraw_all()
     def save_as_file(self, *args):
-        d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.SAVE)
+        d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
             fname = d.GetFilename()
             dir = d.GetDirectory()
-            self.cur_bill.write_qif(os.path.join(dir, fname))
-        if self.cur_bill.name: self.SetTitle("PyAsset: %s" % self.cur_bill.name)
+            self.filename = os.path.join(dir, fname)
+            self.SetTitle("PyAsset: %s" % self.filename)
         return
 
     def close(self, *args):
@@ -578,34 +619,6 @@ class BillFrame(wx.Frame):
                 del self.bills[index]
             self.redraw_all()  # only redraw cells [index-1:]
  
-    def reconcile(self, *args):
-        d = wx.TextEntryDialog(self,
-                               "What is the balance of your last statement?",
-                               "Current Balance")
-        if d.ShowModal() == wx.ID_OK:
-            current_balance = float(d.GetValue())
-        else:
-            current_balance = None
-        d.Destroy()
-        if not current_balance: return
-
-        cleared_balance = self.get_cleared_balance()
-        difference = current_balance - cleared_balance
-        if abs(difference) < 0.01:
-            d = wx.MessageDialog(self,
-                                 "Your Asset balances",
-                                 "Balanced", wx.OK)
-            d.ShowModal()
-            d.Destroy()
-        else:
-            d = wx.MessageDialog(self,
-                                 "Your Asset balance differs by "
-                                 "$%.2f. Adjust balance?" % difference,
-                                 "Adjust balance?", wx.YES_NO)
-            if d.ShowModal() == wx.ID_YES: self.adjust_balance(difference)
-            d.Destroy()
-        return
-
     def adjust_balance(self, diff):
         self.edited = True
         bill = bill()
