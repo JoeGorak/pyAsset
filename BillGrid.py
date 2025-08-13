@@ -512,7 +512,8 @@ class BillGrid(grd.Grid):
         self.Unbind(grd.EVT_GRID_EDITOR_HIDDEN)
         self.Unbind(grd.EVT_GRID_EDITOR_CREATED)
 
-        del self.grid
+        if self.grid != None:
+            del self.grid
 
     def OnCellLeftClick(self, evt):
         row = evt.GetRow()

@@ -91,6 +91,8 @@ class TransactionList:
         return ret_index
 
     def append(self, transaction):
+        if self.transactions == None:
+            self.transactions = TransactionList(self.parent, [])
         self.transactions.append(transaction)
         value_proj = self.update_current_and_projected_values(len(self.transactions)-1)
         self.parent.set_value_proj(value_proj)        
@@ -149,7 +151,7 @@ class TransactionList:
                     if current != None:
                         stat = current['dt']
                     else:
-                        stat = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank due_dates to top of bill list!
+                        stat = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank dates to top of list!
                 elif field == "Action":
                     stat = transactions[j].get_action()
                 test_stat = stat

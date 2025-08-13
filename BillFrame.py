@@ -33,6 +33,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Search functions
 # goto date
 
+from platform import java_ver
 import wx
 import wx.grid
 import csv
@@ -51,10 +52,10 @@ class BillFrame(wx.Frame):
         self.dateFormat = Date.get_global_date_format(self)
         self.dateSep = Date.get_global_date_sep(self)
 
-        if self.bills != None:
-            self.cur_bill = self.bills[0]
-        else:
-            self.cur_bill = None
+#        if self.bills != None and self.bills.bills != []:
+#            self.cur_bill = self.bills.bills[0]
+#        else:
+#            self.cur_bill = None
 
         self.edited = False
         self.rowSize = 10
@@ -284,69 +285,111 @@ class BillFrame(wx.Frame):
 
     def load_file(self, *args):
         self.close()
-        self.cur_bill = Bill()
         self.edited = False
-        d = wx.FileDialog(self, "Open", "", "", "*.qif", wx.OPEN)
-        if d.ShowModal() == wx.ID_OK:
-            fname = d.GetFilename()
-            dir = d.GetDirectory()
-            self.filname = os.path.join(dir, fname)
-            self.cur_bill.read_qif(self.filename)
-            self.redraw_all(-1)
-            self.SetTitle("PyAsset: %s" % self.filename)
+        try:
+            mffile = open(self.filename, 'r')
+        except:
+            error = "No such file or directory :" + self.filename
+            self.MsgBox(error) 
+            return None
+        lines = mffile.readlines()
+        mffile.close()
+        for i in range(len(lines)):
+            lines[i] = lines[i].replace('"', '').strip()                       # remove " from every line and remove leading and trailing spaces
+        fields = lines[0].split(",")
+        bill_fields = Bill.get_bill_fields()
+        args = {}
+        for j in range(len(fields)):
+            if j == len(fields)-1:
+                fields[j] = fields[j].strip()
+            fields[j] = fields[j].replace(' ','_').lower()              # convert field names to keywords by replacing spaces with underscores and changing to all lower case                    
+            bill_fields[j] = bill_fields[j].replace(' ','_').lower()    # convert bill_field names to keywords by replacing spaces with underscores and changing to all lower case                    
+            bill_index=bill_fields.index(fields[j])
+            args[fields[j]] = bill_index
+        for i in range(1,len(lines)):
+            new_bill = Bill()
+            vals = lines[i].split(",")
+            for j in range(len(fields)-1):
+                vals[j] = vals[j].replace("'","").strip()               # Get rid of '' and leading and trailing spaces
+            for k in range(len(args)-1):
+                cur_field = fields[k]
+                val = vals[args[cur_field]]
+                bill_index = bill_fields.index(cur_field)            # Make sure the fields in the file match the fields in the Bill class
+                if bill_index != -1:
+                    if cur_field == "payee":
+                        new_bill.set_payee(val)
+                    elif cur_field == "type":
+                        new_bill.set_type(val)
+                    elif cur_field == "amount":
+                        new_bill.set_amount(val)
+                    elif cur_field == "min_due":
+                        new_bill.set_min_due(val)
+                    elif cur_field == "due_date":
+                        new_bill.set_due_date(val)
+                    elif cur_field == "sched_date":
+                        new_bill.set_sched_date(val)
+                    elif cur_field == "pmt_acct":
+                        new_bill.set_pmt_acct(val)
+                    elif cur_field == "pmt_method":
+                        new_bill.set_pmt_method(val)
+                    elif cur_field == "pmt_freq":
+                        new_bill.set_pmt_frequency(val)
+                    elif cur_field == "check_number":
+                        new_bill.set_check_number(val)
+                    else:
+                        print("Unknown field " + cur_field + " ignored for line " + lines[i])
+            billsList = self.parent.getBillsList()
+            billsList.append(new_bill)
+        self.parent.redraw_all(-1)
+        self.parent.SetTitle("PyAsset: %s" % self.filename)
         return
 
     def save_file(self, *args):
         self.edited = False
-        billList = self.parent.getBills()
+        billList = self.parent.getBillsList()
         if self.filename != "" and len(billList) != 0:
             file = open(self.filename, 'w')                             # Make sure file starts empty! JJG 1/17/2024
             file.close()
-            lines = ["!Account"]
-            self.process_bill_list(billList, "writeBillsToQIF", lines)
-#            for cur_bill in billList:
-#                print(cur_bill)
-#                cur_bill.write_qif(self.filename)
-            
-        return
+            bill_fields = Bill.get_bill_fields()
+            fields = ''
+            for field in bill_fields:
+                fields += '"' + field + '",'                            # Add "" around each field name in case there are spaces
+            fields = [fields[0:len(fields)-1]]                          # create a header line of the field names. Remove extra ',' added in the loop and make a list
+            self.process_bill_list(billList, "writeBillsToCSV", lines=fields)
 
-    def process_bill_list(self, assetList, function, lines = None):
-        #TODO JJG 8/1/2025 Need to rewrite this function to handle bill lists, currently it was copied verbatim from process_account_list
-        print("Need to rewrite process_bill_list function to handle bill list (currently was copied verbatim from process_account_list) ")
-        return
+    def process_bill_list(self, billsList, function, lines=None):
+#        print("process_bill_list: billsList:" + str(billsList) + ", function: " + function + ", lines: ", str(lines))
         if lines != None:
-            with open(self.assetFile, 'a') as file:
+            with open(self.filename, 'a') as file:
                 fileLines = '\n'.join(lines)
                 file.writelines("%s" % fileLines)
                 file.write('\n')
-        nassets = len(assetList.assets)
-        if nassets > 0:
-            for i in range(nassets):
-                if function == 'writeAccountsToQIF':
-                    qif.write_qif(self, self.assetFile, "writeAccountHeader", assetList.assets[i])
-                    qif.write_qif(self, self.assetFile, "writeAccountDetail", assetList.assets[i])
-                elif function == 'add':
-                    cur_asset = assetList.assets[i]
-                    cur_name = cur_asset.get_name()
-                    j = self.assets.index(cur_name)
-                    if j != -1:
-                        self.assets.assets[j] = cur_asset           # For now, just replace, when dates are working, save later date JJG 1/22/2022
-                    else:            
-                        self.assets.append_by_object(cur_asset)
+        if billsList != None:
+            lines = []
+            for i in range(len(billsList)):
+                if function == 'writeBillsToCSV':
+                        cur_bill = str(billsList.bills[i])
+                        lines.append(cur_bill)
                 elif function == 'delete':
                     try:
-                        transFrame = assetList.assets.assets[0].trans_frame
+                        transFrame = billsList.bills.bills[0].trans_frame
                     except:
                         transFrame = None
                     if transFrame != None:
                         transFrame.Destroy()
-                    del assetList.assets[0]                         # Since we are deleting the entire list, we can just delete the first one each time!
+                    del billsList.bills[0]                         # Since we are deleting the entire list, we can just delete the first one each time!
                 else:
                     pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
             if function == 'delete':
-                    self.assetGrid.ClearGrid()
-        if function != 'add':
-            self.redraw_all()
+                self.bill_grid.ClearGrid()
+            if function == 'writeBillsToCSV':
+                with open(self.filename, 'a') as file:
+                    fileLines = '\n'.join(lines)
+                    file.writelines("%s" % fileLines)
+#                    file.write('\n')
+            if function != 'add':
+                self.redraw_all()
+
     def save_as_file(self, *args):
         d = wx.FileDialog(self, "Save", "", "", "*.qif", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
@@ -365,7 +408,8 @@ class BillFrame(wx.Frame):
         if bill_grid != None:
             bill_grid.close()
             del bill_grid
-        del self.panel
+        if self.panel != None:
+            del self.panel
         bill_frame = self.parent.getBillFrame()
         if bill_frame != None:
             self.parent.removeBillFrame()
@@ -423,6 +467,7 @@ class BillFrame(wx.Frame):
     #     File to be read and converted to QIF
     #     @params[in] outf_
     #     File that the converted data will go
+    #     @params[in] deff_
     #     @params[in] deff_
     #     File with the settings for converting CSV
     #
@@ -497,7 +542,8 @@ class BillFrame(wx.Frame):
                 self.SetTitle(title)
 
             else:
-                d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
+#                d = wx.MessageDialog(self, error, wx.OK | wx.ICON_INFORMATION)
+                d = wx.MessageDialog(self, error)
                 d.ShowModal()
                 d.Destroy()
 
@@ -701,3 +747,8 @@ class BillFrame(wx.Frame):
 
         if modified == True:
             self.edited = True
+
+    def MsgBox(self, message):
+        d = wx.MessageDialog(self, message, "error", wx.OK | wx.ICON_INFORMATION)
+        d.ShowModal()
+        d.Destroy()

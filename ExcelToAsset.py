@@ -99,7 +99,7 @@ class ExcelToAsset(wx.Frame):
                         elif "CAR" in asset_name_upper:
                             new_asset.set_type("Car")
                         elif "CHECKING" in asset_name_upper:
-                            new_asset.set_type("Checking")
+                            new_asset.set_type("Checking and Savings")
                         elif "SAVINGS" in asset_name_upper:
                             new_asset.set_type("Savings")
                         elif "MONEY MARKET" in asset_name_upper:
@@ -262,7 +262,7 @@ class ExcelToAsset(wx.Frame):
 
     def ProcessBillsSheet(self, bills):
         MAX_COLS_TO_PROCESS = 8             # Only these columns have data we want! JJG 4/1/2023
-        BillsFound = BillList([])
+        BillsFound = BillList(bills)
         BillPlaces = dict()
         if self.wb == None:
             return BillsFound

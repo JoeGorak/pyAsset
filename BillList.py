@@ -28,22 +28,28 @@ from Date import Date
 class BillList(list):
     def __init__(self, bills):
         if bills == None:
-            self.bills = [Bill()]
+            self.bills = None
         else:
             self.bills = bills
 
+    def getBills(self):
+        return self.bills
+
     def getSortOrder(self):
-        sortFields = [('Due Date', '>'), ('Frequency', '<')]                             # Default sort order for bills list
+        sortFields = [('Due Date', '>'), ('Pmt Freq', '<')]                             # Default sort order for bills list
         valid_fields = Bill.get_bill_fields()
         for i in range(len(sortFields)):
-            field = sortFields[i][0]
+            field = sortFields[i][0].replace(" ","").lower()
             if field not in valid_fields:
                 print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for bills list" )
                 return []
         return sortFields
 
     def __len__(self):
-        return len(self.bills)
+        if self.bills != None:
+            return len(self.getBills())
+        else:
+            return 0
 
     def __getitem__(self, i):
         return self.bills[i]
@@ -83,11 +89,15 @@ class BillList(list):
         return ret_index
 
     def append(self, bill):
-        self.bills.append(bill)
+        if bill != None:
+            if self.bills == None:
+                self.bills = [bill]
+            else:
+                self.bills.append(bill)
         return bill
 
     def sort_by_fields(self, fields = None):                                   # A true multi-field sort!    JJG 1/25/25
-        if fields == None:
+        if fields == None or len(fields) == 0:
             fields = self.getSortOrder()
         valid_fields = Bill.get_bill_fields()
         for i in range(len(fields)):
@@ -95,7 +105,7 @@ class BillList(list):
             if field not in valid_fields:
                 print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for bills list" )
                 return []
-        bills = BillList(self.bills)
+        bills = self.bills
         payment_frequencies = Bill.get_payment_frequencies()
         i = 0
         if fields[i][1] == '>':
@@ -152,12 +162,11 @@ class BillList(list):
                 j -= 1
             else:
                 j += 1
-        return bills.bills
+        return self.bills
      
     def insert(self, new_bill):
-        if new_bill == None:
-            return
-        self.append(new_bill)
+        if new_bill != None:
+            self.append(new_bill)
 
     def sort(self):
         return self.sort_by_fields(self.getSortOrder(self))

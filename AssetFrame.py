@@ -74,6 +74,7 @@ class AssetFrame(wx.Frame):
         self.cur_asset = Asset(name=assetFile)
         self.cfgFile = copy.deepcopy(cfgFile)
         self.assetFile = copy.deepcopy(assetFile)
+        self.filename = None
         self.CreateParams()
         super(AssetFrame, self).__init__(parent, title=title)
         self.make_widgets()
@@ -251,7 +252,7 @@ class AssetFrame(wx.Frame):
                         else:
                             tpayee = bill.get_payee()
                         if not payeeAccount.transaction_exists(tpayee, billdate):
-                            print("Inserting a transaction for " + tpayee + " on " + billdate + " in payee account " + payeeAccount.get_name())
+#                            print("Inserting a transaction for " + tpayee + " on " + billdate + " in payee account " + payeeAccount.get_name())
                             new_transaction = Transaction(self.parent, payee=tpayee, action=action, due_date=billdate, sched_date=billdate, pmt_method=bill.get_pmt_method(), amount=bill.get_amount(), state="budgeted")
                             payeeAccount.transactions.insert(new_transaction)
                             payeeAccount.transactions.sort()
@@ -270,9 +271,9 @@ class AssetFrame(wx.Frame):
                         tpayee = "xfer to " + bill.get_payee()
                 else:
                     tpayee = bill.get_payee()
-                print("Checking if a transaction for " + tpayee + " on " + billdate + " exists in payment account " + paymentAccount.get_name())
+#                print("Checking if a transaction for " + tpayee + " on " + billdate + " exists in payment account " + paymentAccount.get_name())
                 if not paymentAccount.transaction_exists(tpayee, billdate):
-                    print("Inserting a transaction for " + tpayee + " on " + billdate + " in payment account " + paymentAccount.get_name())
+#                    print("Inserting a transaction for " + tpayee + " on " + billdate + " in payment account " + paymentAccount.get_name())
                     new_transaction = Transaction(self.parent, payee=tpayee, action=action, due_date=billdate, sched_date=billdate, pmt_method=bill.get_pmt_method(), amount=bill.get_amount(), state="budgeted")
                     paymentAccount.transactions.insert(new_transaction)
                     paymentAccount.transactions.sort()
@@ -522,21 +523,28 @@ class AssetFrame(wx.Frame):
         self.billButton.Bind(wx.EVT_LEFT_DOWN, self.onBillButtonClick)
 
     def onBillButtonClick(self, evt):
+        if self.filename == None:
+            return
         bill_filename = self.filename.split("\\")                          # JJG 7/29/2025 Start with total asset filname and change last part to Bills.qif for testing
-        bill_filename[len(bill_filename)-1] = "Bills.qif"
+        bill_filename[len(bill_filename)-1] = "Bills.csv"
         bill_filename = "\\".join(bill_filename)
-        if self.bills != None:
-           self.bills = BillList(self.bills)                               # JJG 1/26/2025 Create a new bill list if none exists
+        self.bill_filename = bill_filename
+        if self.bills == None:
+           self.bills = BillList(None)                                   # JJG 8/3/2025 Make sure a new bill list exists if none done
+        else:
+           self.bills = BillList(self.bills)                         # Otherwise make sure the current bills are indeed a bill list
         if self.bills_frame == None:
-            self.bills_frame = BillFrame(None, self, -1, self.bills, filename=bill_filename)
+            self.bills_frame = BillFrame(None, self, -1, self.bills.bills, filename=self.bill_filename)
         else:
             pass                                # TODO: Add code to bring frame into focus on top! JJG 1/26/2025
 
     def getBillFrame(self):
         return self.bills_frame
 
-    def getBills(self):
-        return self.bills.bills
+    def getBillsList(self):
+        if self.bills == None:
+            self.bills = BillList(Bill())
+        return BillList(self.bills.bills)
 
     def removeBillFrame(self):
         self.bills_frame.Destroy()
@@ -800,6 +808,7 @@ class AssetFrame(wx.Frame):
         if latest_assets != None:
             self.process_asset_list(latest_assets, 'add')
             self.assets.update_proj_values(Date.get_proj_date(Date))
+
         self.redraw_all()
 
     def save_file(self, *args):
@@ -1032,7 +1041,7 @@ class AssetFrame(wx.Frame):
                     self.assets[sheet_index].set_value_proj(proj_value)
             else:
                 print(sheet + " not found in asset list")
-        self.bills = xlsm.ProcessBillsSheet(self.bills)
+        self.bills = BillList(xlsm.ProcessBillsSheet(self.bills))
         for asset in latest_assets.assets:
             asset.transactions.update_current_and_projected_values()                
         return latest_assets
@@ -1055,7 +1064,8 @@ class AssetFrame(wx.Frame):
             if error == "":
                 latest_assets = self.process_XLSX_file(total_name_in)
                 if latest_assets != None:
-                    for bill in self.bills:
+                    bills = self.bills.getBills()
+                    for bill in self.bills.getBills():
                         if bill.get_amount() != 0.0 and bill.get_due_date() >= Date.get_today_date(Date)["str"]:
                             billdates = self.process_bill_dates_in_range(bill, Date.get_curr_date(Date), Date.get_proj_date(Date))
                 self.redraw_all()

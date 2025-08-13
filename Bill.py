@@ -36,13 +36,12 @@ UNKNOWN = 5
 # Payment Methods
 DIRECT_DEPOSIT = 1
 SCHED_ONLINE = 2
-SCHED_HICKAM = 3
-CHECK = 4
-AUTOPAY = 5
-CASH = 6
-TBD = 7
-MANUAL = 8
-OTHER = 9
+CHECK = 3
+AUTOPAY = 4
+CASH = 5
+TBD = 6
+MANUAL = 7
+OTHER = 8
 
 # Payment_Frequency
 BIWEEKLY = 0
@@ -54,10 +53,10 @@ MANUAL = -1
 
 class Bill:
     bill_types = [ "Checking and Savings", "Credit Card", "Loan", "Expense", "Unknown" ]
-    payment_methods = [ "Direct deposit", "sched online", "sched Hickam", "Check", "AutoPay", "Cash", "TBD", "Manual", "Other" ]
+    payment_methods = [ "Direct deposit", "sched online", "Check", "AutoPay", "Cash", "TBD", "Manual", "Other" ]
     payment_frequencies = [ "Bi-weekly", "monthly", "quarterly", "semi-yearly", "yearly", "manual" ]
 
-    inc_values = ["2 weeks", "1 month", "3 months", "6 monthe", "1 year", ""]
+    inc_values = ["2 weeks", "1 month", "3 months", "6 months", "1 year", ""]
 
     def get_bill_inc_value(payment_freq):
         which = Bill.payment_frequencies.index(payment_freq)
@@ -75,8 +74,8 @@ class Bill:
     def get_payment_frequencies():
         return Bill.payment_frequencies
 
-    def __init__(self, payee = None, type = "Unknown", action="-", amount = 0.0, min_due = 0.0, due_date = None, sched_date = None,
-                 pmt_acct = "Other", pmt_method = "TBD", check_number = 0, pmt_freq = "Manual" ):
+    def __init__(self, payee=None, type="Unknown", action="-", amount=0.0, min_due=0.0, due_date=None, sched_date=None,
+                 pmt_acct="Other", pmt_method="TBD", check_number=0, pmt_freq="Manual" ):
         self.set_payee(payee)
         self.set_type(type)
         self.set_action(action)
@@ -89,45 +88,13 @@ class Bill:
         self.set_pmt_frequency(pmt_freq)
         self.set_check_number(check_number)
 
-    bill_fields = [ "Payee", "Type", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Frequency", "Check Number" ]
+    bill_fields = [ "Payee", "Type", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Pmt Freq", "Check Number" ]
 
     def get_bill_fields():
         return Bill.bill_fields
 
-#    def __gt__(self, other):
-#        spf = self.payment_frequencies.index(self.get_pmt_frequency())
-#        opf = self.payment_frequencies.index(other.get_pmt_frequency())
-#        if spf != opf:
-#            return spf > opf
-#        else:
-#            return False
-
-#    def __ge__(self, other):
-#        spf = self.payment_frequencies.index(self.get_pmt_frequency())
-#        opf = self.payment_frequencies.index(other.get_pmt_frequency())
-#        if spf != opf:
-#            return spf >= opf
-#        else:
-#            return True
-
-#    def __lt__(self, other):
-#        spf = self.payment_frequencies.index(self.get_pmt_frequency())
-#        opf = self.payment_frequencies.index(other.get_pmt_frequency())
-#        if spf != opf:
-#            return spf < opf
-#        else:
-#            return False
-
-#    def __le__(self, other):
-#        spf = self.payment_frequencie.index(self.get_pmt_frequency())
-#        opf = self.payment_frequencies.index(other.get_pmt_frequency())
-#        if spf != opf:
-#            return spf <= opf
-#        else:
-#            return True
-
     def __str__(self):
-        return " %-10s %-20s $%8.2f $%8.2f %10s %10s %s %s %s" %\
+        return '\"%-10s","%-30s","$%8.2f","$%8.2f","%10s","%10s","%s","%s","%s"' %\
                (self.get_payee(), self.get_type(), self.get_amount(), self.get_min_due(), self.get_due_date(), self.get_sched_date(), self.get_pmt_acct(), self.get_pmt_method(), self.get_pmt_frequency())
 
     def write_qif(self, qif_file):
@@ -155,7 +122,7 @@ class Bill:
     def get_type(self):
         st = self.type
         if st == CHECKINGANDSAVINGS:
-            return "Checking and saving"
+            return "Checking and savings"
         elif st == CREDITCARD:
             return "Credit Card"
         elif st == LOAN:
@@ -168,8 +135,8 @@ class Bill:
             return ""
 
     def set_type(self,type):
-        tu = type.upper()
-        if "CHECKING AND SAVINGS ACCOUNTS" in tu:
+        tu = type.upper().strip()
+        if "CHECKING AND SAVINGS" in tu:
             self.type = CHECKINGANDSAVINGS
         elif "CREDIT CARD" in tu:
             self.type = CREDITCARD
@@ -189,24 +156,29 @@ class Bill:
         return self.amount
 
     def set_amount(self, amount):
+        if type(amount) is str:
+            amount = float(amount.replace("$","").replace(" ",""))
         self.amount = round(amount,2)
 
     def get_min_due(self):
         return self.min_due
 
     def set_min_due(self, min_due):
+        if type(min_due) is str:
+            min_due = float(min_due.replace("$","").replace(" ",""))
         self.min_due = min_due
 
     def get_due_date(self):
-       return self.due_date
+       if self.due_date == None:
+           return ""
+       else:
+           return self.due_date
 
     def get_date_representation(self, in_date):
         out_date_str = ''
         if type(in_date) == str:
-            if in_date != '':
-                temp_out_date = Date.guessDateFormat(self, in_date)
-                temp_out_date = date(temp_out_date['year'], temp_out_date['month'], temp_out_date['day'])
-                temp_out_date = Date.parse_date(Date, temp_out_date, Date.get_global_date_format(Date))
+            if in_date.strip() != '':
+                temp_out_date = Date.parse_date(self, in_date, Date.get_global_date_format(Date))
                 out_date_str = temp_out_date["str"]
         elif type(in_date) is dict:
             out_date_str = in_date["str"]
@@ -218,13 +190,22 @@ class Bill:
         return out_date_str
 
     def set_due_date(self, due_date):
-        self.due_date = self.get_date_representation(due_date)
+        if due_date == None or due_date == "":
+            self.due_date = None
+        else:
+            self.due_date = self.get_date_representation(due_date)
 
     def get_sched_date(self):
-        return self.sched_date
+        if self.sched_date == None:
+            return ""
+        else:
+            return self.sched_date
 
     def set_sched_date(self, sched_date):
-        self.sched_date = self.get_date_representation(sched_date)
+        if sched_date == None or sched_date == "":
+            self.sched_date = None
+        else:
+            self.sched_date = self.get_date_representation(sched_date)
 
 #TODO: Modify get_pmt_acct and set_pmt_acct to use AssetList and Asset!  For now just put in and return whatever is typed!
     def get_pmt_acct(self):
@@ -239,8 +220,6 @@ class Bill:
             return "Direct deposit"
         elif spm == SCHED_ONLINE:
             return "sched online"
-        elif spm == SCHED_HICKAM:
-            return "sched Hickam"
         elif spm == CHECK:
             return "Check"
         elif spm == AUTOPAY:
@@ -262,8 +241,6 @@ class Bill:
             self.pmt_method = DIRECT_DEPOSIT
         elif pmu == "SCHED ONLINE":
             self.pmt_method = SCHED_ONLINE
-        elif pmu == "SCHED HICKAM":
-            self.pmt_method = SCHED_HICKAM
         elif pmu == "CHECK":
             self.pmt_method = CHECK
         elif pmu == "AUTOPAY":

@@ -121,14 +121,14 @@ class AssetList():
             return self.assets[asset_index]
 
     def update_proj_values(self, proj_date):
-        print("update_proj_values called with proj_date ", proj_date)
+ #       print("update_proj_values called with proj_date ", proj_date)
         sep = Date.get_global_date_sep(self)
         Date.set_global_proj_date(self, proj_date)
         for i in range(len(self.assets)):
             new_proj_value = self.assets[i].transactions.update_current_and_projected_values()
             self.assets[i].set_value_proj(new_proj_value)
             limit = self.assets[i].get_limit()
-            if limit != 0.0:
+            if limit != 0.0 and new_proj_value != None:
                 self.assets[i].set_avail_proj(self.assets[i].get_limit()+new_proj_value)
 
     def sort(self):

@@ -232,9 +232,9 @@ class qif(object):
                     cur_asset_name = cur_asset.get_name().upper()
                     if type == "Bank":
                         if cur_asset.name.find("SAVINGS") != -1:
-                            cur_asset.set_type("Savings")
+                            cur_asset.set_type("Checking and Savings")
                         elif cur_asset.name.find("CHECKING") != -1:
-                            cur_asset.set_type("Checking")
+                            cur_asset.set_type("Checking and Savings")
                     elif type == "CCard":
                         cur_asset.set_type("Credit card")
                 elif section == DETAIL or section == SPLIT:
@@ -300,14 +300,14 @@ class qif(object):
             asset.write_qif(filename)
         elif function == 'writeAccountDetail':
             lines = ["!Option:AutoSwitch"]
-            for transaction in asset.transactions.transactions:
-                lines.append(transaction.qif_repr())
+            if asset.transactions.transactions != None:
+                for transaction in asset.transactions.transactions:
+                    lines.append(transaction.qif_repr())
             lines.append("!Clear:AutoSwitch")
             lines.append("^\n")
             filelines = '\n'.join(lines)
             with open(filename, 'a') as file:
                 file.writelines("%s" % filelines)
-
         return True
 
     def save_as_file(self):
