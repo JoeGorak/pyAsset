@@ -39,7 +39,7 @@ class BillList(list):
         sortFields = [('Due Date', '>'), ('Pmt Freq', '<')]                             # Default sort order for bills list
         valid_fields = Bill.get_bill_fields()
         for i in range(len(sortFields)):
-            field = sortFields[i][0].replace(" ","").lower()
+            field = sortFields[i][0]
             if field not in valid_fields:
                 print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for bills list" )
                 return []

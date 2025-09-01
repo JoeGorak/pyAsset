@@ -27,6 +27,8 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  07/03/2021     Added parent to structure
 #  08/07/2021     Version v0.2
 
+from operator import ge
+from re import S
 from Transaction import Transaction
 from Date import Date
 
@@ -49,7 +51,7 @@ class TransactionList:
         for i in range(len(sortFields)):
             field = sortFields[i][0]
             if field not in valid_fields:
-                print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for bills list" )
+                print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for transaction list" )
                 return []
         return sortFields
 
@@ -121,7 +123,28 @@ class TransactionList:
         value_proj = self.update_current_and_projected_values()
         self.parent.set_value_proj(value_proj)
 
-    def sort_by_fields(self, fields = None):                                   # A true multi-field sort! Modeled after similar function for BillList    JJG 7/31/25
+    def get_field_value(self, field, order, j, transactions):
+        field_value = None
+        if field == "Due Date" or field == "Sched Date":
+            current = None
+            if field == "Due Date":
+                current = Date.parse_date(self, transactions[j].get_due_date(), Date.get_global_date_format(self))
+            else:
+                current = Date.parse_date(self, transactions[j].get_sched_date(), Date.get_global_date_format(self))
+            if current != None:
+                field_value = current['str']
+            else:
+                if order == '>':
+                    field_value = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['str']   # Force blank dates to top of list!
+                else:
+                    field_value = Date.parse_date(self, "12/31/9999", "%m/%d/%Y")['str']   # Force blanks to the bottom
+        elif field == "Action":
+            field_value = transactions[j].get_action()
+        return field_value
+
+    def sort_by_fields(self, fields = None):                                   # A true multi-field sort! Modeled after similar function for BillList    JJG 8/31/2025
+        if self.transactions == None:
+            return
         if fields == None:
             fields = self.getSortOrder()
         valid_fields = Transaction.get_transaction_fields()
@@ -130,60 +153,42 @@ class TransactionList:
             if field not in valid_fields:
                 print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for transaction list" )
                 return []
-        transactions = TransactionList(self.transactions)
-        i = 0
-        if fields[i][1] == '>':
+        transactions = self.transactions
+        field = fields[0][0]
+        order = fields[0][1]
+        if order == '>':
             j = len(transactions)-1
         else:
             j = 0
-        while (j >= 0 and fields[i][1] == '>') or (j < len(transactions) and fields[i][1] == '<'):
-            l = j                                       # remember where we left off in the main sort criteia loop
-            while i < len(fields):
-                field = fields[i][0]
-                order = fields[i][1]
-                stat_index = j
-                current = None
-                if field == "Due Date" or field == "Sched Date":
-                    if field == "Due Date":
-                        current = Date.parse_date(self, transactions[j].get_due_date(), Date.get_global_date_format(self))
-                    else:
-                        current = Date.parse_date(self, transactions[j].get_sched_date(), Date.get_global_date_format(self))
-                    if current != None:
-                        stat = current['dt']
-                    else:
-                        stat = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank dates to top of list!
-                elif field == "Action":
-                    stat = transactions[j].get_action()
-                test_stat = stat
-                for k in range(j-1, -1, -1):
-                    if field == "Due Date" or field == "Sched Date":
-                        if field == "Due Date":
-                           test = Date.parse_date(self, transactions[k].get_due_date(), Date.get_global_date_format(self))
-                        else:
-                           test = Date.parse_date(self, transactions[k].get_sched_date(), Date.get_global_date_format(self))
-                        if test != None:
-                            test_stat = test['dt']
-                        else:
-                            test_stat = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']        # Force blanks to the top
-                    elif field == 'Action':
-                        test_stat = transactions[k].get_type()
-                    if (test_stat > stat and order == '>') or (test_stat < stat and order == '<'):
-                        stat = test_stat
-                        stat_index = k
-                if test_stat == stat:                           # Check the next field if this field is equal!
-                    l = j                                       # Remember where we left off for later!
-                    i += 1
-                else:                                           # force while loop checking fields to terminate cause we found the spot!
-                    i = len(fields)
-            transactions[j], transactions[stat_index] = transactions[stat_index], transactions[j]
-            j = l                                               # Pick up the main loop!
-            i = 0
-            if fields[i][1] == '>':
+        while (j > 0 and order == '>') or (j < len(transactions) and order == '<'):
+            maxmin_index = j
+            maxmin = self.get_field_value(field, order, j, transactions)
+            if order == '>':
+                krange = range(j-1, -1, -1)
+            else:
+                krange = range(j+1, len(transactions))
+            for k in krange:
+                test_maxmin = self.get_field_value(field, order, k, transactions)
+                if (test_maxmin > maxmin and order == '>') or (test_maxmin < maxmin and order == '<'):
+                    maxmin = test_maxmin
+                    maxmin_index = k
+                elif test_maxmin == maxmin:
+                    for i in range(1, len(fields)):                                    # Check the remaining fielda if this field is equal
+                       curr = self.get_field_value(fields[i][0], fields[i][1], j, transactions)
+                       poss = self.get_field_value(fields[i][0], fields[i][1], k, transactions)
+                                                                                       # Update stat if the next field is different
+                       if (curr > poss and fields[i][1] == '>') or (curr < poss and fields[i][1] == '<'):
+                           maxmin_index = k
+                           maxmin = curr
+                           break
+            transactions[j], transactions[maxmin_index] = transactions[maxmin_index], transactions[j]
+            if order == '>':
                 j -= 1
             else:
                 j += 1
-        return transactions.transactions
-     
+        self.transactions = transactions
+        self.update_current_and_projected_values()
+
     def update_current_and_projected_values(self, start_trans_number = 0):
         transactions = self.transactions
         if self.transactions == None:
@@ -234,7 +239,7 @@ class TransactionList:
                             new_current_value = current_value + trans_amount
                             new_proj_value = proj_value + trans_amount
                         else:
-                            print("Unknown action " + trans_action + " ignored")
+                            print("Unknown action ", trans_action, " ignored")
                             new_current_value = current_value
                             new_proj_value = proj_value
                         self.transactions[trans_number].set_current_value(str(new_current_value))
