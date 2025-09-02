@@ -340,7 +340,7 @@ class ExcelToAsset(wx.Frame):
 
         # At this point bills were inserted in the order they were found in the Bill sheet.
         # Now do a multi-level sort on the list of bills.  JJG 1/25/2025
-        BillsFound = BillsFound.sort_by_fields(BillList.getSortOrder(self))
+        BillsFound.sort_by_fields(BillList.getSortOrder(self))
         return BillsFound
 
     def MsgBox(self, message):

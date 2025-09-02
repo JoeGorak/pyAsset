@@ -1065,9 +1065,10 @@ class AssetFrame(wx.Frame):
                 latest_assets = self.process_XLSX_file(total_name_in)
                 if latest_assets != None:
                     bills = self.bills.getBills()
-                    for bill in self.bills.getBills():
-                        if bill.get_amount() != 0.0 and bill.get_due_date() >= Date.get_today_date(Date)["str"]:
-                            billdates = self.process_bill_dates_in_range(bill, Date.get_curr_date(Date), Date.get_proj_date(Date))
+                    if bills != None:
+                        for bill in self.bills.getBills():
+                            if bill.get_amount() != 0.0 and bill.get_due_date() >= Date.get_today_date(Date)["str"]:
+                                billdates = self.process_bill_dates_in_range(bill, Date.get_curr_date(Date), Date.get_proj_date(Date))
                 self.redraw_all()
                 self.filename = total_name_in
             else:

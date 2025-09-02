@@ -96,8 +96,33 @@ class BillList(list):
                 self.bills.append(bill)
         return bill
 
+    def get_field_value(self, field, order, j, bills):
+        field_value = None
+        if field == "Pmt Freq":
+#            payment_frequencies = Bill.get_payment_frequencies()
+            field_value = bills[j].get_pmt_frequency()
+        elif field == "Due Date" or field == "Sched Date":
+            current = None
+            if field == "Due Date":
+                current = Date.parse_date(self, bills[j].get_due_date(), Date.get_global_date_format(self))
+            else:
+                current = Date.parse_date(self, bills[j].get_sched_date(), Date.get_global_date_format(self))
+            if current != None:
+                field_value = current['dt']
+            else:
+                if order == '>':
+                    field_value = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank due_dates to top of bill list!
+                else:
+                    field_value = Date.parse_date(self, "12/31/9999", "%m/%d/%Y")['dt']   # Force blanks to the bottom
+        elif field == "Type":
+            field_value = bills[j].get_type()
+        return field_value
+
+
     def sort_by_fields(self, fields = None):                                   # A true multi-field sort!    JJG 1/25/25
-        if fields == None or len(fields) == 0:
+        if self.bills == None:
+            return
+        if fields == None:
             fields = self.getSortOrder()
         valid_fields = Bill.get_bill_fields()
         for i in range(len(fields)):
@@ -106,63 +131,39 @@ class BillList(list):
                 print("field", field, "is not valid. Valid fields are", valid_fields, "ignoring sort for bills list" )
                 return []
         bills = self.bills
-        payment_frequencies = Bill.get_payment_frequencies()
-        i = 0
-        if fields[i][1] == '>':
-            j = len(bills)-1
+        field = fields[0][0]
+        order = fields[0][1]
+        if order == '>':
+            j = len(bills) - 1
         else:
             j = 0
-        while (j >= 0 and fields[i][1] == '>') or (j < len(bills) and fields[i][1] == '<'):
-            l = j                                       # remember where we left off in the main sort criteia loop
-            while i < len(fields):
-                field = fields[i][0]
-                order = fields[i][1]
-                stat_index = j
-                current = None
-                if field == "Frequency":
-                    stat = payment_frequencies.index(bills[j].get_pmt_frequency())
-                elif field == "Due Date" or field == "Sched Date":
-                    if field == "Due Date":
-                        current = Date.parse_date(self, bills[j].get_due_date(), Date.get_global_date_format(self))
-                    else:
-                        current = Date.parse_date(self, bills[j].get_sched_date(), Date.get_global_date_format(self))
-                    if current != None:
-                        stat = current['dt']
-                    else:
-                        stat = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank due_dates to top of bill list!
-                elif field == "Type":
-                    stat = bills[j].get_type()
-                test_stat = stat
-                for k in range(j-1, -1, -1):
-                    if field == "Frequency":
-                        test_stat = payment_frequencies.index(bills[k].get_pmt_frequency())
-                    elif field == "Due Date" or field == "Sched Date":
-                        if field == "Due Date":
-                           test = Date.parse_date(self, bills[k].get_due_date(), Date.get_global_date_format(self))
-                        else:
-                           test = Date.parse_date(self, bills[k].get_sched_date(), Date.get_global_date_format(self))
-                        if test != None:
-                            test_stat = test['dt']
-                        else:
-                            test_stat = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']        # Force blanks to the top
-                    elif field == 'Type':
-                        test_stat = bills[k].get_type()
-                    if (test_stat > stat and order == '>') or (test_stat < stat and order == '<'):
-                        stat = test_stat
-                        stat_index = k
-                if test_stat == stat:                           # Check the next field if this field is equal!
-                    l = j                                       # Remember where we left off for later!
-                    i += 1
-                else:                                           # force while loop checking fields to terminate cause we found the spot!
-                    i = len(fields)
-            bills[j], bills[stat_index] = bills[stat_index], bills[j]
-            j = l                                               # Pick up the main loop!
-            i = 0
-            if fields[i][1] == '>':
+        while (j > 0 and order == '>') or (j < len(bills) and order == '<'):
+            maxmin_index = j
+            maxmin = self.get_field_value(field, order, j, bills)
+            if order == '>':
+                krange = range(j-1, -1, -1)
+            else:
+                krange = range(j+1, len(bills))
+            for k in krange:
+                test_maxmin = self.get_field_value(field, order, k, bills)
+                if (order == '>' and test_maxmin > maxmin) or (order == '<' and test_maxmin < maxmin):
+                    maxmin = test_maxmin
+                    maxmin_index = k
+                elif test_maxmin == maxmin:                           # Check the remaining fields if this field is equal!
+                    for i in range(1, len(fields)):
+                        curr = self.get_field_value(fields[i][0], fields[i][1], j, bills)
+                        poss = self.get_field_value(fields[i][0], fields[i][1], k, bills)
+                        if (fields[i][1] == '>' and curr > poss) or (fields[i][1] == '<' and curr < poss):
+                            maxmin = test_maxmin
+                            maxmin_index = k
+                            break
+            bills[j], bills[maxmin_index] = bills[maxmin_index], bills[j]
+            if order == '>':
                 j -= 1
             else:
                 j += 1
-        return self.bills
+        self.bills = bills
+        pass
      
     def insert(self, new_bill):
         if new_bill != None:

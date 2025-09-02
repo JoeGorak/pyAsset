@@ -132,12 +132,12 @@ class TransactionList:
             else:
                 current = Date.parse_date(self, transactions[j].get_sched_date(), Date.get_global_date_format(self))
             if current != None:
-                field_value = current['str']
+                field_value = current['dt']
             else:
                 if order == '>':
-                    field_value = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['str']   # Force blank dates to top of list!
+                    field_value = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank dates to top of list!
                 else:
-                    field_value = Date.parse_date(self, "12/31/9999", "%m/%d/%Y")['str']   # Force blanks to the bottom
+                    field_value = Date.parse_date(self, "12/31/9999", "%m/%d/%Y")['dt']   # Force blanks to the bottom
         elif field == "Action":
             field_value = transactions[j].get_action()
         return field_value
@@ -176,10 +176,10 @@ class TransactionList:
                     for i in range(1, len(fields)):                                    # Check the remaining fielda if this field is equal
                        curr = self.get_field_value(fields[i][0], fields[i][1], j, transactions)
                        poss = self.get_field_value(fields[i][0], fields[i][1], k, transactions)
-                                                                                       # Update stat if the next field is different
+                                                                                       # Update maxmin if the next field is different
                        if (curr > poss and fields[i][1] == '>') or (curr < poss and fields[i][1] == '<'):
                            maxmin_index = k
-                           maxmin = curr
+                           maxmin = test_maxmin
                            break
             transactions[j], transactions[maxmin_index] = transactions[maxmin_index], transactions[j]
             if order == '>':
