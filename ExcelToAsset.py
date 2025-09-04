@@ -260,9 +260,9 @@ class ExcelToAsset(wx.Frame):
                     TransactionsFound.insert(new_transaction)
         return TransactionsFound
 
-    def ProcessBillsSheet(self, bills):
+    def ProcessBillsSheet(self):
         MAX_COLS_TO_PROCESS = 8             # Only these columns have data we want! JJG 4/1/2023
-        BillsFound = BillList(bills)
+        BillsFound = BillList()
         BillPlaces = dict()
         if self.wb == None:
             return BillsFound

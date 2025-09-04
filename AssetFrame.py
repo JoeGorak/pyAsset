@@ -326,9 +326,9 @@ class AssetFrame(wx.Frame):
 
     def process_bills_sched_in_range(self, start_date, end_date):
     #TODO : JJG 8/1/2025 Need to add code to iterate if sched_date for a bill that goes more than a month, quarter or year
-        bills_sched = []
+        bills_sched = BillList()
         if self.bills != None:
-            bills = self.bills
+            bills = self.bills.getBills()
             dateFormat = self.get_date_format()
             start_date = Date.parse_date(self, start_date, dateFormat)["dt"]
             end_date = Date.parse_date(self, end_date, dateFormat)["dt"]
@@ -345,7 +345,7 @@ class AssetFrame(wx.Frame):
                             inc_value = Bill.get_bill_inc_value(bill.get_pmt_frequency())
 
             if bills_sched != []:
-                bills_sched = BillList(bills_sched).sort_by_fields([['Sched Date', '>'], ['Frequency', '>']])
+                bills_sched.sort_by_fields([['Sched Date', '>'], ['Pmt Freq', '>']])
                 for bill in bills_sched:
 #                    print("Processing bill: %s, Sched date: %s, Frequency: %s" % (bill.get_payee(), bill.get_sched_date(), bill.get_pmt_frequency()))
                     pmt_acct = self.assets.get_asset_by_name(bill.get_pmt_acct())
@@ -529,10 +529,6 @@ class AssetFrame(wx.Frame):
         bill_filename[len(bill_filename)-1] = "Bills.csv"
         bill_filename = "\\".join(bill_filename)
         self.bill_filename = bill_filename
-        if self.bills == None:
-           self.bills = BillList(None)                                   # JJG 8/3/2025 Make sure a new bill list exists if none done
-        else:
-           self.bills = BillList(self.bills)                         # Otherwise make sure the current bills are indeed a bill list
         if self.bills_frame == None:
             self.bills_frame = BillFrame(None, self, -1, self.bills.bills, filename=self.bill_filename)
         else:
@@ -1041,7 +1037,7 @@ class AssetFrame(wx.Frame):
                     self.assets[sheet_index].set_value_proj(proj_value)
             else:
                 print(sheet + " not found in asset list")
-        self.bills = BillList(xlsm.ProcessBillsSheet(self.bills))
+        self.bills = xlsm.ProcessBillsSheet()
         for asset in latest_assets.assets:
             asset.transactions.update_current_and_projected_values()                
         return latest_assets

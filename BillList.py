@@ -25,12 +25,9 @@ from logging import raiseExceptions
 from Bill import Bill
 from Date import Date
 
-class BillList(list):
-    def __init__(self, bills):
-        if bills == None:
-            self.bills = None
-        else:
-            self.bills = bills
+class BillList():
+    def __init__(self):
+        self.bills = None
 
     def getBills(self):
         return self.bills

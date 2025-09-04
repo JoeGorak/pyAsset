@@ -47,7 +47,7 @@ from BillList import BillList
 
 class BillFrame(wx.Frame):
     def __init__(self, style, parent, my_id, bills, title="PyAsset:Bills", filename="", **kwds):
-        self.bills = BillList(bills)
+        self.bills = bills
         self.parent = parent
         self.dateFormat = Date.get_global_date_format(self)
         self.dateSep = Date.get_global_date_sep(self)
