@@ -101,7 +101,7 @@ class ExcelToAsset(wx.Frame):
                         elif "CHECKING" in asset_name_upper:
                             new_asset.set_type("Checking and Savings")
                         elif "SAVINGS" in asset_name_upper:
-                            new_asset.set_type("Savings")
+                            new_asset.set_type("Checking and Savings")
                         elif "MONEY MARKET" in asset_name_upper:
                             new_asset.set_type("Money Market")
                         elif "OVERDRAFT" in asset_name_upper:
@@ -254,7 +254,7 @@ class ExcelToAsset(wx.Frame):
                     if new_transaction.get_sched_date() != None and new_transaction.get_pmt_method() != "TBD":
                         new_transaction.set_state("scheduled")
                     if new_transaction.get_pmt_method() == "processing":
-                        new_transaction.set_state("outstanding")
+                        new_transaction.set_state("pending")
                     if new_transaction.get_pmt_method() == "TBD" and new_transaction.get_state() == "unknown" and new_transaction.get_amount() != 0.0:
                         new_transaction.set_comment("Need to schedule this ASAP!")
                     TransactionsFound.insert(new_transaction)

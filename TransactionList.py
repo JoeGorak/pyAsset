@@ -74,6 +74,9 @@ class TransactionList:
     def __delitem__(self, i):
         del self.transactions[i]
 
+    def getTransactions(self):
+        return self.transactions
+
     def index(self, payee, date):
         # Assume the desired transaction is not there
         ret_index = -1
@@ -133,11 +136,6 @@ class TransactionList:
                 current = Date.parse_date(self, transactions[j].get_sched_date(), Date.get_global_date_format(self))
             if current != None:
                 field_value = current['dt']
-            else:
-                if order == '>':
-                    field_value = Date.parse_date(self, "01/01/1970", "%m/%d/%Y")['dt']   # Force blank dates to top of list!
-                else:
-                    field_value = Date.parse_date(self, "12/31/9999", "%m/%d/%Y")['dt']   # Force blanks to the bottom
         elif field == "Action":
             field_value = transactions[j].get_action()
         return field_value
@@ -163,12 +161,20 @@ class TransactionList:
         while (j > 0 and order == '>') or (j < len(transactions) and order == '<'):
             maxmin_index = j
             maxmin = self.get_field_value(field, order, j, transactions)
+            if maxmin == None:
+                if order == '>':
+                    j -= 1
+                else:
+                    j += 1
+                continue
             if order == '>':
                 krange = range(j-1, -1, -1)
             else:
                 krange = range(j+1, len(transactions))
             for k in krange:
                 test_maxmin = self.get_field_value(field, order, k, transactions)
+                if test_maxmin == None:
+                    continue
                 if (test_maxmin > maxmin and order == '>') or (test_maxmin < maxmin and order == '<'):
                     maxmin = test_maxmin
                     maxmin_index = k
@@ -190,13 +196,14 @@ class TransactionList:
         self.update_current_and_projected_values()
 
     def update_current_and_projected_values(self, start_trans_number = 0):
+        ret_proj_value = self.parent.get_value()
         transactions = self.transactions
-        if self.transactions == None:
-            return
+        if transactions == None:
+            return ret_proj_value
         trans_number = 0
         trans_sched_date = proj_date = Date.get_proj_date(Date)
         if proj_date == None: return
-        proj_date_obj = ret_proj_value = None
+        proj_date_obj = None
         if 'mm' not in proj_date:
             proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
         if proj_date_obj != None:
@@ -205,57 +212,51 @@ class TransactionList:
             if trans_number == 0:
                 current_value = self.parent.get_value()
             else:
-                current_value = self.transactions[trans_number].get_current_value()
+                current_value = self.transactions[trans_number-1].get_current_value()
             ret_proj_value= proj_value = current_value
             while trans_number < len(self.transactions):
                 trans_pmt_method = self.transactions[trans_number].get_pmt_method()
                 trans_sched_date = self.transactions[trans_number].get_sched_date()
-                process_transaction = True
                 new_current_value = current_value
                 new_proj_value = proj_value
-                if trans_pmt_method != "posted" and trans_sched_date != None:
-                    trans_state = self.transactions[trans_number].get_state()
-                else:
-                    process_transaction = False
+                trans_state = self.transactions[trans_number].get_state()
+                self.transactions[trans_number].set_current_value(str(new_current_value))
+                self.transactions[trans_number].set_projected_value(str(new_proj_value))
+                trans_action = self.transactions[trans_number].get_action()
+                if trans_action:
+
+#                   Check to make sure transaction hasn't been voided before updating current value     JJG 07/17/2021
+#                   Also check for outstanding transactions which should not affect current value
+
+                    if trans_state != "void" and trans_state != "outstanding":
+                        trans_amount = self.transactions[trans_number].get_amount()
+                        if trans_amount == None:
+                            trans_amount = 0.00
+                    else:
+                        trans_amount = 0.00
+                    if trans_action == '-':
+                        new_current_value = current_value - trans_amount
+                        new_proj_value = proj_value - trans_amount
+                    elif trans_action == '+':
+                        new_current_value = current_value + trans_amount
+                        new_proj_value = proj_value + trans_amount
+                    else:
+                        print("Unknown action ", trans_action, " ignored")
+                        new_current_value = current_value
+                        new_proj_value = proj_value
                     self.transactions[trans_number].set_current_value(str(new_current_value))
                     self.transactions[trans_number].set_projected_value(str(new_proj_value))
-                if process_transaction:
-                    trans_action = self.transactions[trans_number].get_action()
-                    if trans_action:
-
-#                       Check to make sure transaction hasn't been voided before updating current value     JJG 07/17/2021
-#                       Also make sure transaction is not in outstanding state before updaing current value JJG 07/13/2025
-
-                        if trans_state != "void" and trans_state != 'outstanding':
-                            trans_amount = self.transactions[trans_number].get_amount()
-                            if trans_amount == None:
-                                trans_amount = 0.00
-                        else:
-                            trans_amount = 0.00
-                        if trans_action == '-':
-                            new_current_value = current_value - trans_amount
-                            new_proj_value = proj_value - trans_amount
-                        elif trans_action == '+':
-                            new_current_value = current_value + trans_amount
-                            new_proj_value = proj_value + trans_amount
-                        else:
-                            print("Unknown action ", trans_action, " ignored")
-                            new_current_value = current_value
-                            new_proj_value = proj_value
-                        self.transactions[trans_number].set_current_value(str(new_current_value))
-                        self.transactions[trans_number].set_projected_value(str(new_proj_value))
-                    current_value = new_current_value
-                    proj_value = new_proj_value
-                    DateFormat = Date.get_global_date_format(Date)
-                    if trans_sched_date != None:
-                        trans_sched_date_obj = Date.parse_date(self, trans_sched_date, DateFormat)["dt"]
-                        proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
-                        if trans_sched_date_obj <= proj_date_obj:
-                            ret_proj_value = proj_value
-                    else:
+                current_value = new_current_value
+                proj_value = new_proj_value
+                DateFormat = Date.get_global_date_format(Date)
+                if trans_sched_date != None:
+                    trans_sched_date_obj = Date.parse_date(self, trans_sched_date, DateFormat)["dt"]
+                    proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
+                    if trans_sched_date_obj <= proj_date_obj:
                         ret_proj_value = proj_value
+                else:
+                    ret_proj_value = proj_value
                 trans_number += 1
-            trans_number = trans_number + 1
         return ret_proj_value
 
     def update_transaction_dates(self, oldDateFormat, newDateFormat):

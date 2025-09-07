@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 import wx
 from Date import Date
+from wx.core import DateTime
 from datetime import date, datetime
 
 # Bill types
@@ -59,11 +60,21 @@ class Bill:
     inc_values = ["2 weeks", "1 month", "3 months", "6 months", "1 year", ""]
 
     def get_bill_inc_value(payment_freq):
+        ret_value = None
         which = Bill.payment_frequencies.index(payment_freq)
-        if which == -1:
-            return None
-        else:
-            return Bill.inc_values[which]
+        if which != -1:
+            inc_value = Bill.inc_values[which]
+            if inc_value == "2 weeks":
+                ret_value = wx.DateSpan(weeks=2)
+            elif inc_value == "1 month":
+                ret_value = wx.DateSpan(months=1)
+            elif inc_value == "3 months":
+                ret_value = wx.DateSpan(months=3)
+            elif inc_value == "6 months":
+                ret_value = wx.DateSpan(months=6)
+            elif inc_value == "1 year":
+                ret_value = wx.DateSpan(years=1)
+        return ret_value
 
     def get_bill_types():
         return Bill.bill_types
@@ -182,9 +193,12 @@ class Bill:
                 out_date_str = temp_out_date["str"]
         elif type(in_date) is dict:
             out_date_str = in_date["str"]
-        elif type(in_date) is datetime:
+        elif type(in_date) is DateTime or type(in_date) is datetime:
             out_day = in_date.day
-            out_month = in_date.month-1
+            if type(in_date) is DateTime:
+                out_month = in_date.month
+            else:
+                out_month = in_date.month-1
             out_year = in_date.year
             out_date_str = wx.DateTime.FromDMY(out_day, out_month, out_year).Format(Date.get_global_date_format(Date))
         return out_date_str

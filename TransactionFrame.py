@@ -640,9 +640,16 @@ class TransactionFrame(wx.Frame):
                                  "Really delete this transaction?",
                                  "Really delete?", wx.YES_NO)
             if d.ShowModal() == wx.ID_YES:
-                del self.transactions[index]
-                self.trans_grid.DeleteRows()
-            self.redraw_all()  # only redraw cells [index-1:]
+                trans_grid = self.get_trans_grid()
+                transactions = trans_grid.frame.transactions.getTransactions
+                payee = trans_grid.GetCellValue(index, trans_grid.TRANS_PAYEE_COL)
+                due_date = trans_grid.GetCellValue(index, trans_grid.TRANS_DUE_DATE_COL)
+                trans_list_index = self.transactions.index(payee, due_date)
+                del self.transactions[trans_list_index]
+                self.trans_grid.DeleteRows(pos=index)
+                value_proj = self.transactions.update_current_and_projected_values(trans_list_index)
+                pass
+#                self.parent.set_value_proj(value_proj)        
  
     def reconcile(self, *args):
         d = wx.TextEntryDialog(self,
