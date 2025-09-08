@@ -567,9 +567,17 @@ class TransactionGrid(grd.Grid):
         del self.grid
 
     def OnCellLeftClick(self, evt):
-        print("OnCellLeftClick: (%d,%d) %s\n" % (evt.GetRow(),
-                                                 evt.GetCol(),
-                                                 evt.GetPosition()))
+        row = evt.GetRow()
+        col = evt.GetCol()
+        pos = evt.GetPosition
+        trans_frame = self.frame
+        transactions = trans_frame.getTransactions()
+        payee = self.GetCellValue(row, self.TRANS_PAYEE_COL)
+        due_date = self.GetCellValue(row, self.TRANS_DUE_DATE_COL)
+        transaction_index = trans_frame.transactions.index(payee, due_date)
+        trans_frame.voidLabelUpdate(transaction_index)
+
+        print("OnCellLeftClick: (%d,%d) %s\n" % (row, col, pos))
         evt.Skip()
 
     def OnCellRightClick(self, evt):

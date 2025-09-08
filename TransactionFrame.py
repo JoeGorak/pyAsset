@@ -74,6 +74,9 @@ class TransactionFrame(wx.Frame):
         self.SetTitle("PyAsset:Transactions for %s" % title)
         self.redraw_all()
 
+    def getTransactions(self):
+        return self.transactions.transactions
+
     def make_widgets(self):
         self.menubar = wx.MenuBar()
         self.SetMenuBar(self.menubar)
@@ -590,6 +593,15 @@ class TransactionFrame(wx.Frame):
         self.transactions.sort()
         self.redraw_all(-1)
 
+    def voidLabelUpdate(self, index):
+        transaction = self.transactions[index]
+        void_id = self.editmenu.FindItemById(self.ID_VOID_ENTRY).Id
+        if transaction.get_payee()[:6] == "VOID: ":
+            new_label = "Unvoid Entry\tCtrl-v"
+        else:
+            new_label = "Void Entry\tCtrl-v"
+        self.editmenu.SetLabel(void_id, new_label)
+
     def voidentry(self, *args):
         index = self.trans_grid.GetGridCursorRow()
         if index < 0:
@@ -598,11 +610,11 @@ class TransactionFrame(wx.Frame):
         else:
             transaction = self.transactions[index]
             if transaction.get_state() != "void":
-                msg = "Really void this transaction?"
+                msg = "Really void this entry?"
                 title = "Really void?"
                 void = True
             else:
-                msg = "Really unvoid this transaction?"
+                msg = "Really unvoid this entry?"
                 title = "Really unvoid?"
                 void = False
             d = wx.MessageDialog(self,
@@ -614,16 +626,19 @@ class TransactionFrame(wx.Frame):
                 # Toggle values so if it was void make it active and if active make it void
                 if void:
                     transaction.set_payee("VOID: " + transaction.get_payee())
-                    transaction.set_memo("voided %s" % today_date)
+                    transaction.set_memo("voided %s" % today_date["str"])
                     transaction.set_prev_state(transaction.get_state())
                     transaction.set_state("void")
+                    new_label = "Unvoid Entry\tCtrl-v"
                 else:
                     new_payee = transaction.get_payee()[5:]
                     transaction.set_payee(new_payee)
-                    unvoid_msg = "; unvoided %s" % today_date
-                    transaction.set_memo(transaction.get_memo() + unvoid_msg)
+                    transaction.set_memo("")
                     new_state = transaction.get_prev_state()
                     transaction.set_state(new_state)
+                    new_label = "Void Entry\tCtrl-v"
+                void_id = self.editmenu.FindItemById(self.ID_VOID_ENTRY).Id
+                self.editmenu.SetLabel(void_id, new_label)
                 proj_value = self.transactions.update_current_and_projected_values(0)
                 self.transactions.parent.set_value_proj(proj_value)
                 for i in range(index,len(self.transactions)):

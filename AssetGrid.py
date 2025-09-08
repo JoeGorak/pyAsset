@@ -552,9 +552,12 @@ class AssetGrid(grd.Grid):
         row = evt.GetRow()
         col = evt.GetCol()
         pos = evt.GetPosition
-        if row < len(self.getFrame().assets):
+        assetFrame = self.getFrame()
+        assets = assetFrame.getAssets()
+        if assets != None:
+            pass                                    # JJG 9/7/2025 if we need access to assets in the future we have them here!
+        if row < len(assets):
             if col == self.ACCT_NAME_COL:
-                assetFrame = self.getFrame()
                 transactionFrame = assetFrame.getTransactionFrame(row)
                 if transactionFrame != None:
                     transactionFrame.redraw_all()

@@ -286,7 +286,7 @@ class ExcelToAsset(wx.Frame):
                 if type(cv) is str:
                     cvu = cv.upper()
                 # if this is a header line, simply record the fact and go process it accordingly!   JJG 7/25/2025
-                if col_num == 1 and ("CHECKING AND SAVINGS" in cvu or "CREDIT CARDS" in cvu or "LOANS" in cvu or "EXPENSE" in cv):
+                if col_num == 1 and ("CHECKING AND SAVINGS" in cvu or "CREDIT CARDS" in cvu or "LOANS" in cvu or "EXPENSES" in cvu):
                     cur_type = cv
                     break
                 else:

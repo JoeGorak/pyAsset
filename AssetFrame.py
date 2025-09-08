@@ -128,6 +128,12 @@ class AssetFrame(wx.Frame):
         self.projDate = currDate
         self.edited = False
 
+    def getAssets(self):
+        if self.assets == None:
+            return None
+        else:
+            return self.assets.assets
+
     def get_date_format(self):
         return Date.get_global_date_format(Date)
 
@@ -363,7 +369,7 @@ class AssetFrame(wx.Frame):
                             break
                     else:                                                   # for manual bills, we are done so exit the while loop!
                         break
-            if bills_due != []:
+            if bills_due != [] and bills_due != None:
                 for bill in bills_due:
                     amount = bill.get_amount()
                     btype = bill.get_type()
