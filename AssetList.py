@@ -27,6 +27,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 from Asset import Asset
 from Date import Date
+from copy import deepcopy
 
 class AssetList():
     def __init__(self, parent):

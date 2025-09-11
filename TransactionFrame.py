@@ -72,10 +72,14 @@ class TransactionFrame(wx.Frame):
             self.cur_transaction.read_qif(filename)
 
         self.SetTitle("PyAsset:Transactions for %s" % title)
+        self.title = title
         self.redraw_all()
 
     def getTransactions(self):
         return self.transactions.transactions
+
+    def getTitle(self):
+        return self.title
 
     def make_widgets(self):
         self.menubar = wx.MenuBar()
@@ -367,7 +371,7 @@ class TransactionFrame(wx.Frame):
                     elif function == 'delete':
                         del transactionList.transactions[0]             # Since we are deleting the entire list, we can just delete the first one each time!
                     elif function == 'print':
-                        print(transactionsList.transactions[i])
+                        print(transactionList.transactions[i])
                     else:
                         pass                                            # JJG 1/26/24  TODO add code to print error if unknown function parameter passed to process_asset_list
                 if function == 'delete':
@@ -623,9 +627,12 @@ class TransactionFrame(wx.Frame):
             if d.ShowModal() == wx.ID_YES:
                 self.edited = True
                 today_date = Date.get_curr_date(self.parent)
+                # Get payee and date of transaction for later use
+                original_payee = transaction.get_payee()
+                original_date = transaction.get_due_date()
                 # Toggle values so if it was void make it active and if active make it void
                 if void:
-                    transaction.set_payee("VOID: " + transaction.get_payee())
+                    transaction.set_payee("VOID:" + transaction.get_payee())
                     transaction.set_memo("voided %s" % today_date["str"])
                     transaction.set_prev_state(transaction.get_state())
                     transaction.set_state("void")
@@ -640,10 +647,25 @@ class TransactionFrame(wx.Frame):
                 void_id = self.editmenu.FindItemById(self.ID_VOID_ENTRY).Id
                 self.editmenu.SetLabel(void_id, new_label)
                 proj_value = self.transactions.update_current_and_projected_values(0)
-                self.transactions.parent.set_value_proj(proj_value)
-                for i in range(index,len(self.transactions)):
-                    self.trans_grid.setValue(i, "Value", str(round(self.transactions[i].get_current_value(),2)))
-                self.redraw_all()  # redraw only [index:]
+                self.update_asset_projected_value(index)
+                # If we voided or unvoifed a payment or paydown, we need to void or unvoid the corresponding payment or paydown
+                if self.starts_with(original_payee, "Payment") or self.starts_with(original_payee, "VOID:Payment"):
+                    pass
+                elif self.starts_with(original_payee, "Paydown") or self.starts_with(original_payee, "VOID:Paydown"):
+                    pass
+
+    def starts_with(self, string, substring):
+        return string[:len(substring)] == substring
+
+    def update_asset_projected_value(self, index=0):
+        assets = self.parent.getAssets()
+        new_value = assets[0].get_value_proj()
+        for i in range(index,len(self.transactions)):
+            self.trans_grid.setValue(i, "Value", str(round(self.transactions[i].get_current_value(),2)))
+            new_value = self.transactions[i].get_current_value()
+        assets[self.asset_index].set_value_proj(new_value)
+        self.parent.redraw_all()
+        self.redraw_all()  # redraw only [index:]
 
     def deleteentry(self, *args):
         index = self.trans_grid.GetGridCursorRow()
@@ -662,9 +684,8 @@ class TransactionFrame(wx.Frame):
                 trans_list_index = self.transactions.index(payee, due_date)
                 del self.transactions[trans_list_index]
                 self.trans_grid.DeleteRows(pos=index)
-                value_proj = self.transactions.update_current_and_projected_values(trans_list_index)
-                pass
-#                self.parent.set_value_proj(value_proj)        
+                value_proj = self.transactions.update_current_and_projected_values()
+                self.update_asset_projected_value()
  
     def reconcile(self, *args):
         d = wx.TextEntryDialog(self,
@@ -745,38 +766,96 @@ class TransactionFrame(wx.Frame):
         return
 
     def assetchange(self, which_transaction, which_column, new_value):
-        colName = self.trans_grid.getColName(which_column)
+        if type(which_column) is int:
+            colName = self.trans_grid.getColName(which_column)
+        else:
+            colName = which_column
         transaction_changed = self.transactions[which_transaction]
+        payee = transaction_changed.get_payee()
         modified = True
-        print("TransactionFrame: Recieved notification that transaction ", transaction_changed.get_payee(), " column", colName, "changed, new_value", new_value)
+        print("TransactionFrame: Recieved notification that transaction ", payee, " column", colName, "changed, new_value", new_value)
+        print("Transaction changed: ", transaction_changed)
+
+        modified_transaction_index = -1
+        if self.starts_with(payee, "Payment") or self.starts_with(payee, "VOID:Payment"):
+            if self.starts_with(payee, "Payment"):
+                payment_account = payee[len("Payment from "):]
+            else:
+                payment_account = payee[len("VOID:Payment from ")]
+            asset_index = self.parent.assets.index(payment_account)
+            modified_asset = self.parent.getAssets()[asset_index]
+            modified_payee = "Paydown " + self.title + " from " + payment_account
+        elif self.starts_with(payee, "Paydown") or self.starts_with(payee, "VOID:Paydown"):
+            from_place = payee.index("from ")
+            if self.starts_with(payee, "Paydown"):
+                paydown_place = len("Paydown ")
+            else:
+                paydown_place = len("VOID:Paydown ")
+            payment_account = payee[from_place+len("from "):]
+            modified_asset_name = payee[paydown_place:from_place-1]
+            modified_asset = self.parent.assets.get_asset_by_name(modified_asset_name)
+            modified_payee = "Payment from " + payment_account
+        modified_transactions = modified_asset.transactions
+        modified_transaction_index = modified_transactions.index(modified_payee, transaction_changed.get_due_date()["str"])
+
         if colName == "Pmt Method":
             transaction_changed.set_pmt_method(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_pmt_method(new_value)
         elif colName == "Chk #":
             transaction_changed.set_check_num(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_check_num(new_value)
         elif colName == "Payee":
             transaction_changed.set_payee(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_payee(new_value)
         elif colName == "Amount":
             transaction_changed.set_amount(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_amount(new_value)
         elif colName == "Action":
             transaction_changed.set_action(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_action(new_value)
         elif colName == "Value":
             transaction_changed.set_current_value(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_current_value(new_value)
         elif colName == "Due Date":
             transaction_changed.set_due_date(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_due_date(new_value)
         elif colName == "Sched Date":
             transaction_changed.set_sched_date(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_sched_date(new_value)
         elif colName == "State":
             transaction_changed.set_state(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_state(new_value)
         elif colName == "Comment":
             transaction_changed.set_comment(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_comment(new_value)
         elif colName == "Memo":
             transaction_changed.set_memo(new_value)
+            if modified_transaction_index != -1:
+               modified_transactions[modified_transaction_index].set_memo(new_value)
         else:
             self.DisplayMsg("Unknown column " + colName + " ignored!")
             modified = False
 
         if modified == True:
-            transaction_changed.assetchange(colName, new_value)
-            del self.transactions[which_transaction]
-            self.transactions.insert(transaction_changed)
+            if modified_transaction_index != -1:
+                self.update_asset_projected_value()
+                try:
+                    modified_transaction_frame = modified_asset.trans_frame
+                except:
+                    modified_transaction_frame = None
+                if modified_transaction_frame != None:
+                    modified_transaction_frame.redraw_all()
+            self.redraw_all()
+            self.parent.assets.update_proj_values(Date.get_global_proj_date(self))
+            self.parent.redraw_all()
             self.edited = True

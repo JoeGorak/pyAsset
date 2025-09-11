@@ -394,8 +394,8 @@ class TransactionGrid(grd.Grid):
                 dollar_amount = new_value.replace("$", "").replace(",", "")
                 if "." not in dollar_amount:
                     dollar_amount += ".00"
-                    evt.Veto()
-                    self.frame.trans_grid.SetCellValue(row, col, dollar_amount)
+                evt.Veto()
+                self.frame.trans_grid.SetCellValue(row, col, dollar_amount)
                 evt.String = dollar_amount
             else:
                 str = "%s is not a valid dollar string" % (new_value)
@@ -637,8 +637,7 @@ class TransactionGrid(grd.Grid):
             msg = 'Selected'
         else:
             msg = 'Deselected'
-        print("OnRangeSelect: %s  top-left %s, bottom-right %s\n" % (msg, evt.GetTopLeftCoords(),
-                                                                     evt.GetBottomRightCoords()))
+        print("OnRangeSelect: %s  top-left %s, bottom-right %s\n" % (msg, evt.GetTopLeftCoords(),                                                             evt.GetBottomRightCoords()))
         evt.Skip()
 
     def OnCellChange(self, evt):

@@ -78,7 +78,15 @@ class Asset(object):
         self.cash_used = cash_used
         self.cash_avail = cash_avail
         self.transactions = TransactionList(self, limit=limit)
-        return
+
+    def get_assetList(self):
+        try:
+            assetList = self.assetList
+        except:
+            assetList = None
+
+    def set_assetList(self, assetList):
+        self.assetList = assetList
 
     def __len__(self):
         return len(self.transactions)

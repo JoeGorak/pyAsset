@@ -1078,6 +1078,7 @@ class AssetFrame(wx.Frame):
                 if self.assets[sheet_index].transactions:
                     proj_value = self.assets[sheet_index].transactions.update_current_and_projected_values()
                     self.assets[sheet_index].set_value_proj(proj_value)
+                    self.assets[sheet_index].set_assetList(self.assets)
             else:
                 print(sheet + " not found in asset list")
         self.bills = xlsm.ProcessBillsSheet()
