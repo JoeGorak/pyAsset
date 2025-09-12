@@ -61,11 +61,10 @@ class TransactionFrame(wx.Frame):
         if style == None:
             style = wx.DEFAULT_FRAME_STYLE
         kwds["style"] = style
-        wx.Frame.__init__(self, parent, my_id, title, **kwds)
-
-        self.Bind(wx.EVT_CLOSE,self.close)
+        super(TransactionFrame, self).__init__(parent, my_id, title=title, **kwds)
         self.make_widgets()
 
+        self.Bind(wx.EVT_CLOSE,self.close)
         self.edited = False
 
         if filename:
@@ -88,8 +87,6 @@ class TransactionFrame(wx.Frame):
         self.make_filemenu()
         self.make_editmenu()
         self.make_helpmenu()
-        self.make_trans_grid()
-        self.set_properties()
         self.do_layout()
 
     def make_filemenu(self):
@@ -175,9 +172,6 @@ class TransactionFrame(wx.Frame):
     def make_trans_grid(self):
         self.panel = wx.Panel(self)
         self.trans_grid = TransactionGrid(self, self.panel)
-        self.rowSize = 20
-        self.colSize = self.trans_grid.getNumLayoutCols()
-        self.trans_grid.CreateGrid(self.rowSize, self.colSize) 
         return self.trans_grid
 
     def get_trans_grid(self):
@@ -192,10 +186,21 @@ class TransactionFrame(wx.Frame):
         self.total_width = self.trans_grid.set_properties(self)
 
     def do_layout(self):
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.trans_grid, 1, wx.EXPAND)
-        self.panel.SetSizer(sizer)
+        self.panel = wx.Panel(self)
+
+        self.make_trans_grid()
+        self.set_properties()
+
+        self.grid_sizer = wx.FlexGridSizer(1, 1, 0, 0)
+        self.grid_sizer.Add(self.trans_grid, proportion=1, flag=wx.RESERVE_SPACE_EVEN_IF_HIDDEN|wx.EXPAND)
+
+        self.panel.Fit()
+        self.panel.SetSizer(self.grid_sizer)
+        self.grid_sizer.SetSizeHints(self.panel)
+
+        self.Fit()
         self.Layout()
+        self.Show()
 
     def update_transaction_grid_dates(self, oldDateFormat, newDateFormat):
         self.edited = True

@@ -35,8 +35,19 @@ class TransactionGrid(grd.Grid):
     def __init__(self, frame, panel, **keywords):
         self.dateFormat = Date.get_global_date_format(Date)
         self.dateSep = Date.get_global_date_sep(self)
-        self.grid = grd.Grid.__init__(self, panel, **keywords)
+        self.columnNames = ["Pmt Method", "Chk #", "Payee", "Amount", "Action", "Value", "Sched Date", "Due Date", "State", "Comment", "Memo"];
+        self.trans_grid = grd.Grid.__init__(self, panel, **keywords)
+        self.NumRows = 20                           # Initial number of rows in grid
+        self.MaxNumRows = 45                        # Maximum number of rows in grid
+        numTransactions = len(frame.transactions)
+        if numTransactions < self.NumRows:
+            self.NumRows = numTransactions
+        elif numTransactions > self.MaxNumRows:
+            self.NumRows = self.MaxNumRows
+        self.CreateGrid(self.NumRows, len(self.columnNames))
         self.frame = frame
+
+        # Define all needed evenent bindings
         self.Bind(grd.EVT_GRID_CELL_CHANGING, self.cellchanging)
 
         # test all the events
@@ -62,17 +73,18 @@ class TransactionGrid(grd.Grid):
         self.Bind(grd.EVT_GRID_EDITOR_CREATED, self.OnEditorCreated)
 
         # Define the layout of the grid in the frame
-        self.TRANS_PMT_METHOD_COL = 0
-        self.TRANS_CHECK_NUM_COL = 1
-        self.TRANS_PAYEE_COL = 2
-        self.TRANS_AMOUNT_COL = 3
-        self.TRANS_ACTION_COL = 4
-        self.TRANS_VALUE_COL = 5
-        self.TRANS_SCHED_DATE_COL = 6
-        self.TRANS_DUE_DATE_COL = 7
-        self.TRANS_STATE_COL = 8
-        self.TRANS_COMMENT_COL = 9
-        self.TRANS_MEMO_COL = 10
+        Headers = self.columnNames
+        self.TRANS_PMT_METHOD_COL = Headers.index("Pmt Method")
+        self.TRANS_CHECK_NUM_COL = Headers.index("Chk #")
+        self.TRANS_PAYEE_COL = Headers.index("Payee")
+        self.TRANS_AMOUNT_COL = Headers.index("Amount")
+        self.TRANS_ACTION_COL = Headers.index("Action")
+        self.TRANS_VALUE_COL = Headers.index("Value")
+        self.TRANS_SCHED_DATE_COL = Headers.index("Sched Date")
+        self.TRANS_DUE_DATE_COL = Headers.index("Due Date")
+        self.TRANS_STATE_COL = Headers.index("State")
+        self.TRANS_COMMENT_COL = Headers.index("Comment")
+        self.TRANS_MEMO_COL = Headers.index("Memo")
 
         # Define the widths of the columns in the grid
         TRANS_PMT_METHOD_COL_WIDTH = 80
@@ -123,8 +135,6 @@ class TransactionGrid(grd.Grid):
                          [self.TRANS_COMMENT_COL, TRANS_COMMENT_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
                          [self.TRANS_MEMO_COL, TRANS_MEMO_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
         ]
-
-        return
 
     def getNumLayoutCols(self):
         return len(self.col_info)
@@ -214,9 +224,6 @@ class TransactionGrid(grd.Grid):
     def getCurrTrans(self, row, col):
         col = col                                   # JJG 1/1/2024 So editor will do folding right!
         return self.getFrame().transactions[row]
-
-    def getNumLayoutCols(self):
-        return len(self.col_info)
 
 #TODO Investigate making GridCell Renderers be true cell renderers vice functions!
 
@@ -504,17 +511,16 @@ class TransactionGrid(grd.Grid):
     def set_properties(self, frame):
         frame.statusbar.SetStatusWidths([-1])
         statusbar_fields = [""]
-        self.columnNames = ["Pmt Method", "Chk #", "Payee", "Amount", "Action", "Value", "Sched Date", "Due Date", "State", "Comment", "Memo"];
 
         for i in range(len(statusbar_fields)):
             frame.statusbar.SetStatusText(statusbar_fields[i], i)
-        self.value_width = 60  # non-zero start value to account for record number of TransactionGrid frame!
+        self.total_width = 60  # non-zero start value to account for record number of TransactionGrid frame!
         for i in range(len(self.columnNames)):
             self.SetColLabelValue(i, self.columnNames[i])
             cur_width = self.getColWidth(i)
-            self.value_width += cur_width
+            self.total_width += cur_width
             self.SetColSize(i, cur_width)
-        return self.value_width
+        return self.total_width
 
     def update_transaction_grid_dates(self, oldDateFormat, newDateFormat):
         self.edited = True
@@ -564,7 +570,8 @@ class TransactionGrid(grd.Grid):
         self.Unbind(grd.EVT_GRID_EDITOR_HIDDEN)
         self.Unbind(grd.EVT_GRID_EDITOR_CREATED)
 
-        del self.grid
+        if self.trans_grid != None:
+            del self.trans_grid
 
     def OnCellLeftClick(self, evt):
         row = evt.GetRow()

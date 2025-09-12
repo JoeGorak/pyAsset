@@ -130,7 +130,7 @@ class AssetFrame(wx.Frame):
             return None
         else:
             return self.assets.assets
-
+        
     def get_date_format(self):
         return Date.get_global_date_format(Date)
 
@@ -366,7 +366,8 @@ class AssetFrame(wx.Frame):
                             break
                     else:                                                   # for manual bills, we are done so exit the while loop!
                         break
-            if bills_due != [] and bills_due != None:
+            bills_due = bills_due.getBills()
+            if bills_due != None:
                 for bill in bills_due:
                     amount = bill.get_amount()
                     btype = bill.get_type()
@@ -382,7 +383,7 @@ class AssetFrame(wx.Frame):
                             payee_type = payee_asset.get_type()
                         else:
                             payee_type = "possible expense"
-                        if payee_type == "CCard" or payee_type == "Loan":
+                        if payee_type == "CCard" or payee_type == "Oth L":
                             payee = "Paydown " + payee + " from " + pmt_acct.get_name()
                             new_payee = "Payment from " + pmt_acct.get_name()
                             if not payee_asset.transaction_exists(new_payee, due_date):
