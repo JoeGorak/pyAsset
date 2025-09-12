@@ -667,6 +667,8 @@ class TransactionFrame(wx.Frame):
         for i in range(index,len(self.transactions)):
             self.trans_grid.setValue(i, "Value", str(round(self.transactions[i].get_current_value(),2)))
             new_value = self.transactions[i].get_current_value()
+            if self.transactions[i].get_due_date() == None:
+                continue
             due_date = self.transactions[i].get_due_date()["dt"]
             if due_date <= proj_date:
                 asset_value_proj= new_value

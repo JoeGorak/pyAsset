@@ -436,9 +436,6 @@ class AssetGrid(grd.Grid):
         assetFrame = self.getFrame()
         if row < 0 or row >= len(assetFrame.assets):
             assetFrame.assets.assets.append(Asset(type = new_value))            # JJG 6/26/25 Pass in name to determine type of asset
-#            str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
-#            ret_val = self.DisplayMsg(str)
-#        elif self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
         if self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
             str = "Warning: Changes not allowed for column %s!" % (self.getColName(col))
             ret_val = self.DisplayMsg(str)
