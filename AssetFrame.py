@@ -408,7 +408,7 @@ class AssetFrame(wx.Frame):
 
     def clear_all_assets(self):
         self.assets = AssetList(self)
-        self.redraw_all(-1)
+        self.redraw_all()
 
     def checkForConfigFile(self, cfgFile):
         if cfgFile == "":
@@ -1019,7 +1019,7 @@ class AssetFrame(wx.Frame):
                 self.cur_asset = self.qif.read_qif(total_name_qif)
                 fromfile.close()
                 deffile.close()
-                self.redraw_all(-1)
+                self.redraw_all()
                 if self.cur_asset.name:
                     self.SetTitle("PyAsset: %s" % self.cur_asset.name)
             else:
@@ -1274,7 +1274,7 @@ class AssetFrame(wx.Frame):
             if fname:
                 break
         archive.write_qif(os.path.join(dir, fname))
-        self.redraw_all(-1)
+        self.redraw_all()
         self.edited = True
 
     def newentry(self, *args):

@@ -215,47 +215,47 @@ class TransactionList:
                 current_value = self.transactions[trans_number-1].get_current_value()
             ret_proj_value= proj_value = current_value
             while trans_number < len(self.transactions):
-                trans_pmt_method = self.transactions[trans_number].get_pmt_method()
-                trans_sched_date = self.transactions[trans_number].get_sched_date()
-                new_current_value = current_value
-                new_proj_value = proj_value
-                trans_state = self.transactions[trans_number].get_state()
-                self.transactions[trans_number].set_current_value(str(new_current_value))
-                self.transactions[trans_number].set_projected_value(str(new_proj_value))
-                trans_action = self.transactions[trans_number].get_action()
-                if trans_action:
-
-#                   Check to make sure transaction hasn't been voided before updating current value     JJG 07/17/2021
-#                   Also check for outstanding transactions which should not affect current value
-
-                    if trans_state != "void" and trans_state != "outstanding":
-                        trans_amount = self.transactions[trans_number].get_amount()
-                        if trans_amount == None:
-                            trans_amount = 0.00
-                    else:
-                        trans_amount = 0.00
-                    if trans_action == '-':
-                        new_current_value = current_value - trans_amount
-                        new_proj_value = proj_value - trans_amount
-                    elif trans_action == '+':
-                        new_current_value = current_value + trans_amount
-                        new_proj_value = proj_value + trans_amount
-                    else:
-                        print("Unknown action ", trans_action, " ignored")
-                        new_current_value = current_value
-                        new_proj_value = proj_value
+                due_date_obj = Date.parse_date(self, self.transactions[trans_number].get_due_date(), Date.get_global_date_format(Date))
+                if due_date_obj != None:
+                    trans_pmt_method = self.transactions[trans_number].get_pmt_method()
+                    trans_sched_date = self.transactions[trans_number].get_sched_date()
+                    new_current_value = current_value
+                    new_proj_value = proj_value
+                    trans_state = self.transactions[trans_number].get_state()
                     self.transactions[trans_number].set_current_value(str(new_current_value))
                     self.transactions[trans_number].set_projected_value(str(new_proj_value))
-                current_value = new_current_value
-                proj_value = new_proj_value
-                DateFormat = Date.get_global_date_format(Date)
-                if trans_sched_date != None:
-                    trans_sched_date_obj = Date.parse_date(self, trans_sched_date, DateFormat)["dt"]
-                    proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
-                    if trans_sched_date_obj <= proj_date_obj:
+                    trans_action = self.transactions[trans_number].get_action()
+                    if trans_action:
+#                       Check to make sure transaction hasn't been voided before updating current value     JJG 07/17/2021
+#                       Also check for outstanding transactions which should not affect current value
+                        if trans_state != "void" and trans_state != "outstanding":
+                            trans_amount = self.transactions[trans_number].get_amount()
+                            if trans_amount == None:
+                                trans_amount = 0.00
+                        else:
+                            trans_amount = 0.00
+                        if trans_action == '-':
+                            new_current_value = current_value - trans_amount
+                            new_proj_value = proj_value - trans_amount
+                        elif trans_action == '+':
+                            new_current_value = current_value + trans_amount
+                            new_proj_value = proj_value + trans_amount
+                        else:
+                            print("Unknown action ", trans_action, " ignored")
+                            new_current_value = current_value
+                            new_proj_value = proj_value
+                        self.transactions[trans_number].set_current_value(str(new_current_value))
+                        self.transactions[trans_number].set_projected_value(str(new_proj_value))
+                    current_value = new_current_value
+                    proj_value = new_proj_value
+                    DateFormat = Date.get_global_date_format(Date)
+                    if trans_sched_date != None:
+                        trans_sched_date_obj = Date.parse_date(self, trans_sched_date, DateFormat)["dt"]
+                        proj_date_obj = Date.parse_date(self, proj_date, Date.get_global_date_format(Date))["dt"]
+                        if trans_sched_date_obj <= proj_date_obj:
+                            ret_proj_value = proj_value
+                    else:
                         ret_proj_value = proj_value
-                else:
-                    ret_proj_value = proj_value
                 trans_number += 1
         return ret_proj_value
 
