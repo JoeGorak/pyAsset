@@ -261,18 +261,18 @@ class TransactionList:
 
     def update_transaction_dates(self, oldDateFormat, newDateFormat):
         trans_number = 0
+        if self.transactions != None:
+            while trans_number < len(self.transactions):
+                due_date = self.transactions[trans_number].get_due_date()
+                if due_date != None:
+                    new_due_date = Date.convertDateFormat(Date, due_date, oldDateFormat, newDateFormat)
+                    self.transactions[trans_number].set_due_date(new_due_date)
 
-        while trans_number < len(self.transactions):
-            due_date = self.transactions[trans_number].get_due_date()
-            if due_date != None:
-                new_due_date = Date.convertDateFormat(Date, due_date, oldDateFormat, newDateFormat)
-                self.transactions[trans_number].set_due_date(new_due_date)
+                sched_date = self.transactions[trans_number].get_sched_date()
+                if sched_date != None:
+                    new_sched_date = Date.convertDateFormat(Date, sched_date, oldDateFormat, newDateFormat)
+                    self.transactions[trans_number].set_sched_date(new_sched_date)
 
-            sched_date = self.transactions[trans_number].get_sched_date()
-            if sched_date != None:
-                new_sched_date = Date.convertDateFormat(Date, sched_date, oldDateFormat, newDateFormat)
-                self.transactions[trans_number].set_sched_date(new_sched_date)
+                self.transactions[trans_number].dateFormat = newDateFormat
 
-            self.transactions[trans_number].dateFormat = newDateFormat
-
-            trans_number += 1
+                trans_number += 1

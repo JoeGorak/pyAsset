@@ -36,14 +36,11 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Search functions
 # goto date
 
-from ast import Pass
-from re import S
 import wx
 import csv
 import os
 import copy
 from wx import Button
-from wx.core import AcceleratorEntry
 from qif import qif
 from Asset import Asset
 from AssetList import AssetList

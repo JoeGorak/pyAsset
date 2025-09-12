@@ -269,8 +269,9 @@ class TransactionFrame(wx.Frame):
                 else:
                     self.trans_grid.GridCellErrorRenderer(row, col)
 
-        win_height = (ntransactions+3) * self.rowSize + 120                 # +3 for header lines + 120 for borders
-        self.SetSize(self.total_width + 120, win_height)
+        # TODO: These lines need to be fixed!!!! JJG 09/10/2025
+        #win_height = (ntransactions+3) * self.rowSize  # + 120                 # +3 for header lines + 120 for borders
+        #self.SetSize(self.total_width + 120, win_height)
         self.Show()
 
         cursorCell = index

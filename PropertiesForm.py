@@ -252,6 +252,8 @@ class PropertyForm(wx.Panel):
                 curr_date = self.assetFrame.curr_date
                 self.assetFrame.curr_date = Date.convertDateFormat(Date,curr_date,old_format,new_format)             # JJG 1/7/2024 Change current date to new format
                 self.assetFrame.proj_date = new_global_proj_date                                                     # JJG 5/26/2024 Change proj_date to new format
+                self.assetFrame.update_date_dates(old_format, new_format)
+                self.assetFrame.update_all_Date_Formats(old_format, new_format)
             self.NewRefDate = Date.convertDateFormat(Date,self.NewRefDate,old_format,new_format)
             self.assetFrame.setRefDate(self.NewRefDate)
             if self.oldPayType != self.payType:
