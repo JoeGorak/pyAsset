@@ -77,7 +77,6 @@ class BillFrame(wx.Frame):
     def make_widgets(self):
         self.menubar = wx.MenuBar()
         self.SetMenuBar(self.menubar)
-        self.statusbar = self.CreateStatusBar(1, 0)
         self.make_filemenu()
         self.make_editmenu()
         self.make_helpmenu()

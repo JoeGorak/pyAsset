@@ -32,14 +32,14 @@ from datetime import date, datetime
 from Date import Date
 
 class TransactionGrid(grd.Grid):
-    def __init__(self, frame, panel, **keywords):
+    def __init__(self, frame, panel, transactions, **keywords):
         self.dateFormat = Date.get_global_date_format(Date)
         self.dateSep = Date.get_global_date_sep(self)
         self.columnNames = ["Pmt Method", "Chk #", "Payee", "Amount", "Action", "Value", "Sched Date", "Due Date", "State", "Comment", "Memo"];
         self.trans_grid = grd.Grid.__init__(self, panel, **keywords)
-        self.NumRows = 20                           # Initial number of rows in grid
+        self.NumRows = 30                           # Initial number of rows in grid
         self.MaxNumRows = 45                        # Maximum number of rows in grid
-        numTransactions = len(frame.transactions)
+        numTransactions = len(transactions)
         if numTransactions < self.NumRows:
             self.NumRows = numTransactions
         elif numTransactions > self.MaxNumRows:
@@ -123,17 +123,17 @@ class TransactionGrid(grd.Grid):
 
         # Grid layout array
         self.col_info = [
-                         [self.TRANS_PMT_METHOD_COL, TRANS_PMT_METHOD_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_CHECK_NUM_COL, TRANS_CHECK_NUM_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_PAYEE_COL, TRANS_PAYEE_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
-                         [self.TRANS_AMOUNT_COL, TRANS_AMOUNT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_ACTION_COL, TRANS_ACTION_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_VALUE_COL, TRANS_VALUE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
-                         [self.TRANS_SCHED_DATE_COL, TRANS_SCHED_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_DUE_DATE_COL, TRANS_DUE_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_STATE_COL, TRANS_STATE_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_COMMENT_COL, TRANS_COMMENT_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-                         [self.TRANS_MEMO_COL, TRANS_MEMO_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
+            [self.TRANS_PMT_METHOD_COL, TRANS_PMT_METHOD_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.TRANS_CHECK_NUM_COL, TRANS_CHECK_NUM_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.TRANS_PAYEE_COL, TRANS_PAYEE_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
+            [self.TRANS_AMOUNT_COL, TRANS_AMOUNT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.TRANS_ACTION_COL, TRANS_ACTION_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.TRANS_VALUE_COL, TRANS_VALUE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
+            [self.TRANS_SCHED_DATE_COL, TRANS_SCHED_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.TRANS_DUE_DATE_COL, TRANS_DUE_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.TRANS_STATE_COL, TRANS_STATE_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.TRANS_COMMENT_COL, TRANS_COMMENT_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.TRANS_MEMO_COL, TRANS_MEMO_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.ZERO_SUPPRESS],
         ]
 
     def getNumLayoutCols(self):
@@ -171,54 +171,54 @@ class TransactionGrid(grd.Grid):
 
     def getColMethod(self, row, i):
         if i == self.TRANS_PMT_METHOD_COL:
-            return self.frame.transactions[row].get_pmt_method()
+            return self.frame.getTransactions()[row].get_pmt_method()
         elif i == self.TRANS_CHECK_NUM_COL:
-            return self.frame.transactions[row].get_check_num()
+            return self.frame.getTransactions()[row].get_check_num()
         elif i == self.TRANS_PAYEE_COL:
-            return self.frame.transactions[row].get_payee()
+            return self.frame.getTransactions()[row].get_payee()
         elif i == self.TRANS_AMOUNT_COL:
-            return self.frame.transactions[row].get_amount()
+            return self.frame.getTransactions()[row].get_amount()
         elif i == self.TRANS_ACTION_COL:
-            return self.frame.transactions[row].get_action()
+            return self.frame.getTransactions()[row].get_action()
         elif i == self.TRANS_VALUE_COL:
-            return self.frame.transactions[row].get_current_value()
+            return self.frame.getTransactions()[row].get_current_value()
         elif i == self.TRANS_DUE_DATE_COL:
-            return self.frame.transactions[row].get_due_date()
+            return self.frame.getTransactions()[row].get_due_date()
         elif i == self.TRANS_SCHED_DATE_COL:
-            return self.frame.transactions[row].get_sched_date()
+            return self.frame.getTransactions()[row].get_sched_date()
         elif i == self.TRANS_STATE_COL:
-            return self.frame.transactions[row].get_state()
+            return self.frame.getTransactions()[row].get_state()
         elif i == self.TRANS_COMMENT_COL:
-            return self.frame.transactions[row].get_comment()
+            return self.frame.getTransactions()[row].get_comment()
         elif i == self.TRANS_MEMO_COL:
-            return self.frame.transactions[row].get_memo()
+            return self.frame.getTransactions()[row].get_memo()
         else:
             return "??"
 
     def setColMethod(self, row, i, value):
         ret_val = "??"
         if i == self.TRANS_PMT_METHOD_COL:
-            ret_val = self.frame.transactions[row].set_pmt_method(value)
+            ret_val = self.frame.getTransactions()[row].set_pmt_method(value)
         elif i == self.TRANS_CHECK_NUM_COL:
-            ret_val = self.frame.transactions[row].set_check_num(value)
+            ret_val = self.frame.getTransactions()[row].set_check_num(value)
         elif i == self.TRANS_PAYEE_COL:
-            ret_val = self.frame.transactions[row].set_payee(value)
+            ret_val = self.frame.getTransactions()[row].set_payee(value)
         elif i == self.TRANS_AMOUNT_COL:
-            ret_val = self.frame.transactions[row].set_amount(value)
+            ret_val = self.frame.getTransactions()[row].set_amount(value)
         elif i == self.TRANS_ACTION_COL:
-            ret_val = self.frame.transactions[row].set_action(value)
+            ret_val = self.frame.getTransactions()[row].set_action(value)
         elif i == self.TRANS_VALUE_COL:
-            ret_val = self.frame.transactions[row].set_current_value(value)
+            ret_val = self.frame.getTransactions()[row].set_current_value(value)
         elif i == self.TRANS_DUE_DATE_COL:
-            ret_val = self.frame.transactions[row].set_due_date(value)
+            ret_val = self.frame.getTransactions()[row].set_due_date(value)
         elif i == self.TRANS_SCHED_DATE_COL:
-            ret_val = self.frame.transactions[row].set_sched_date(value)
+            ret_val = self.frame.getTransactions()[row].set_sched_date(value)
         elif i == self.TRANS_STATE_COL:
-            ret_val = self.frame.transactions[row].set_state(value)
+            ret_val = self.frame.getTransactions()[row].set_state(value)
         elif i == self.TRANS_COMMENT_COL:
-            ret_val = self.frame.transactions[row].set_comment(value)
+            ret_val = self.frame.getTransactions()[row].set_comment(value)
         elif i == self.TRANS_MEMO_COL:
-            ret_vak = self.frame.transactions[row].set_memo(value)
+            ret_vak = self.frame.getTransactions()[row].set_memo(value)
         return ret_val
 
     def getCurrTrans(self, row, col):
@@ -387,7 +387,7 @@ class TransactionGrid(grd.Grid):
         if new_value == "":
             col_type = self.col_info[col][self.TYPE_COL]
             if col_type == self.DOLLAR_TYPE: new_value = "0.00"
-        if row < 0 or row >= len(self.frame.transactions):
+        if row < 0 or row >= len(self.frame.getTransactions()):
             str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
             ret_val =  self.DisplayMsg(str)
         elif self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
@@ -509,11 +509,6 @@ class TransactionGrid(grd.Grid):
             self.SetCellValue(row, i, cellValue)
 
     def set_properties(self, frame):
-        frame.statusbar.SetStatusWidths([-1])
-        statusbar_fields = [""]
-
-        for i in range(len(statusbar_fields)):
-            frame.statusbar.SetStatusText(statusbar_fields[i], i)
         self.total_width = 60  # non-zero start value to account for record number of TransactionGrid frame!
         for i in range(len(self.columnNames)):
             self.SetColLabelValue(i, self.columnNames[i])
@@ -570,8 +565,8 @@ class TransactionGrid(grd.Grid):
         self.Unbind(grd.EVT_GRID_EDITOR_HIDDEN)
         self.Unbind(grd.EVT_GRID_EDITOR_CREATED)
 
-        if self.trans_grid != None:
-            del self.trans_grid
+        if self.frame.trans_grid != None:
+            del self.frame.trans_grid
 
     def OnCellLeftClick(self, evt):
         row = evt.GetRow()

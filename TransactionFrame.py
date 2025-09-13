@@ -47,7 +47,7 @@ from TransactionList import TransactionList
 from TransactionGrid import TransactionGrid
 
 class TransactionFrame(wx.Frame):
-    def __init__(self, style, parent, my_id, asset_index, transactions, title="PyAsset:Transaction", filename=None, **kwds):
+    def __init__(self, parent, asset_index, transactions, title="PyAsset:Transaction", filename=None, **kwds):
         self.asset_index = asset_index
         self.transactions = transactions
         self.parent = parent
@@ -58,10 +58,7 @@ class TransactionFrame(wx.Frame):
         else:
             self.cur_transaction = None
 
-        if style == None:
-            style = wx.DEFAULT_FRAME_STYLE
-        kwds["style"] = style
-        super(TransactionFrame, self).__init__(parent, my_id, title=title, **kwds)
+        super(TransactionFrame, self).__init__(parent, title=title)
         self.make_widgets()
 
         self.Bind(wx.EVT_CLOSE,self.close)
@@ -83,7 +80,6 @@ class TransactionFrame(wx.Frame):
     def make_widgets(self):
         self.menubar = wx.MenuBar()
         self.SetMenuBar(self.menubar)
-        self.statusbar = self.CreateStatusBar(1, 0)
         self.make_filemenu()
         self.make_editmenu()
         self.make_helpmenu()
@@ -169,29 +165,25 @@ class TransactionFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.about, None, wx.ID_ABOUT)
         self.Bind(wx.EVT_MENU, self.gethelp, None,self. ID_HELP)
 
-    def make_trans_grid(self):
-        self.panel = wx.Panel(self)
-        self.trans_grid = TransactionGrid(self, self.panel)
+    def make_trans_grid(self, panel):
+        self.trans_grid = TransactionGrid(self, panel, self.transactions)
         return self.trans_grid
 
     def get_trans_grid(self):
         try:
             trans_grid = self.trans_grid
         except:
-            trans_grid = self.make_trans_grid()
+            trans_grid = self.make_trans_grid(self.panel)
         self.trans_grid = trans_grid
         return self.trans_grid
-
-    def set_properties(self):
-        self.total_width = self.trans_grid.set_properties(self)
 
     def do_layout(self):
         self.panel = wx.Panel(self)
 
-        self.make_trans_grid()
-        self.set_properties()
+        self.make_trans_grid(self.panel)
+        self.trans_grid.set_properties(self)
 
-        self.grid_sizer = wx.FlexGridSizer(1, 1, 0, 0)
+        self.grid_sizer = wx.FlexGridSizer(1, self.trans_grid.getNumLayoutCols(), 0, 0)
         self.grid_sizer.Add(self.trans_grid, proportion=1, flag=wx.RESERVE_SPACE_EVEN_IF_HIDDEN|wx.EXPAND)
 
         self.panel.Fit()
@@ -274,9 +266,6 @@ class TransactionFrame(wx.Frame):
                 else:
                     self.trans_grid.GridCellErrorRenderer(row, col)
 
-        # TODO: These lines need to be fixed!!!! JJG 09/10/2025
-        #win_height = (ntransactions+3) * self.rowSize  # + 120                 # +3 for header lines + 120 for borders
-        #self.SetSize(self.total_width + 120, win_height)
         self.Show()
 
         cursorCell = index
@@ -394,7 +383,7 @@ class TransactionFrame(wx.Frame):
                 self.save_file()
         self.edited = False
         self.get_trans_grid().close()
-        del self.trans_grid
+#        del self.trans_grid
         del self.panel
         trans_frame = self.parent.getTransactionFrame(self.asset_index, False)
         if trans_frame != None:

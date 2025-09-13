@@ -25,7 +25,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  04/15/2023     Initial version v0.1
 
 import wx
-from wx.core import DefaultTimeSpanFormat
 import wx.grid as grd
 import re
 from datetime import date, datetime

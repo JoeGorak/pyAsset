@@ -381,14 +381,19 @@ class AssetFrame(wx.Frame):
                     if pmt_acct != None:
                         if payee_asset != None:
                             payee_type = payee_asset.get_type()
-                        else:
-                            payee_type = "possible expense"
+                            if btype == "Loan":
+                                if pmt_acct.transaction_exists(payee, due_date):                # If a Loan Payment exists with only the name, delete the transaction since a new_transaction will be created!   JJG 5/12/25
+                                    trans_list_index = pmt_acct.transactions.index(payee, due_date)
+                                    del pmt_acct.transactions[trans_list_index]
                         if payee_type == "CCard" or payee_type == "Oth L":
-                            payee = "Paydown " + payee + " from " + pmt_acct.get_name()
-                            new_payee = "Payment from " + pmt_acct.get_name()
-                            if not payee_asset.transaction_exists(new_payee, due_date):
-                                new_transaction = Transaction(self.parent, payee=new_payee, action="+", due_date=due_date, sched_date=due_date, pmt_method=bill.get_pmt_method(), amount=amount, state="budgeted")
-                                payee_asset.transactions.insert(new_transaction)
+                            if payee_type == "CCard":
+                                new_payee = "Paydown " + payee + " from " + pmt_acct.get_name()
+                            else:
+                               new_payee = "Payment from " + pmt_acct.get_name()
+                            if payee_asset != None:
+                                if payee_asset.transaction_exists(new_payee, due_date) == False:
+                                    new_transaction = Transaction(self.parent, payee=new_payee, action="+", due_date=due_date, sched_date=due_date, pmt_method=bill.get_pmt_method(), amount=amount, state="budgeted")
+                                    payee_asset.transactions.insert(new_transaction)
                         elif btype == "Checking and savings":
                             payee = "xfer to " + payee 
                         if not pmt_acct.transaction_exists(payee, due_date):
@@ -566,7 +571,7 @@ class AssetFrame(wx.Frame):
     def onBillButtonClick(self, evt):
         if self.filename == None:
             return
-        bill_filename = self.filename.split("\\")                          # JJG 7/29/2025 Start with total asset filname and change last part to Bills.qif for testing
+        bill_filename = self.filename.split("\\")                          # JJG 9/12/2025 Start with total asset filname and change last part to Bills.csv for testing
         bill_filename[len(bill_filename)-1] = "Bills.csv"
         bill_filename = "\\".join(bill_filename)
         self.bill_filename = bill_filename
@@ -635,26 +640,31 @@ class AssetFrame(wx.Frame):
         date_format = Date.get_global_date_format(Date)
         parsed_proj_date = Date.parse_date(self, in_date, date_format)
         if parsed_proj_date != None:
-            self.proj_date = wx.DateTime.FromDMY(parsed_proj_date["day"], parsed_proj_date["month"] - 1, parsed_proj_date["year"])
-            self.proj_year = parsed_proj_date["year"]
-            self.proj_month = parsed_proj_date["month"]
-            self.proj_day = parsed_proj_date["day"]
-            print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
-                  (self.proj_date.Format(date_format), self.proj_month, self.proj_day, self.proj_year))
-            Date.set_proj_date(self, in_date)
-            paydates = self.process_paydates_in_range(Date.get_global_curr_date(self), parsed_proj_date)
-#            print("Pay dates in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, paydates))
-            billsdue = self.process_bills_due_in_range(Date.get_global_curr_date(self), parsed_proj_date)
-#            print("Bills due in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, BillList(billsdue)))
-            self.assets.update_proj_values(self.get_proj_date())
-            self.redraw_all()
+            today = Date.get_today_date(Date)
+            if parsed_proj_date["dt"] <= today["dt"]:
+                self.proj_date = None
+                self.DisplayMsg("Bad projected date ignored: %s" % (in_date))
+            else:
+                self.proj_date = wx.DateTime.FromDMY(parsed_proj_date["day"], parsed_proj_date["month"] - 1, parsed_proj_date["year"])
+                self.proj_year = parsed_proj_date["year"]
+                self.proj_month = parsed_proj_date["month"]
+                self.proj_day = parsed_proj_date["day"]
+                print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
+                      (self.proj_date.Format(date_format), self.proj_month, self.proj_day, self.proj_year))
+                Date.set_proj_date(self, in_date)
+                paydates = self.process_paydates_in_range(Date.get_global_curr_date(self), parsed_proj_date)
+    #            print("Pay dates in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, paydates))
+                billsdue = self.process_bills_due_in_range(Date.get_global_curr_date(self), parsed_proj_date)
+    #            print("Bills due in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, BillList(billsdue)))
+                self.assets.update_proj_values(self.get_proj_date())
+                self.redraw_all()
         else:
             self.proj_date = None
             self.DisplayMsg("Bad projected date ignored: %s" % (in_date))
 
     def make_asset_grid(self, panel):
         self.assetGrid = AssetGrid(panel)
-        self.needed_width = self.assetGrid.set_properties(self)
+        self.assetGrid.set_properties(self)
 
     def setup_layout(self):
         self.panel = wx.Panel(self)
@@ -735,7 +745,7 @@ class AssetFrame(wx.Frame):
         name = self.assets.assets[row].name
         transactions = self.assets[row].transactions
         if autoCreate:
-            retVal = self.assets.assets[row].trans_frame = TransactionFrame(None, self, -1, row, transactions, name)
+            retVal = self.assets.assets[row].trans_frame = TransactionFrame(self, row, transactions, name)
         return retVal
 
     def getTransactionFrame(self, row, autoCreate = True):
