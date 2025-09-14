@@ -444,9 +444,7 @@ class BillGrid(grd.Grid):
         elif ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.STRING_TYPE:
             pass
         else:
-            if ret_val != wx.OK:
-                str = "Warning: cellchanging not allowed for cell %d %d!" % (row, col)
-                ret_val = self.DisplayMsg(str)
+            pass
         if ret_val == wx.OK:
             self.getFrame().billchange(row,col,new_value)
             self.getFrame().redraw_all(row)  # only redraw current row

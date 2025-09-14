@@ -59,6 +59,21 @@ class Bill:
 
     inc_values = ["2 weeks", "1 month", "3 months", "6 months", "1 year", ""]
 
+    def __init__(self, parent, payee=None, type="Unknown", action="-", amount=0.0, min_due=0.0, due_date=None, sched_date=None,
+                 pmt_acct="Other", pmt_method="TBD", check_number=0, pmt_freq="Manual" ):
+        self.parent = parent
+        self.set_payee(payee)
+        self.set_type(type)
+        self.set_action(action)
+        self.set_amount(amount)
+        self.set_min_due(min_due)
+        self.set_due_date(due_date)
+        self.set_sched_date(sched_date)
+        self.set_pmt_acct(pmt_acct)
+        self.set_pmt_method(pmt_method)
+        self.set_pmt_frequency(pmt_freq)
+        self.set_check_number(check_number)
+
     def get_bill_inc_value(payment_freq):
         ret_value = None
         which = Bill.payment_frequencies.index(payment_freq)
@@ -84,20 +99,6 @@ class Bill:
 
     def get_payment_frequencies():
         return Bill.payment_frequencies
-
-    def __init__(self, payee=None, type="Unknown", action="-", amount=0.0, min_due=0.0, due_date=None, sched_date=None,
-                 pmt_acct="Other", pmt_method="TBD", check_number=0, pmt_freq="Manual" ):
-        self.set_payee(payee)
-        self.set_type(type)
-        self.set_action(action)
-        self.set_amount(amount)
-        self.set_min_due(min_due)
-        self.set_due_date(due_date)
-        self.set_sched_date(sched_date)
-        self.set_pmt_acct(pmt_acct)
-        self.set_pmt_method(pmt_method)
-        self.set_pmt_frequency(pmt_freq)
-        self.set_check_number(check_number)
 
     bill_fields = [ "Payee", "Type", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Pmt Freq", "Check Number" ]
 
@@ -221,12 +222,20 @@ class Bill:
         else:
             self.sched_date = self.get_date_representation(sched_date)
 
-#TODO: Modify get_pmt_acct and set_pmt_acct to use AssetList and Asset!  For now just put in and return whatever is typed!
     def get_pmt_acct(self):
-        return self.pmt_acct
+        try:
+            pmt_acct = self.pmt_acct
+        except:
+            pmt_acct = ""
+        return pmt_acct
 
     def set_pmt_acct(self, pmt_acct):
-        self.pmt_acct = pmt_acct
+        assets = self.parent.assets
+        if assets.index(pmt_acct) == -1 and pmt_acct != "Other" and pmt_acct != "Unknown" and pmt_acct != "":
+            self.MsgBox("Payment account " + pmt_acct + " not found in asset list! Ignoring update")
+            self.pmt_acct = "Unknown"
+        else:
+            self.pmt_acct = pmt_acct
 
     def get_pmt_method(self):
         spm = self.pmt_method
@@ -305,3 +314,8 @@ class Bill:
         else:
             print("Unknown payment frequency " + payment_freq + "! Defaulting to MANUAL")
             self.payment_frequency = MANUAL
+
+    def MsgBox(self, message):
+        d = wx.MessageDialog(self.parent, message, "error", wx.OK | wx.ICON_INFORMATION)
+        d.ShowModal()
+        d.Destroy()

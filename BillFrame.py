@@ -33,7 +33,6 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Search functions
 # goto date
 
-from platform import java_ver
 import wx
 import wx.grid
 import csv
@@ -47,15 +46,12 @@ from BillList import BillList
 
 class BillFrame(wx.Frame):
     def __init__(self, style, parent, my_id, bills, title="PyAsset:Bills", filename="", **kwds):
-        self.bills = bills
+        self.bills = BillList()
+        for bill in bills:
+            self.bills.insert(bill)
         self.parent = parent
         self.dateFormat = Date.get_global_date_format(self)
         self.dateSep = Date.get_global_date_sep(self)
-
-#        if self.bills != None and self.bills.bills != []:
-#            self.cur_bill = self.bills.bills[0]
-#        else:
-#            self.cur_bill = None
 
         self.edited = False
         self.rowSize = 10
@@ -306,7 +302,7 @@ class BillFrame(wx.Frame):
             bill_index=bill_fields.index(fields[j])
             args[fields[j]] = bill_index
         for i in range(1,len(lines)):
-            new_bill = Bill()
+            new_bill = Bill(self, self.parent)
             vals = lines[i].split(",")
             for j in range(len(fields)-1):
                 vals[j] = vals[j].replace("'","").strip()               # Get rid of '' and leading and trailing spaces
@@ -600,7 +596,7 @@ class BillFrame(wx.Frame):
 
     def newentry(self, *args):
         self.edited = True
-        self.bills.append(Bill())
+        self.bills.append(Bill(self.parent))
         self.bill_grid.AppendRows()
         nbills = self.bill_grid.GetNumberRows()
         self.bill_grid.SetGridCursor(nbills - 1, 0)
@@ -721,27 +717,59 @@ class BillFrame(wx.Frame):
         colName = self.bill_grid.getColName(which_column)
         bill_changed = self.bills[which_bill]
         modified = True
+        old_value = -1
         print("billFrame: Recieved notification that bill ", bill_changed.get_payee(), " column", colName, "changed, new_value", new_value)
         if colName == "Payee":
+            old_value = bill_changed.get_payee()
             bill_changed.set_payee(new_value)
         elif colName == "Amount":
+            old_value = bill_changed.get_amount()
             bill_changed.set_amount(new_value)
         elif colName == "Min Due":
+            old_value = bill_changed.get_min_due()
             bill_changed.set_min_due(new_value)
         elif colName == "Due Date":
+            old_value = bill_changed.get_due_date()
             bill_changed.set_due_date(new_value)
         elif colName == "Sched Date":
+            old_value = bill_changed.get_sched_date()
             bill_changed.set_sched_date(new_value)
         elif colName == "Pmt Acct":
+            old_value = bill_changed.get_pmt_acct()
             bill_changed.set_pmt_acct(new_value)
         elif colName == "Due Date":
+            old_value = bill_changed.get_due_date()
             bill_changed.set_due_date(new_value)
         elif colName == "Pmt Method":
+            old_value = bill_changed.get_pmt_method()
             bill_changed.set_pmt_method(new_value)
         elif colName == "Frequency":
+            old_value = bill_changed.get_pmt_frequency()
             bill_changed.set_pmt_frequency(new_value)
         else:
             self.DisplayMsg("Unknown column " + colName + " ignored!")
+            new_value = -1
+            modified = False
+
+        if old_value != new_value:
+            pmt_acct = bill_changed.get_pmt_acct()
+            pmt_acct_bad = pmt_acct == "Other" or pmt_acct == "Unknown" or pmt_acct == ""
+            if bill_changed.get_amount() != 0.0 and bill_changed.get_sched_date() != "" and not pmt_acct_bad:
+                print("Need to process a transaction to " + bill_changed.get_payee() + " from " + bill_changed.get_pmt_acct() + " for " + str(bill_changed.get_amount()) + " on " + bill_changed.get_sched_date())
+                bill_type = bill_changed.get_type()
+                #TODO: Need to finish logic for adding transactions for billbudgeting  JJG 9/13/2025
+                if bill_type == "Checking and savings":
+                    pass
+                elif bill_type == "Credit Card":
+                    pass
+                elif bill_type == "Loan":
+                    pass
+                elif bill_type == "Expense":
+                    pass
+                else:
+                    self.DisplayMsg("Unknown bill type " + bill_type + " ignored!")
+                    modified = False
+        else:
             modified = False
 
         if modified == True:

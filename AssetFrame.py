@@ -129,7 +129,7 @@ class AssetFrame(wx.Frame):
         if self.assets == None:
             return None
         else:
-            return self.assets.assets
+            return self.assets
         
     def get_date_format(self):
         return Date.get_global_date_format(Date)
@@ -351,9 +351,18 @@ class AssetFrame(wx.Frame):
                 if due_date > end_date:
                     continue
                 temp_date = Date.parse_date(self, start_date["str"], dateFormat)["dt"]
-                temp_bill = copy.deepcopy(bill)
+                temp_bill = Bill(self, bill.get_payee(), bill.get_type(), bill.get_action(),
+                                       bill.get_amount(), bill.get_min_due(), bill.get_due_date(),
+                                       bill.get_sched_date(), bill.get_pmt_acct(), bill.get_pmt_method(),
+                                       bill.get_pmt_frequency(), bill.get_check_number()
+                                )
                 while temp_date <= end_date:
-                    bills_due.append(copy.deepcopy(temp_bill))
+                    new_bill = Bill(self, temp_bill.get_payee(), temp_bill.get_type(), temp_bill.get_action(),
+                                          temp_bill.get_amount(), temp_bill.get_min_due(), temp_bill.get_due_date(),
+                                          temp_bill.get_sched_date(), temp_bill.get_pmt_acct(), temp_bill.get_pmt_method(),
+                                          temp_bill.get_pmt_frequency(), temp_bill.get_check_number()
+                                    )
+                    bills_due.append(new_bill)
                     inc_value = Bill.get_bill_inc_value(temp_bill.get_pmt_frequency())
                     if inc_value != None:                                   # if this bill is not manual it will have an increment value for the next due date
                         due_date = temp_bill.get_due_date()
@@ -402,7 +411,7 @@ class AssetFrame(wx.Frame):
         return bills_due
 
     def updatePayDates(self):
-        self.set_curr_paydate()
+        self.get_curr_paydate()
         self.set_next_paydate()
         print("Curr paydate: %s, Next paydate: %s" % (self.global_curr_paydate, self.global_next_paydate))
 
@@ -585,7 +594,7 @@ class AssetFrame(wx.Frame):
 
     def getBillsList(self):
         if self.bills == None:
-            self.bills = BillList(Bill())
+            self.bills = BillList(Bill(self))
         return BillList(self.bills.bills)
 
     def removeBillFrame(self):
@@ -641,7 +650,7 @@ class AssetFrame(wx.Frame):
         parsed_proj_date = Date.parse_date(self, in_date, date_format)
         if parsed_proj_date != None:
             today = Date.get_today_date(Date)
-            if parsed_proj_date["dt"] <= today["dt"]:
+            if parsed_proj_date["dt"] < today["dt"]:
                 self.proj_date = None
                 self.DisplayMsg("Bad projected date ignored: %s" % (in_date))
             else:

@@ -272,7 +272,7 @@ class ExcelToAsset(wx.Frame):
         Finished = False
         cur_type = "Unknown"
         for row in ws.rows:
-            new_bill = Bill()
+            new_bill = Bill(wx.GetTopLevelParent(self).Parent)
             row_num += 1
             if row_num == 1:
                 continue
