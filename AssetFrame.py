@@ -581,19 +581,23 @@ class AssetFrame(wx.Frame):
         self.billButton.Bind(wx.EVT_LEFT_DOWN, self.onBillButtonClick)
 
     def onBillButtonClick(self, evt):
-        if self.filename == None:
-            return
-        bill_filename = self.filename.split("\\")                          # JJG 9/12/2025 Start with total asset filname and change last part to Bills.csv for testing
-        bill_filename[len(bill_filename)-1] = "Bills.csv"
-        bill_filename = "\\".join(bill_filename)
-        self.bill_filename = bill_filename
-        self.bills_frame = BillGrid(self, self.bills.bills, title="PyAsset: Bills", filename=self.bill_filename)
+        self.bill_filename = self.filename
+        if self.filename != None:
+            bill_filename = self.filename.split("\\")                          # JJG 9/12/2025 Start with total asset filname and change last part to Bills.csv for testing
+            bill_filename[len(bill_filename)-1] = "Bills.csv"
+            bill_filename = "\\".join(bill_filename)
+            self.bill_filename = bill_filename
+        if self.bills == None:
+            bills = None
+        else:
+            bills = self.getBillsList()
+        self.bills_frame = BillGrid(self, bills, title="PyAsset: Bills", filename=self.bill_filename)
         pass                                # TODO: Add code to bring bill_frame into focus on top! JJG 1/26/2025
 
     def getBillsList(self):
         if self.bills == None:
-            self.bills = BillList(Bill(self))
-        return BillList(self.bills.bills)
+            self.bills = BillList()
+        return self.bills
 
     def make_date_grid(self, panel):
         self.currDateLabel = wx.StaticText(panel, label="Curr Date")

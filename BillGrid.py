@@ -30,6 +30,7 @@ import wx.grid as grd
 import re
 from datetime import date, datetime
 from Date import Date
+from Bill import Bill
 from BillList import BillList
 from Transaction import Transaction
 from HelpDialog import HelpDialog
@@ -46,13 +47,18 @@ class BillGrid(wx.Frame):
             filename = kwargs["filename"]
         except:
             filename = kwargs["filename"] = ""
+        self.title = title
+        self.filename = filename
         self.dateFormat = Date.get_global_date_format(self)
         self.dateSep = Date.get_global_date_sep(self)
         self.columnNames = ["Type", "Payee", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Frequency"]
         self.bills = BillList()
-        for bill in bills:
-            self.bills.insert(bill)
-        self.maxRows = self.getNumBills()
+        if bills != None:
+            for bill in bills:
+                self.bills.insert(bill)
+        self.maxRows = self.getNumRowsNeeded()
+        if self.maxRows == 0:
+            self.maxRows += 2                           # If no bills leave room for the header and one new bill
         self.maxCols = self.getNumColumns()
         super(BillGrid, self).__init__(args[0], title=title, size=(self.maxRows, self.maxCols))
         self.edited = False
@@ -148,62 +154,69 @@ class BillGrid(wx.Frame):
     def redraw_all(self, index=None):
         if index == None:
             index = -1
-        nbills = len(self.bills)
+        nRows = self.getNumRowsNeeded()
         start_range = 0
-        end_range = nbills
+        end_range = nRows
         if index == -1:
             nrows = self.bill_grid.GetNumberRows()
             if nrows > 0 and (index == None or index == -1):
                 self.bill_grid.DeleteRows(0, nrows)
                 nrows = 0
-            if nrows < nbills:
-                rows_needed = nbills - nrows
+            if nrows < nRows:
+                rows_needed = nRows - nrows
                 self.bill_grid.AppendRows(rows_needed)
         else:
             start_range = index
             end_range = start_range + 1
 
+        haveBills = True
+        if self.bills.getBills() == None:
+            haveBills = False
+
         # Display the bills
         for row in range(start_range, end_range):
             for col in range(self.getNumColumns()):
                 ret_val = wx.OK
-                if row < 0 or row >= nbills:
+                if row < 0 or row >= nRows:
                     str = "Warning: skipping redraw on bad cell %d %d!" % (row, col)
                     ret_val = self.DisplayMsg(str)
                 if ret_val != wx.OK:
                     continue
 
                 cellType = self.getColType(col)
-                if cellType == self.DOLLAR_TYPE:
+                if cellType == self.DOLLAR_TYPE and haveBills:
                     self.GridCellDollarRenderer(row, col)
-                elif cellType == self.RATE_TYPE:
+                elif cellType == self.RATE_TYPE and haveBills:
                     self.GridCellPercentRenderer(row, col)
-                elif cellType == self.DATE_TYPE:
+                elif cellType == self.DATE_TYPE and haveBills:
                     self.GridCellDateRenderer(row, col)
-                elif cellType == self.DATE_TIME_TYPE:
+                elif cellType == self.DATE_TIME_TYPE and haveBills:
                     self.GridCellDateTimeRenderer(row, col)
-                elif cellType == self.STRING_TYPE:
+                elif cellType == self.STRING_TYPE and haveBills:
                     self.GridCellStringRenderer(row, col)
-                else:
+                elif haveBills:
                     self.GridCellErrorRenderer(row, col)
 
         cursorCell = index
         if index == -1:
-            if nbills > 0:
-                cursorCell = nbills - 1
+            if nRows > 0:
+                cursorCell = nRows - 1
             else:
                 cursorCell = 0
         else:
-            if index > nbills:
-                cursorCell = nbills - 1
+            if index > nRows:
+                cursorCell = nRows - 1
             else:
                 cursorCell = index
         self.bill_grid.SetGridCursor(cursorCell, 0)
         self.bill_grid.MakeCellVisible(cursorCell, True)
         self.Show()
 
-    def getNumBills(self):
-        return len(self.bills)
+    def getNumRowsNeeded(self):
+        numBills = len(self.bills)
+        if numBills == 0:
+            numBills += 2                       # If there are no bills, we want to allow for Headers and a new entry so add 2
+        return numBills
 
     def getMinNumRows(self):
         return(self.minNumRows)
@@ -535,7 +548,7 @@ class BillGrid(wx.Frame):
         if new_value == "":
             col_type = self.col_info[col][self.TYPE_COL]
             if col_type == self.DOLLAR_TYPE: new_value = 0.00
-        if row < 0 or row >= len(self.bills):
+        if row < 0 or row >= self.getNumRowsNeeded():
             str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
             ret_val = self.DisplayMsg(str)
         elif self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
@@ -640,13 +653,17 @@ class BillGrid(wx.Frame):
         grid = self.bill_grid
         grid.CreateGrid(self.maxRows, self.maxCols)
         grid.SetSize((self.maxRows, self.maxCols))
-        for j in range(len(self.bills)):
+        haveBills = True
+        if self.bills.getBills() == None:
+            haveBills = False
+        for j in range(self.getNumRowsNeeded()):
             for i in range(len(self.columnNames)):
                 grid.SetColLabelValue(i, colNames[i])
                 cur_width = self.getColWidth(i)
                 total_width += cur_width
                 grid.SetColSize(i, cur_width)
-                grid.SetCellValue(j, i, str(self.getColMethod(j, i)))
+                if haveBills:
+                    grid.SetCellValue(j, i, str(self.getColMethod(j, i)))
         style = wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
         grid.SetWindowStyle(style)
 
@@ -1040,9 +1057,9 @@ class BillGrid(wx.Frame):
         self.edited = True
         self.bills.append(Bill(self.parent))
         self.AppendRows()
-        nbills = self.GetNumberRows()
-        self.SetGridCursor(nbills - 1, 0)
-        self.MakeCellVisible(nbills - 1, 1)
+        nRows = self.GetNumberRows()
+        self.SetGridCursor(nRows - 1, 0)
+        self.MakeCellVisible(nRows - 1, 1)
 
     def sort(self, *args):
         self.edited = True
@@ -1085,7 +1102,7 @@ class BillGrid(wx.Frame):
                     bill.set_state(new_state)
                 proj_value = self.bills.update_current_and_projected_values(0)
                 self.bills.parent.set_value_proj(proj_value)
-                for i in range(index, self.getNumBills()):
+                for i in range(index, self.getNumRowsNeeded()):
                     self.setValue(i, "Value", str(round(self.bills[i].get_current_value(),2)))
                 self.redraw_all()  # redraw only [index:]
 
@@ -1248,7 +1265,7 @@ class BillGrid(wx.Frame):
         col = evt.GetCol()
         pos = evt.GetPosition()
         value = self.bill_grid.GetCellValue(row, col)
-        if row < len(self.bills):
+        if row < self.getNumRowsNeeded():
             if col == self.BILL_PMT_ACCT_COL:
                 asset_name = value
                 if asset_name != "Other" and asset_name != "Unknown" and asset_name != "TBD":
@@ -1363,7 +1380,7 @@ class BillGrid(wx.Frame):
             return  # cancels the cell selection
 
         value = self.bill_grid.GetCellValue(row, col)
-        if row < len(self.bills):
+        if row < self.getNumRowsNeeded():
             if col == self.BILL_PMT_ACCT_COL:
                 asset_name = value
                 if asset_name != "Other" and asset_name != "Unknown" and asset_name != "TBD":
