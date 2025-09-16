@@ -60,7 +60,7 @@ class Bill:
     inc_values = ["2 weeks", "1 month", "3 months", "6 months", "1 year", ""]
 
     def __init__(self, parent, payee=None, type="Unknown", action="-", amount=0.0, min_due=0.0, due_date=None, sched_date=None,
-                 pmt_acct="Other", pmt_method="TBD", check_number=0, pmt_freq="Manual" ):
+                 pmt_acct="Other", pmt_method="TBD", check_number=0, pmt_frequency="Manual" ):
         self.parent = parent
         self.set_payee(payee)
         self.set_type(type)
@@ -71,7 +71,7 @@ class Bill:
         self.set_sched_date(sched_date)
         self.set_pmt_acct(pmt_acct)
         self.set_pmt_method(pmt_method)
-        self.set_pmt_frequency(pmt_freq)
+        self.set_pmt_frequency(pmt_frequency)
         self.set_check_number(check_number)
 
     def get_bill_inc_value(payment_freq):

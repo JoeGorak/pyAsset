@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #  Version information
 #  04/15/2023     Initial version v0.1
+#  09/15/2025     Rewrite to simply logic (not compatible with previos versions of BillGrid.py)         JJG
 
 import wx
 import wx.grid as grd
@@ -30,6 +31,8 @@ import re
 from datetime import date, datetime
 from Date import Date
 from BillList import BillList
+from Transaction import Transaction
+from HelpDialog import HelpDialog
 
 class BillGrid(wx.Frame):
 #  self.bills_frame = BillGrid(self, self.bills.bills, title="PyAsset: Bills", filename=self.bill_filename) # Current call from AssetFrame.py looks like this JJG 9/15/2025
@@ -1121,14 +1124,14 @@ class BillGrid(wx.Frame):
         d = wx.MessageDialog(self,
                              "Python Bill Manager\n"
                              "Copyright (c) 2026 Joseph J. Gorak\n"
-                             "Released under the Gnu GPL\n"
+                             "Released under the Gnu GPL\n",
                              "About JGBillManager",
                              wx.OK | wx.ICON_INFORMATION)
         d.ShowModal()
         d.Destroy()
 
     def gethelp(self, *args):
-        d = HelpDialog(self, -1, "Help", __doc__)
+        d = HelpDialog(self.Parent)
         val = d.ShowModal()
         d.Destroy()
 
@@ -1155,7 +1158,7 @@ class BillGrid(wx.Frame):
         bill_changed = self.bills[which_bill]
         modified = True
         old_value = -1
-        print("billFrame: Recieved notification that bill ", bill_changed.get_payee(), " column", colName, "changed, new_value", new_value)
+        print("billGrid: Recieved notification that bill ", bill_changed.get_payee(), " column", colName, "changed, new_value", new_value)
         if colName == "Payee":
             old_value = bill_changed.get_payee()
             bill_changed.set_payee(new_value)
@@ -1244,16 +1247,18 @@ class BillGrid(wx.Frame):
         row = evt.GetRow()
         col = evt.GetCol()
         pos = evt.GetPosition()
+        value = self.bill_grid.GetCellValue(row, col)
         if row < len(self.bills):
             if col == self.BILL_PMT_ACCT_COL:
-                asset_name = self.bill_grid.GetCellValue(row, col)
-                asset_frame = self.parent
-                pmt_asset_index = asset_frame.assets.index(asset_name)
-                if pmt_asset_index != -1:
-                    asset_frame.addTransactionFrame(pmt_asset_index,False)
+                asset_name = value
+                if asset_name != "Other" and asset_name != "Unknown" and asset_name != "TBD":
+                    asset_frame = self.Parent
+                    pmt_asset_index = asset_frame.assets.index(asset_name)
+                    if pmt_asset_index != -1:
+                        self.billchange(row, col, asset_name)
             else:
-                print("OnCellLeftClick: bill_grid (%d,%d) %s\n" % (row, col, pos))
-            evt.Skip()
+                print("OnCellLeftClick: bill_grid (%d,%d) %s value %s\n" % (row, col, pos, value))
+        evt.Skip()
 
     def OnCellRightClick(self, evt):
         print("OnCellRightClick: (%d,%d) %s\n" % (evt.GetRow(),
@@ -1336,12 +1341,14 @@ class BillGrid(wx.Frame):
             msg = 'Selected'
         else:
             msg = 'Deselected'
-        print("OnSelectCell: %s (%d,%d) %s\n" % (msg, evt.GetRow(),
-                                                 evt.GetCol(), evt.GetPosition()))
+
+        row = evt.GetRow()
+        col = evt.GetCol()
+        pos = evt.GetPosition()
+
+        print("OnSelectCell: %s (%d,%d) %s\n" % (msg, row, col, pos))
 
         # Another way to stay in a cell that has a bad value...
-        row = self.bill_grid.GetGridCursorRow()
-        col = self.bill_grid.GetGridCursorCol()
 
         if self.bill_grid.IsCellEditControlEnabled():
             self.bill_grid.HideCellEditControl()
@@ -1355,6 +1362,15 @@ class BillGrid(wx.Frame):
         if value == 'no good':
             return  # cancels the cell selection
 
+        value = self.bill_grid.GetCellValue(row, col)
+        if row < len(self.bills):
+            if col == self.BILL_PMT_ACCT_COL:
+                asset_name = value
+                if asset_name != "Other" and asset_name != "Unknown" and asset_name != "TBD":
+                    asset_frame = self.Parent
+                    pmt_asset_index = asset_frame.assets.index(asset_name)
+                    if pmt_asset_index != -1:
+                        self.billchange(row, col, asset_name)
         evt.Skip()
 
     def OnEditorShown(self, evt):

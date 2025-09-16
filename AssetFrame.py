@@ -351,16 +351,16 @@ class AssetFrame(wx.Frame):
                 if due_date > end_date:
                     continue
                 temp_date = Date.parse_date(self, start_date["str"], dateFormat)["dt"]
-                temp_bill = Bill(self, bill.get_payee(), bill.get_type(), bill.get_action(),
-                                       bill.get_amount(), bill.get_min_due(), bill.get_due_date(),
-                                       bill.get_sched_date(), bill.get_pmt_acct(), bill.get_pmt_method(),
-                                       bill.get_pmt_frequency(), bill.get_check_number()
+                temp_bill = Bill(self, payee=bill.get_payee(), type=bill.get_type(), action=bill.get_action(),
+                                       amount=bill.get_amount(), min_due=bill.get_min_due(), due_date=bill.get_due_date(),
+                                       sched_date=bill.get_sched_date(), pmt_acct=bill.get_pmt_acct(), pmt_method=bill.get_pmt_method(),
+                                       pmt_frequency=bill.get_pmt_frequency(), check_number=bill.get_check_number()
                                 )
                 while temp_date <= end_date:
-                    new_bill = Bill(self, temp_bill.get_payee(), temp_bill.get_type(), temp_bill.get_action(),
-                                          temp_bill.get_amount(), temp_bill.get_min_due(), temp_bill.get_due_date(),
-                                          temp_bill.get_sched_date(), temp_bill.get_pmt_acct(), temp_bill.get_pmt_method(),
-                                          temp_bill.get_pmt_frequency(), temp_bill.get_check_number()
+                    new_bill = Bill(self, payee=temp_bill.get_payee(), type=temp_bill.get_type(), action=temp_bill.get_action(),
+                                          amount=temp_bill.get_amount(), min_due=temp_bill.get_min_due(), due_date=temp_bill.get_due_date(),
+                                          sched_date=temp_bill.get_sched_date(), pmt_acct=temp_bill.get_pmt_acct(), pmt_method=temp_bill.get_pmt_method(),
+                                          pmt_frequency=temp_bill.get_pmt_frequency(), check_number=temp_bill.get_check_number()
                                     )
                     bills_due.append(new_bill)
                     inc_value = Bill.get_bill_inc_value(temp_bill.get_pmt_frequency())
@@ -1332,7 +1332,7 @@ class AssetFrame(wx.Frame):
         d.Destroy()
 
     def gethelp(self, *args):
-        d = HelpDialog(self, -1, "Help", __doc__)
+        d = HelpDialog(self.Parent)
         val = d.ShowModal()
         d.Destroy()
 
