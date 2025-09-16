@@ -331,7 +331,7 @@ class ExcelToAsset(wx.Frame):
                             new_bill.set_type("Loan")
                         else:
                             new_bill.set_type("Expense")
-                    elif "CHECKING" in btu or "sAVINGS" in btu:
+                    elif "CHECKING" in btu or "SAVINGS" in btu:
                         pass
                     else:
                         print("Unhandled btype: " + btype + " for new_bill: " + new_bill.get_payee())

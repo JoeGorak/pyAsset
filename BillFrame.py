@@ -23,6 +23,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #  Version information
 #  04/25/2023     Initial version v0.1
+#  09/15/2025     DEPRECATED DUE TO REFACTOR TO USE BILLGRID AS MODIFIED FROM WXPYTHON DOCUMENTATION - USE AT YOUR OWN RISK AT THIS IS NO LONGER SUPPORTED   JJG
 
 # To Do list:
 # Speed redraw_all: break into redraw_all, redraw_range, redraw_totals
@@ -43,9 +44,10 @@ from HelpDialog import HelpDialog
 from Bill import Bill
 from BillGrid import BillGrid
 from BillList import BillList
+from Transaction import Transaction
 
 class BillFrame(wx.Frame):
-    def __init__(self, style, parent, my_id, bills, title="PyAsset:Bills", filename="", **kwds):
+    def __init__(self, style, parent, bills, title="PyAsset:Bills", filename="", **kwds):
         self.bills = BillList()
         for bill in bills:
             self.bills.insert(bill)
@@ -54,8 +56,6 @@ class BillFrame(wx.Frame):
         self.dateSep = Date.get_global_date_sep(self)
 
         self.edited = False
-        self.rowSize = 10
-        self.colSize = 20
 
         if style == None:
             style = wx.DEFAULT_FRAME_STYLE
@@ -70,14 +70,16 @@ class BillFrame(wx.Frame):
         self.SetTitle(title)
         self.redraw_all()
 
-    def make_widgets(self):
+    def make_menus(self):
         self.menubar = wx.MenuBar()
         self.SetMenuBar(self.menubar)
         self.make_filemenu()
         self.make_editmenu()
         self.make_helpmenu()
+
+    def make_widgets(self):
+        self.make_menus()
         self.make_bill_grid()
-        self.set_properties()
         self.do_layout()
 
     def make_filemenu(self):
@@ -159,23 +161,29 @@ class BillFrame(wx.Frame):
         self.Bind(wx.EVT_MENU, self.about, None, wx.ID_ABOUT)
         self.Bind(wx.EVT_MENU, self.gethelp, None, ID_HELP)
 
+    def getNumBills(self):
+        return len(self.bills)
+
     def make_bill_grid(self):
-        self.panel = wx.Panel(self)
-        self.bill_grid = BillGrid(self, self.panel)
-        self.rowSize = 150
-        self.colSize = self.bill_grid.getNumColumns()
-        self.bill_grid.CreateGrid(self.rowSize, self.colSize) 
+ #       self.panel = wx.Panel(self)
+        self.bill_grid = BillGrid(self, self.Parent)
+        self.rowSize = self.getNumBills()
+        self.colSize = self.getNumColumns()
+        self.bill_grid.CreateGrid(self.rowSize, self.colSize)
         return self.bill_grid
 
     def get_bill_grid(self):
-        return self.bill_grid
-
-    def set_properties(self):
-        self.total_width = self.bill_grid.set_properties(self)
+        try:
+            bill_grid = self.Parent.bill_grid
+        except:
+            bill_grid = self.make_bill_grid()
+            self.bill_grid = bill_grid
+        return bill_grid
 
     def do_layout(self):
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.bill_grid, 1, wx.EXPAND)
+        sizer = wx.FlexGridSizer(1, self.bill_grid.getNumColumns(), 0, 0)
+        sizer.Add(self.get_bill_grid(), proportion=1, flag=wx.RESERVE_SPACE_EVEN_IF_HIDDEN|wx.EXPAND)
+        sizer.AddGrowableRow(0, proportion=1)
         self.panel.SetSizer(sizer)
         self.Layout()
 
@@ -188,9 +196,7 @@ class BillFrame(wx.Frame):
     def redraw_all(self, index=None):
         if index == None:
             index = -1
-        nbills = 0
-        if self.bills != None:
-            nbills = len(self.bills)
+        nbills = len(self.bills)
         start_range = 0
         end_range = nbills
         if index == -1:
@@ -229,9 +235,10 @@ class BillFrame(wx.Frame):
                 else:
                     self.bill_grid.GridCellErrorRenderer(row, col)
 
-        win_height = (nbills+3) * self.rowSize + 150                 # +3 for header lines + 150 for borders
-        self.SetSize(self.total_width + 150, win_height)
-        self.Show()
+#        win_height = nbills  # * self.rowSize   # + 150                 # +3  + 150 for borders
+#        total_width = self.bill_grid.set_properties(self)
+#        self.SetSize(total_width, win_height)
+#        self.Show()
 
         cursorCell = index
         if index == -1:
@@ -643,7 +650,7 @@ class BillFrame(wx.Frame):
                     bill.set_state(new_state)
                 proj_value = self.bills.update_current_and_projected_values(0)
                 self.bills.parent.set_value_proj(proj_value)
-                for i in range(index,len(self.bills)):
+                for i in range(index, self.getNumBills()):
                     self.bill_grid.setValue(i, "Value", str(round(self.bills[i].get_current_value(),2)))
                 self.redraw_all()  # redraw only [index:]
 
@@ -759,7 +766,30 @@ class BillFrame(wx.Frame):
                 bill_type = bill_changed.get_type()
                 #TODO: Need to finish logic for adding transactions for billbudgeting  JJG 9/13/2025
                 if bill_type == "Checking and savings":
-                    pass
+                    pmt_acct_payee = "xfer to " + bill_changed.get_payee()
+                    assets = self.parent.getAssets()
+                    bill_changed_payee = "Deposit from " + assets[assets.index(pmt_acct)].get_name()
+
+                    payee_asset_index = assets.index(bill_changed.get_payee())
+                    payee_transactions = assets[payee_asset_index].transactions
+                    payee_trans = Transaction(self.parent, payee=bill_changed_payee, action=bill_changed.get_action(), sched_date=bill_changed.get_sched_date(),
+                                             due_date=bill_changed.get_due_date(), pmt_method=bill_changed.get_pmt_method(), amount=bill_changed.get_amount()
+                                             )
+                    if payee_transactions.index(bill_changed_payee, bill_changed.get_sched_date()) == -1:
+                        payee_transactions.insert(payee_trans)
+                        payee_transactions.update_current_and_projected_values()
+
+                    pmt_acct_asset_index = assets.index(bill_changed.get_pmt_acct())
+                    pmt_acct_transactions = assets[pmt_acct_asset_index].transactions
+                    pmt_acct_trans_index = pmt_acct_transactions.index(pmt_acct_payee, bill_changed.get_sched_date())
+                    pmt_bill_changed = pmt_acct_transactions[pmt_acct_trans_index]
+                    pmt_acct_trans = Transaction(self.parent, payee=pmt_acct_payee, action=pmt_bill_changed.get_action(), sched_date=pmt_bill_changed.get_sched_date(),
+                                                 due_date=pmt_bill_changed.get_due_date(), pmt_method=pmt_bill_changed.get_pmt_method(), amount=pmt_bill_changed.get_amount()
+                                                )
+                    if pmt_acct_transactions.index(pmt_acct_payee, pmt_bill_changed.get_sched_date()):
+                        pmt_acct_transactions.insert(pmt_acct_trans)
+                        pmt_acct_transactions.update_current_and_projected_values()
+
                 elif bill_type == "Credit Card":
                     pass
                 elif bill_type == "Loan":

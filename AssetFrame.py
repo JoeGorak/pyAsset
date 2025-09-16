@@ -44,7 +44,7 @@ from wx import Button
 from qif import qif
 from Asset import Asset
 from AssetList import AssetList
-from BillFrame import BillFrame
+from BillGrid import BillGrid
 from BillList import BillList
 from Bill import Bill
 from AssetGrid import AssetGrid
@@ -147,7 +147,7 @@ class AssetFrame(wx.Frame):
             payType = self.get_pay_types()[self.payType]
         else:
            if type(self.payType) is not str:
-              MsgBox(self, "Bad payType "+self.payType+" in get_pay_incr")
+              self.MsgBox(self, "Bad payType "+self.payType+" in get_pay_incr")
         if payType == "every week":
             incr = wx.DateSpan(weeks=1)
         elif payType == "every 2 weeks":
@@ -483,13 +483,16 @@ class AssetFrame(wx.Frame):
         d.ShowModal()
         d.Destroy()
 
-    def make_widgets(self):
+    def make_menus(self):
         self.menubar = wx.MenuBar()
         self.SetMenuBar(self.menubar)
         self.make_filemenu()
         self.make_editmenu()
         self.make_helpmenu()
-        self.setup_layout()
+    
+    def make_widgets(self):
+        self.make_menus()
+        self.do_layout()
 
     def make_filemenu(self):
         self.filemenu = wx.Menu()
@@ -584,22 +587,13 @@ class AssetFrame(wx.Frame):
         bill_filename[len(bill_filename)-1] = "Bills.csv"
         bill_filename = "\\".join(bill_filename)
         self.bill_filename = bill_filename
-        if self.bills_frame == None:
-            self.bills_frame = BillFrame(None, self, -1, self.bills.bills, filename=self.bill_filename)
-        else:
-            pass                                # TODO: Add code to bring frame into focus on top! JJG 1/26/2025
-
-    def getBillFrame(self):
-        return self.bills_frame
+        self.bills_frame = BillGrid(self, self.bills.bills, title="PyAsset: Bills", filename=self.bill_filename)
+        pass                                # TODO: Add code to bring bill_frame into focus on top! JJG 1/26/2025
 
     def getBillsList(self):
         if self.bills == None:
             self.bills = BillList(Bill(self))
         return BillList(self.bills.bills)
-
-    def removeBillFrame(self):
-        self.bills_frame.Destroy()
-        self.bills_frame = None
 
     def make_date_grid(self, panel):
         self.currDateLabel = wx.StaticText(panel, label="Curr Date")
@@ -675,7 +669,7 @@ class AssetFrame(wx.Frame):
         self.assetGrid = AssetGrid(panel)
         self.assetGrid.set_properties(self)
 
-    def setup_layout(self):
+    def do_layout(self):
         self.panel = wx.Panel(self)
 
         self.make_bill_button(self.panel)

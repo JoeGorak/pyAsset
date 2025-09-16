@@ -32,7 +32,6 @@
     <Compile Include="AssetFrame.py" />
     <Compile Include="AssetGrid.py" />
     <Compile Include="Bill.py" />
-    <Compile Include="BillFrame.py" />
     <Compile Include="BillGrid.py" />
     <Compile Include="AssetList.py" />
     <Compile Include="BillList.py" />
