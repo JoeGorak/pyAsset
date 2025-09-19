@@ -317,8 +317,8 @@ class TransactionGrid(grd.Grid):
 
     def GridCellDateRenderer(self, row, col):
         cellValue = self.getColMethod(row, col)
-        if cellValue != "None" and cellValue != None:
-            cellValue = cellValue["str"]
+#        if cellValue != "None" and cellValue != None:
+#            cellValue = cellValue["str"]
         if cellValue == None or cellValue == "None":
             tableValue = ""
         elif self.getColZeroSuppress(row, col) == self.ZERO_SUPPRESS and (cellValue == "0" or cellValue == ""):

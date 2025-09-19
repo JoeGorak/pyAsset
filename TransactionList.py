@@ -89,7 +89,7 @@ class TransactionList:
                 if self.transactions[i].get_payee() == payee:
                     due_date = self.transactions[i].get_due_date()
                     # Check to make sure the due date also matched
-                    if due_date != None and self.transactions[i].get_due_date()['str'] == date['str']:
+                    if due_date != None and due_date == date['str']:
                         # We found it! Set the index and get out of the loop!
                         ret_index = i
                         break

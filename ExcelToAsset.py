@@ -114,6 +114,8 @@ class ExcelToAsset(wx.Frame):
                             new_asset.set_type("Store Card")
                         elif "LOAN" in asset_name_upper or "MORTGAGE" in asset_name_upper:
                             new_asset.set_type("Loan")
+                        elif "EMERGENCY" in asset_name_upper:
+                            new_asset.set_type("Emergency Fund")
                         else:
                             new_asset.set_type("Other")
                     else:  # 2nd and remaining columns are more data for the current asset...
@@ -232,7 +234,12 @@ class ExcelToAsset(wx.Frame):
                             if pmt_method != None:
                                 new_transaction.set_check_num(cv)
                         elif "PAYEE" == headingUpper:
-                            new_transaction.set_payee(cv)
+                            payee = cv
+                            new_transaction.set_payee(payee)
+                            if payee[0:len("Paydown")]=="Paydown" or payee[0:len("Xfer")]=="Xfer":
+                                new_transaction.set_action("+")
+                            else:
+                                new_transaction.set_action("-")
                         elif "AMT" == headingUpper:
                             new_transaction.set_amount(cv)
                         elif "B" == headingUpper:

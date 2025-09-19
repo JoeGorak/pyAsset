@@ -41,11 +41,12 @@ CREDIT_CARD = 5
 STORE_CARD = 6
 RETIREMENT = 7
 LOAN = 8
-MORTGAGE = 9
-CD = 10
-HOUSE = 11
-CAR = 12
-OTHER = 13
+EMERGENCY_FUND = 9
+MORTGAGE = 10
+CD = 11
+HOUSE = 12
+CAR = 13
+OTHER = 14
 
 from TransactionList import TransactionList
 from Transaction import Transaction
@@ -365,9 +366,9 @@ class Asset(object):
         elif st == CREDIT_CARD or st == STORE_CARD: return "CCard"
         elif st == CD or st == RETIREMENT: return "Invst"
         elif st == HOUSE or st == CAR: return "Oth A"
-        elif st == OVERDRAFT or st == LOAN or st == MORTGAGE: return "Oth L"
-        elif st == OTHER: return "OTH U"                # JJG 2/11/24 Addition to qif codes
-        else: return "UNK"                              # JJG 2/11/24 Also addition to qif codes (should not occur if code is working properly!!)
+        elif st == OVERDRAFT or st == LOAN or st == MORTGAGE or st == EMERGENCY_FUND: return "Oth L"
+        elif st == OTHER: return "OTH U"                                          # JJG 2/11/24 Addition to qif codes
+        else: return "UNK"                                                        # JJG 2/11/24 Also addition to qif codes (should not occur if code is working properly!!)
 
     def set_type(self, type):
         tu = type.upper()
@@ -381,6 +382,7 @@ class Asset(object):
         elif "RETIREMENT" in tu: self.type = RETIREMENT
         elif "MORTGAGE" in tu: self.type = MORTGAGE
         elif "LOAN" in tu: self.type = LOAN
+        elif "EMERGENCY" in tu: self.type = EMERGENCY_FUND
         elif "CD" in tu: self.type = CD
         elif "HOUSE" in tu: self.type = HOUSE
         elif "CAR" in tu: self.type = CAR

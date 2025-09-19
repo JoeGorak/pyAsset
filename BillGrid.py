@@ -23,9 +23,10 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 
 #  Version information
 #  04/15/2023     Initial version v0.1
-#  09/15/2025     Rewrite to simply logic (not compatible with previos versions of BillGrid.py)         JJG
+#  09/15/2025     Rewrite to simplify logic (not compatible with previos versions of BillGrid.py)         JJG
 
 import wx
+import csv
 import wx.grid as grd
 import re
 from datetime import date, datetime
@@ -51,14 +52,12 @@ class BillGrid(wx.Frame):
         self.filename = filename
         self.dateFormat = Date.get_global_date_format(self)
         self.dateSep = Date.get_global_date_sep(self)
-        self.columnNames = ["Type", "Payee", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Frequency"]
+        self.columnNames = Bill.get_bill_fields()
         self.bills = BillList()
         if bills != None:
             for bill in bills:
                 self.bills.insert(bill)
         self.maxRows = self.getNumRowsNeeded()
-        if self.maxRows == 0:
-            self.maxRows += 2                           # If no bills leave room for the header and one new bill
         self.maxCols = self.getNumColumns()
         super(BillGrid, self).__init__(args[0], title=title, size=(self.maxRows, self.maxCols))
         self.edited = False
@@ -99,19 +98,8 @@ class BillGrid(wx.Frame):
         self.BILL_SCHED_DATE_COL = Headers.index("Sched Date")
         self.BILL_PMT_ACCT_COL = Headers.index("Pmt Acct")
         self.BILL_PMT_METHOD_COL = Headers.index("Pmt Method")
-        self.BILL_FREQUENCY_COL = Headers.index("Frequency")
-
-        # Define the widths of the columns in the grid
-        BILL_TYPE_COL_WIDTH = 150
-        BILL_PAYEE_COL_WIDTH = 300
-        BILL_AMOUNT_COL_WIDTH = 75
-        BILL_MIN_DUE_COL_WIDTH = 75
-        BILL_DUE_DATE_COL_WIDTH = 100
-        BILL_SCHED_DATE_COL_WIDTH = 100
-        BILL_PMT_ACCT_COL_WIDTH = 150
-        BILL_PMT_METHOD_COL_WIDTH = 80
-        BILL_FREQUENCY_COL_WIDTH = 5
-        BILL_PAYMENT_COL_WIDTH = 9
+        self.BILL_FREQUENCY_COL = Headers.index("Pmt Freq")
+        self.BILL_CHECK_NUM_COL = Headers.index("Check Number")
 
         # Define what the valid input data types are
         self.DOLLAR_TYPE = 0
@@ -130,22 +118,22 @@ class BillGrid(wx.Frame):
 
         # Define indices of columns in grid layout array
         self.NAME_COL = 0
-        self.WIDTH_COL = 1
-        self.TYPE_COL = 2
-        self.EDIT_COL = 3
-        self.ZERO_SUPPRESS_COL = 4
+        self.TYPE_COL = 1
+        self.EDIT_COL = 2
+        self.ZERO_SUPPRESS_COL = 3
 
         # Grid layout array
         self.col_info = [
-            [self.BILL_TYPE_COL, BILL_TYPE_COL_WIDTH, self.STRING_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
-            [self.BILL_PAYEE_COL, BILL_PAYEE_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-            [self.BILL_AMOUNT_COL, BILL_AMOUNT_COL_WIDTH, self.DOLLAR_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
-            [self.BILL_MIN_DUE_COL, BILL_MIN_DUE_COL_WIDTH, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
-            [self.BILL_DUE_DATE_COL, BILL_DUE_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-            [self.BILL_SCHED_DATE_COL, BILL_SCHED_DATE_COL_WIDTH, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-            [self.BILL_PMT_ACCT_COL, BILL_PMT_ACCT_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-            [self.BILL_PMT_METHOD_COL, BILL_PMT_METHOD_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
-            [self.BILL_FREQUENCY_COL, BILL_FREQUENCY_COL_WIDTH, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.BILL_TYPE_COL, self.STRING_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
+            [self.BILL_PAYEE_COL, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.BILL_AMOUNT_COL, self.DOLLAR_TYPE, self.EDITABLE, self.NO_ZERO_SUPPRESS],
+            [self.BILL_MIN_DUE_COL, self.DOLLAR_TYPE, self.NOT_EDITABLE, self.NO_ZERO_SUPPRESS],
+            [self.BILL_DUE_DATE_COL, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.BILL_SCHED_DATE_COL, self.DATE_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.BILL_PMT_ACCT_COL, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.BILL_PMT_METHOD_COL, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.BILL_FREQUENCY_COL, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
+            [self.BILL_CHECK_NUM_COL, self.STRING_TYPE, self.EDITABLE, self.ZERO_SUPPRESS],
         ]
 
         self.make_widgets()
@@ -173,50 +161,50 @@ class BillGrid(wx.Frame):
         if self.bills.getBills() == None:
             haveBills = False
 
-        # Display the bills
-        for row in range(start_range, end_range):
-            for col in range(self.getNumColumns()):
-                ret_val = wx.OK
-                if row < 0 or row >= nRows:
-                    str = "Warning: skipping redraw on bad cell %d %d!" % (row, col)
-                    ret_val = self.DisplayMsg(str)
-                if ret_val != wx.OK:
-                    continue
+        # Display the bills in the grid
+        if haveBills:
+            for row in range(start_range, end_range):
+                for col in range(self.getNumColumns()):
+                    ret_val = wx.OK
+                    if row < 0 or row >= nRows:
+                        str = "Warning: skipping redraw on bad cell %d %d!" % (row, col)
+                        ret_val = self.DisplayMsg(str)
+                    if ret_val != wx.OK:
+                        continue
 
-                cellType = self.getColType(col)
-                if cellType == self.DOLLAR_TYPE and haveBills:
-                    self.GridCellDollarRenderer(row, col)
-                elif cellType == self.RATE_TYPE and haveBills:
-                    self.GridCellPercentRenderer(row, col)
-                elif cellType == self.DATE_TYPE and haveBills:
-                    self.GridCellDateRenderer(row, col)
-                elif cellType == self.DATE_TIME_TYPE and haveBills:
-                    self.GridCellDateTimeRenderer(row, col)
-                elif cellType == self.STRING_TYPE and haveBills:
-                    self.GridCellStringRenderer(row, col)
-                elif haveBills:
-                    self.GridCellErrorRenderer(row, col)
+                    cellType = self.getColType(col)
+                    if cellType == self.DOLLAR_TYPE and haveBills:
+                        self.GridCellDollarRenderer(row, col)
+                    elif cellType == self.RATE_TYPE and haveBills:
+                        self.GridCellPercentRenderer(row, col)
+                    elif cellType == self.DATE_TYPE and haveBills:
+                        self.GridCellDateRenderer(row, col)
+                    elif cellType == self.DATE_TIME_TYPE and haveBills:
+                        self.GridCellDateTimeRenderer(row, col)
+                    elif cellType == self.STRING_TYPE and haveBills:
+                        self.GridCellStringRenderer(row, col)
+                    elif haveBills:
+                        self.GridCellErrorRenderer(row, col)
 
         cursorCell = index
         if index == -1:
-            if nRows > 0:
-                cursorCell = nRows - 1
-            else:
-                cursorCell = 0
+            cursorCell = 0
         else:
-            if index > nRows:
-                cursorCell = nRows - 1
-            else:
-                cursorCell = index
+            cursorCell = index
+        self.bill_grid.AutoSize()
         self.bill_grid.SetGridCursor(cursorCell, 0)
         self.bill_grid.MakeCellVisible(cursorCell, True)
         self.Show()
 
     def getNumRowsNeeded(self):
         numBills = len(self.bills)
-        if numBills == 0:
-            numBills += 2                       # If there are no bills, we want to allow for Headers and a new entry so add 2
-        return numBills
+        if numBills == 0:                       # If no bills yet, allocate 2 blank rows for new bill entry
+            rowsNeeded = 2
+            for i in range(rowsNeeded):
+                self.bills.append(Bill(self))
+        else:
+            rowsNeeded = numBills                       
+        return rowsNeeded
 
     def getMinNumRows(self):
         return(self.minNumRows)
@@ -226,9 +214,6 @@ class BillGrid(wx.Frame):
 
     def getColName(self, col):
         return self.bill_grid.GetColLabelValue(col)
-
-    def getColWidth(self, i):
-        return self.col_info[i][self.WIDTH_COL]
 
     def getColType(self, i):
         return self.col_info[i][self.TYPE_COL]
@@ -247,11 +232,9 @@ class BillGrid(wx.Frame):
             self.col_info[i][self.ZERO_SUPPRESS_COL] = zero_suppress
 
     def do_layout(self):
-        self.bill_grid.Layout()
-        self.bill_grid.Show()
-        sizer = wx.BoxSizer(wx.VERTICAL)
-        sizer.Add(self.bill_grid, proportion=1, flag=wx.EXPAND | wx.ALL)
-        self.panel.SetSizerAndFit(sizer)        
+        mainsizer = wx.BoxSizer(wx.VERTICAL)
+        mainsizer.Add(self.bill_grid, proportion=1, flag=wx.EXPAND | wx.ALL)
+        self.panel.SetSizerAndFit(mainsizer)        
         self.Fit()
         self.Show()
 
@@ -275,6 +258,8 @@ class BillGrid(wx.Frame):
             return currBill.get_pmt_method()
         elif i == self.BILL_FREQUENCY_COL:
             return currBill.get_pmt_frequency()
+        elif i == self.BILL_CHECK_NUM_COL:
+            return currBill.get_check_number()
         else:
             return "??"
 
@@ -648,24 +633,22 @@ class BillGrid(wx.Frame):
             evt.Veto()
 
     def set_properties(self):
-        total_width = 60  # non-zero start value to account for record number and status lines of frame!
         colNames = self.columnNames
         grid = self.bill_grid
         grid.CreateGrid(self.maxRows, self.maxCols)
         grid.SetSize((self.maxRows, self.maxCols))
+
         haveBills = True
         if self.bills.getBills() == None:
             haveBills = False
         for j in range(self.getNumRowsNeeded()):
             for i in range(len(self.columnNames)):
                 grid.SetColLabelValue(i, colNames[i])
-                cur_width = self.getColWidth(i)
-                total_width += cur_width
-                grid.SetColSize(i, cur_width)
+ #               cur_width = self.getColWidth(i)
+ #               total_width += cur_width
+ #               grid.SetColSize(i, cur_width)
                 if haveBills:
                     grid.SetCellValue(j, i, str(self.getColMethod(j, i)))
-        style = wx.DEFAULT_FRAME_STYLE & ~(wx.RESIZE_BORDER | wx.MAXIMIZE_BOX)
-        grid.SetWindowStyle(style)
 
     def update_bill_grid_dates(self, oldDateFormat, newDateFormat):
         self.edited = True
@@ -691,33 +674,44 @@ class BillGrid(wx.Frame):
                                 print("update_bill_grid_dates: Warning: unknown method for cell! row, ", row, " col ", col, " Skipping!")
 
     def cellchange(self, evt):
-        doredraw = 0
+        doredraw = True
         row = evt.GetRow()
         col = evt.GetCol()
         if row < 0: return
         if row >= len(self.cur_bill):
             print("Warning: modifying incorrect cell!")
-            return
-        self.edited = True
-        bill = self.cur_bill[row]
-        val = self.cbgrid.GetCellValue(row, col)
-        if col == 0:
-            bill.setdate(val)
-        elif col == 1:
-            bill.setnumber(val)
-        elif col == 2:
-            bill.setpayee(val)
-        elif col == 3:
-            if val:
-                bill.set_state("cleared")
-        elif col == 4:
-            bill.setmemo(val)
-        elif col == 5:
-            doredraw = 1
-            bill.setamount(val)
-        else:
+            doredraw = False
+        if col < 0 or col >= self.getNumColumns():
             print("Warning: modifying incorrect cell!")
-            return
+            doredraw = False
+        if doredraw:
+            self.edited = True
+            bill = self.cur_bill[row]
+            val = self.cbgrid.GetCellValue(row, col)
+#        self.columnNames = ["Type", "Payee", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Frequency"]
+            colIndex = self.columnNames.index(self.getColName(col))
+            colString = self.columnNames[colIndex]
+            if colString == "Type":
+                bill.set_type(val)
+            elif colString == "Payee":
+                bill.set_payee(val)
+            elif colString == "Amount":
+                bill.set_amount(val)
+            elif colString == "Min Due":
+                bill.set_min_due(val)
+            elif colString == "Due Date":
+                bill.set_due_date(val)
+            elif colString == "Sched Date":
+                bill.set_sched_date(val)
+            elif colString == "Pmt Acct":
+                bill.set_payment_account(val)
+            elif colString == "Pmt Method":
+                bill.set_pmt_method(val)
+            elif colString == "Frequency":
+                bill.set_pmt_frequency(val)
+            else:
+                print("Warning: modifying incorrect cell!")
+                doredraw = False
         if doredraw:
             self.redraw_all(row)  # only redraw [row:]
 
@@ -871,7 +865,6 @@ class BillGrid(wx.Frame):
         self.Unbind(grd.EVT_GRID_EDITOR_HIDDEN)
         self.Unbind(grd.EVT_GRID_EDITOR_CREATED)
 
-#        del self.Parent.bills_frame
         self.Destroy()
 
     def write_file(self, date_, amount_, memo_, payee_, filelocation_):
@@ -1170,12 +1163,7 @@ class BillGrid(wx.Frame):
                 self.setValue(index, "State", prev_state)
         return
 
-    def billchange(self, which_bill, which_column, new_value):
-        colName = self.getColName(which_column)
-        bill_changed = self.bills[which_bill]
-        modified = True
-        old_value = -1
-        print("billGrid: Recieved notification that bill ", bill_changed.get_payee(), " column", colName, "changed, new_value", new_value)
+    def update_bill_column(self, bill_changed, colName, new_value):
         if colName == "Payee":
             old_value = bill_changed.get_payee()
             bill_changed.set_payee(new_value)
@@ -1185,12 +1173,22 @@ class BillGrid(wx.Frame):
         elif colName == "Min Due":
             old_value = bill_changed.get_min_due()
             bill_changed.set_min_due(new_value)
-        elif colName == "Due Date":
-            old_value = bill_changed.get_due_date()
-            bill_changed.set_due_date(new_value)
-        elif colName == "Sched Date":
-            old_value = bill_changed.get_sched_date()
-            bill_changed.set_sched_date(new_value)
+        elif colName == "Due Date" or colName == "Sched Date":
+            new_value_parsed = Date.parse_date(self, new_value, Date.get_global_date_format(Date))
+            if new_value_parsed != "":
+                if new_value_parsed["dt"] < Date.get_global_curr_date(self)["dt"]:
+                    if colName == "Due Date":
+                        self.DisplayMsg("Due Date " + new_value + " must today or late!")
+                    else:
+                        self.DisplayMsg("Sched Date " + new_value + " must be today or later!")
+                    new_value = -1
+                else:
+                    if colName == "Due Date":
+                        old_value = bill_changed.get_due_date()
+                        bill_changed.set_due_date(new_value)
+                    else:
+                        old_value = bill_changed.get_sched_date()
+                        bill_changed.set_sched_date(new_value)
         elif colName == "Pmt Acct":
             old_value = bill_changed.get_pmt_acct()
             bill_changed.set_pmt_acct(new_value)
@@ -1206,9 +1204,22 @@ class BillGrid(wx.Frame):
         else:
             self.DisplayMsg("Unknown column " + colName + " ignored!")
             new_value = -1
-            modified = False
+        return new_value
 
-        if old_value != new_value:
+    def billchange(self, which_bill, which_column, new_value):
+        colName = self.getColName(which_column)
+        bill_changed = self.bills[which_bill]
+        modified = True
+        old_value = -1
+        print("billGrid: Recieved notification that bill ", bill_changed.get_payee(), " column", colName, "changed, new_value", new_value)
+        self.update_bill_column(bill_changed, colName, new_value)
+
+        if new_value != old_value:
+            if (colName == "Pmt Acct"):
+                # We nned to delete transactions from old pmt_acct
+                old_pmt_acct = bill_changed.get_pmt_acct()
+                pass
+            # add transactions to new pmt_acct if amount != 0.0 and sched_date != "" and pmt_acct not in ("Other", "Unknown", "")
             pmt_acct = bill_changed.get_pmt_acct()
             pmt_acct_bad = pmt_acct == "Other" or pmt_acct == "Unknown" or pmt_acct == ""
             if bill_changed.get_amount() != 0.0 and bill_changed.get_sched_date() != "" and not pmt_acct_bad:
@@ -1216,13 +1227,13 @@ class BillGrid(wx.Frame):
                 bill_type = bill_changed.get_type()
                 #TODO: Need to finish logic for adding transactions for billbudgeting  JJG 9/13/2025
                 if bill_type == "Checking and savings":
-                    pmt_acct_payee = "xfer to " + bill_changed.get_payee()
-                    assets = self.parent.getAssets()
+                    pmt_acct_payee = "Xfer to " + bill_changed.get_payee()
+                    assets = self.Parent.getAssets()
                     bill_changed_payee = "Deposit from " + assets[assets.index(pmt_acct)].get_name()
 
                     payee_asset_index = assets.index(bill_changed.get_payee())
                     payee_transactions = assets[payee_asset_index].transactions
-                    payee_trans = Transaction(self.parent, payee=bill_changed_payee, action=bill_changed.get_action(), sched_date=bill_changed.get_sched_date(),
+                    payee_trans = Transaction(self.Parent, payee=bill_changed_payee, action=bill_changed.get_action(), sched_date=bill_changed.get_sched_date(),
                                              due_date=bill_changed.get_due_date(), pmt_method=bill_changed.get_pmt_method(), amount=bill_changed.get_amount()
                                              )
                     if payee_transactions.index(bill_changed_payee, bill_changed.get_sched_date()) == -1:
@@ -1232,13 +1243,15 @@ class BillGrid(wx.Frame):
                     pmt_acct_asset_index = assets.index(bill_changed.get_pmt_acct())
                     pmt_acct_transactions = assets[pmt_acct_asset_index].transactions
                     pmt_acct_trans_index = pmt_acct_transactions.index(pmt_acct_payee, bill_changed.get_sched_date())
-                    pmt_bill_changed = pmt_acct_transactions[pmt_acct_trans_index]
-                    pmt_acct_trans = Transaction(self.parent, payee=pmt_acct_payee, action=pmt_bill_changed.get_action(), sched_date=pmt_bill_changed.get_sched_date(),
-                                                 due_date=pmt_bill_changed.get_due_date(), pmt_method=pmt_bill_changed.get_pmt_method(), amount=pmt_bill_changed.get_amount()
-                                                )
-                    if pmt_acct_transactions.index(pmt_acct_payee, pmt_bill_changed.get_sched_date()):
+                    if pmt_acct_trans_index != -1:
+                        pmt_acct_asset = pmt_acct_transactions[pmt_acct_trans_index]
+                        self.update_bill_column(pmt_acct_asset, colName, new_value)
+                    else:
+                        pmt_acct_trans = Transaction(self.Parent, payee=pmt_acct_payee, action=pmt_bill_changed.get_action(), sched_date=bill_changed.get_sched_date(),
+                                                    due_date=bill_changed.get_due_date(), pmt_method=bill_changed.get_pmt_method(), amount=bill_changed.get_amount()
+                                                    )
                         pmt_acct_transactions.insert(pmt_acct_trans)
-                        pmt_acct_transactions.update_current_and_projected_values()
+                    pmt_acct_transactions.update_current_and_projected_values()
 
                 elif bill_type == "Credit Card":
                     pass

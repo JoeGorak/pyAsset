@@ -25,6 +25,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 #  06/11/2016     Initial version v0.1
 #  08/07/2021     Version v0.2
 
+import re
 import wx
 from Date import Date
 
@@ -37,13 +38,24 @@ CLEARED = 4
 VOID = 5
 RECONCILED = 6
 
+# Transaction Payment Methods
+# While UNKNOWN is a valid method, it is already defined as 0 above
+DIRECT_DEPOSIT = 1
+AUTOPAY = 2
+CHECK = 3
+SCHED_ONLINE = 4
+PENDING = 5
+CASH = 6
+TBD = 7
+MANUAL = 8
+
 def string_limit(mystr, limit):
     if mystr and len(mystr) > limit:
         mystr = mystr[:limit]
     return mystr
 
 class Transaction:
-    def __init__(self, parent, payee=None, action=None, sched_date=None, due_date=None, pmt_method=None, amount=None, state='unknown' ):
+    def __init__(self, parent, payee=None, action=None, sched_date=None, due_date=None, pmt_method='unknown', amount=None, state='unknown' ):
         self.parent = parent
         if self.parent != None:
             self.assetFrame = self.parent.parent
@@ -77,39 +89,20 @@ class Transaction:
         return Transaction.transaction_fields
 
     def __str__(self):
-        lines = []
-        lines.append("Sched date: %1s " % self.sched_date["str"])
-        if self.due_date:
-            lines.append("Due date: %1s " % self.due_date["str"])
-        if self.pmt_method:
-            lines.append("Pmt method: %1s " % self.pmt_method)
-        if self.check_num:
-            lines.append("Check_num: %1d " % self.check_num)
-        lines.append("Payee: %1s " % string_limit(self.payee, 40))
-        lines.append("Amount: %4.2f " % self.amount)
-        if self.action:
-            lines.append("Action: %s " % self.action)
-            if self.current_value:
-                lines.append("Curr Value: %4.2f " % self.current_value)
-        if self.state == UNKNOWN:
-            lines.append("State: Unknown ")
-        elif self.state == SCHEDULED:
-            lines.append("State: Scheduled")
-        elif self.state == BUDGETED:
-            lines.append("State: Budgeted")
-        elif self.state == OUTSTANDING:
-            lines.append("State: Outstanding ")
-        elif self.state == CLEARED:
-            lines.append("State: Cleared ")
-        elif self.state == VOID:
-             lines.append("State: Void ")
-        else:
-            lines.append("State: ??  ")
-        if self.comment:
-            lines.append("Comment: %1s " % string_limit(self.comment, 10))
-        if self.memo:
-            lines.append("Memo: %1s " % string_limit(self.memo, 10))
-        return " ".join(lines)
+        line = []
+        line.append("Sched date: %1s " % self.get_sched_date())
+        line.append("Due date: %1s " % self.get_due_date())
+        line.append("Pmt method: %1s " % self.get_pmt_method())
+        line.append("Check_num: %1s " % self.get_check_num())
+        line.append("Payee: %1s " % string_limit(self.get_payee(), 40))
+        line.append("Amount: %4.2f " % self.get_amount())
+        line.append("Action: %s " % self.get_action())
+        line.append("Curr Value: %4.2f " % self.get_current_value())
+        line.append("Proj Value: %4.2f " % self.get_projected_value())
+        line.append("State: %1s " % self.get_state())
+        line.append("Comment: %1s " % string_limit(self.get_comment(), 10))
+        line.append("Memo: %1s " % string_limit(self.get_memo(), 10))
+        return " ".join(line)
 
     def __gt__(self, other):
         if self.due_date != None and other.due_date != None:
@@ -159,23 +152,13 @@ class Transaction:
 
     def qif_repr(self):
         lines = []
-        sched_date = self.get_sched_date()
-        if sched_date != None:
-            lines.append("S%s" % sched_date["str"])
-        due_date = self.get_due_date()
-        if due_date != None:
-            lines.append("D%s" % due_date["str"])
-        amount = self.get_amount()
-        if amount != None:
-            lines.append("T%.2f" % amount)
+        lines.append("S%s" % self.get_sched_date())
+        lines.append("D%s" % self.get_due_date())
+        lines.append("T%4.2f" % self.get_amount())
         lines.append("A%s" % self.get_state())
-        check_num = self.get_check_num()
-        if check_num:
-            lines.append("N%d" % check_num)
+        lines.append("N%1s" % self.get_check_num())
         lines.append("P%s" % self.get_payee())
-        comment = self.get_comment()
-        if comment:
-            lines.append("L%s" % comment)
+        lines.append("L%s" % self.get_comment())
         memo_line = "";
         pmt_method = self.get_pmt_method()
         if pmt_method != "":
@@ -218,18 +201,51 @@ class Transaction:
         return '\n'.join(lines)
 
     def set_pmt_method(self,rest):
-        self.pmt_method = rest
+        if type(rest) is str:
+            rest = rest.upper()
+            if "UNKNOWN" in rest:
+                self.pmt_method = UNKNOWN
+            elif "DIRECT DEPOSIT" in rest:
+                self.pmt_method = DIRECT_DEPOSIT
+            elif "AUTOPAY" in rest:
+                self.pmt_method = AUTOPAY
+            elif "CHECK" in rest:
+                self.pmt_method = CHECK
+            elif "SCHED ONLINE" in rest:
+                self.pmt_method = SCHED_ONLINE
+            elif "PENDING" in rest:
+                self.pmt_method = PENDING
+            elif "CASH" in rest:
+                self.pmt_method = CASH
+            elif "TBD" in rest:
+                self.pmt_method = TBD
+            elif "MANUAL" in rest:
+                self.pmt_method = MANUAL
+        elif type(rest) is int:
+            self.state = rest
+        else:
+            print("State: " + rest + " not known - setting to UNKNOWN")
+            self.state = UNKNOWN
+        return self.pmt_method
 
     def set_amount(self, rest):
+        if rest == None:
+            rest = 0.0
+        temp = rest
         if type(rest) == str:
-            rest = float(rest.replace('$','').replace(',',''))
+            temp = float(temp.replace('$','').replace(',',''))
         try:
-            self.amount = round(rest,2)
+            self.amount = round(temp,2)
         except:
+            print("Error setting amount to ", rest)
+            print("transaction: ", self)
+            self.MsgBox("Error setting amount to ", rest, " See error log for more details!")
             self.amount = 0.0
+        return self.amount
 
     def set_action(self, rest):
         self.action = rest
+        return self.action
 
     def set_current_value(self, rest):
         if rest == None:
@@ -238,7 +254,11 @@ class Transaction:
             try:
                 self.current_value = round(float(rest), 2)
             except:
+                print("Error setting current value to ", rest)
+                print("transaction: ", self)
+                self.MsgBox("Error setting current value to ", rest, " See error log for more details!")
                 self.current_value = 0.0
+        return self.current_value
 
     def set_projected_value(self, rest):
         if rest == None:
@@ -248,6 +268,7 @@ class Transaction:
                 self.projected_value = round(float(rest), 2)
             except:
                 self.projected_value = 0.0
+        return self.projected_value
 
     def set_sched_date(self, rest):
         if rest != None:
@@ -259,6 +280,7 @@ class Transaction:
             self.sched_date = Date.parse_date(self, rest, global_date_format)
         else:
             self.sched_date = None
+        return self.sched_date
 
     def set_due_date(self, rest):
         if rest != None:
@@ -270,31 +292,35 @@ class Transaction:
             self.due_date = Date.parse_date(self, rest, Date.get_global_date_format(Date))
         else:
             self.due_date = None
+        return self.due_date
 
     def set_payee(self, rest):
         if rest == None or rest == "None":
             self.payee = None
         else:
             self.payee = rest
+        return self.payee
 
     def set_comment(self, rest):
         if rest == None or rest == "None":
             self.comment = None
         else:
             self.comment = rest
+        return self.comment
 
     def set_memo(self, rest):
         if rest == None or rest == "None":
             self.memo = None
         else:
             self.memo = rest
+        return self.memo
 
     def set_check_num(self, rest):
         self.check_num = None
         if rest != None:
             self.check_num = rest
-        return
-
+        return self.check_num
+    
     def set_state(self, rest):
         if type(rest) is str:
             rest = rest.upper()
@@ -338,19 +364,63 @@ class Transaction:
         return self.prev_state
 
     def get_pmt_method(self):
-        return self.pmt_method
+        return_value = ""
+        val = -1
+        try:
+            val = self.pmt_method
+        except:
+            pass
+        if val == UNKNOWN:
+            return_value = "unknown"
+        elif val == DIRECT_DEPOSIT:
+            return_value = "Direct Deposit"
+        elif val == AUTOPAY:
+            return_value = "AutoPay"
+        elif val == CHECK:
+            return_value = "Check"
+        elif val == SCHED_ONLINE:
+            return_value = "sched online"
+        elif val == PENDING:
+            return_value = "pending"
+        elif val == CASH:
+            return_value = "Cash"
+        elif val == TBD:
+            return_value = "TBD"
+        elif val == MANUAL:
+            return_value = "manual"
+        return return_value
 
     def get_sched_date(self):
-        return self.sched_date
+        return_value = ""
+        try:
+            return_value = self.sched_date["str"]
+        except:
+            pass
+        return return_value
 
     def get_due_date(self):
-        return self.due_date
+        return_value = ""
+        try:
+            return_value = self.due_date["str"]
+        except:
+            pass
+        return return_value
 
     def get_payee(self):
-        return self.payee
+        ret_val = ""
+        try:
+            ret_val = self.payee
+        except :
+            pass
+        return ret_val
 
     def get_amount(self):
-        return self.amount
+        ret_val = 0.0
+        try:
+            ret_val = self.amount
+        except :
+            pass
+        return ret_val
 
     def get_action(self):
         return self.action
@@ -368,13 +438,28 @@ class Transaction:
             return 0.0
 
     def get_comment(self):
-        return self.comment
+        ret_val = ""
+        try:
+            ret_val = self.comment
+        except:
+            pass
+        return ret_val
 
     def get_memo(self):
-        return self.memo
+        ret_val = ""
+        try:
+            ret_val = self.memo
+        except:
+            pass
+        return ret_val
 
     def get_check_num(self):
-        return self.check_num
+        ret_val = ""
+        try:
+            ret_val = str(self.check_num)
+        except :
+            pass
+        return ret_val
 
     def get_state(self):
         return_value = ""
@@ -395,7 +480,7 @@ class Transaction:
         return return_value
 
     def get_prev_state(self):
-        return_value = "??"
+        return_value = ""
         if self.prev_state == UNKNOWN:
             return_value = "unknown"
         elif self.prev_state == OUTSTANDING:
@@ -415,3 +500,7 @@ class Transaction:
     def assetchange(self, which_column, new_value):
         print("Transaction: ", self.get_payee(), "Recieved notification that column", which_column, "changed", ", new_value", new_value)
         
+    def MsgBox(self, message):
+        d = wx.MessageDialog(self.parent, message, "error", wx.OK | wx.ICON_INFORMATION)
+        d.ShowModal()
+        d.Destroy()

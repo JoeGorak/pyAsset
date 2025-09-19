@@ -21,6 +21,7 @@ along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 
+import re
 import wx
 from Date import Date
 from wx.core import DateTime
@@ -60,7 +61,7 @@ class Bill:
     inc_values = ["2 weeks", "1 month", "3 months", "6 months", "1 year", ""]
 
     def __init__(self, parent, payee=None, type="Unknown", action="-", amount=0.0, min_due=0.0, due_date=None, sched_date=None,
-                 pmt_acct="Other", pmt_method="TBD", check_number=0, pmt_frequency="Manual" ):
+                 pmt_acct="Unknown", pmt_method="TBD", check_number=0, pmt_frequency="Manual" ):
         self.parent = parent
         self.set_payee(payee)
         self.set_type(type)
@@ -120,10 +121,17 @@ class Bill:
         return self.check_number
 
     def set_check_number(self, check_number):
+        if type(check_number) is int:
+            try:
+                check_number = str(check_number)
+            except:
+                check_number = "0"
         self.check_number = check_number
+        return self.check_number
 
     def set_action(self, action):
         self.action = action
+        return self.action
 
     def get_action(self):
         return self.action
@@ -160,9 +168,12 @@ class Bill:
             self.type = UNKNOWN
         else:
             print("Unknown type", type, "ignored")
+            self.type = UNKNOWN
+        return self.type
 
     def set_payee(self,payee):
         self.payee = payee
+        return self.payee
 
     def get_amount(self):
         return self.amount
@@ -171,6 +182,7 @@ class Bill:
         if type(amount) is str:
             amount = float(amount.replace("$","").replace(" ",""))
         self.amount = round(amount,2)
+        return self.amount
 
     def get_min_due(self):
         return self.min_due
@@ -179,6 +191,7 @@ class Bill:
         if type(min_due) is str:
             min_due = float(min_due.replace("$","").replace(" ",""))
         self.min_due = min_due
+        return self.min_due
 
     def get_due_date(self):
        if self.due_date == None:
@@ -209,6 +222,7 @@ class Bill:
             self.due_date = None
         else:
             self.due_date = self.get_date_representation(due_date)
+        return self.due_date
 
     def get_sched_date(self):
         if self.sched_date == None:
@@ -221,6 +235,7 @@ class Bill:
             self.sched_date = None
         else:
             self.sched_date = self.get_date_representation(sched_date)
+        return self.sched_date
 
     def get_pmt_acct(self):
         try:
@@ -230,12 +245,21 @@ class Bill:
         return pmt_acct
 
     def set_pmt_acct(self, pmt_acct):
-        assets = self.parent.assets
-        if assets.index(pmt_acct) == -1 and pmt_acct != "Other" and pmt_acct != "Unknown" and pmt_acct != "":
-            self.MsgBox("Payment account " + pmt_acct + " not found in asset list! Ignoring update")
+        if pmt_acct == "Unknown":
             self.pmt_acct = "Unknown"
         else:
-            self.pmt_acct = pmt_acct
+            try:
+                assets = self.parent.assets
+            except:
+                self.pmt_acct = "Unknown"
+                assets = None
+            if assets != None:
+                if assets.index(pmt_acct) == -1 and pmt_acct != "Other" and pmt_acct != "":
+                    self.MsgBox("Payment account " + pmt_acct + " not found in asset list! Ignoring update")
+                    self.pmt_acct = "Unknown"
+                else:
+                    self.pmt_acct = pmt_acct
+        return self.pmt_acct
 
     def get_pmt_method(self):
         spm = self.pmt_method
@@ -279,6 +303,7 @@ class Bill:
         else:
             print("Unknown payment method - " + pmt_method + "! Defaulting to TBD")
             self.pmt_method = TBD
+        return self.pmt_method
 
     def get_pmt_frequency(self):
         spf = self.payment_frequency
@@ -314,8 +339,10 @@ class Bill:
         else:
             print("Unknown payment frequency " + payment_freq + "! Defaulting to MANUAL")
             self.payment_frequency = MANUAL
+        return self.payment_frequency
 
     def MsgBox(self, message):
         d = wx.MessageDialog(self.parent, message, "error", wx.OK | wx.ICON_INFORMATION)
         d.ShowModal()
         d.Destroy()
+

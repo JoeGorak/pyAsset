@@ -643,7 +643,7 @@ class TransactionFrame(wx.Frame):
                 self.editmenu.SetLabel(void_id, new_label)
                 proj_value = self.transactions.update_current_and_projected_values(0)
                 self.update_asset_projected_value(index)
-                # TODO: If we voided or unvoifed a payment or paydown, we need to void or unvoid the corresponding payment or paydown
+                # TODO: If we voided or unvoided a payment or paydown, we need to void or unvoid the corresponding payment or paydown
                 if self.starts_with(original_payee, "Payment") or self.starts_with(original_payee, "VOID:Payment"):
                     pass
                 elif self.starts_with(original_payee, "Paydown") or self.starts_with(original_payee, "VOID:Paydown"):

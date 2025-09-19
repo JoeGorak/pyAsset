@@ -112,8 +112,6 @@ class AssetFrame(wx.Frame):
             else:
                 error = "Can't determine type of assetFile: " + self.assetFile + " - skipping"
                 self.MsgBox(error)
-        if self.redraw:
-            self.redraw_all()
 
         oldDateFormat = Date.get_global_date_format(Date)
         oldPayType = self.getPayType()
@@ -124,6 +122,9 @@ class AssetFrame(wx.Frame):
         currDate = Date.parse_date(self, self.curr_date, Date.get_global_date_format(Date))
         self.projDate = currDate
         self.edited = False
+
+        if self.redraw:
+            self.redraw_all()
 
     def getAssets(self):
         if self.assets == None:
@@ -214,38 +215,42 @@ class AssetFrame(wx.Frame):
     def get_next_paydate(self):
         return self.global_next_paydate
 
-    def process_bill_dates_in_range(self, bill, start_date, end_date):
+    def process_bill_dates_in_range(self, start_date, end_date):
+        billdates = []
         dateFormat = self.get_date_format()
         start_date = Date.parse_date(self, start_date, dateFormat)
         start_date = wx.DateTime.FromDMY(start_date['day'], start_date['month']-1, start_date['year'])
         end_date = Date.parse_date(self, end_date, dateFormat)
         end_date = wx.DateTime.FromDMY(end_date['day'], end_date['month']-1, end_date['year'])
-        billdates = []
         if end_date < start_date:
             start_date, end_date = end_date, start_date
-        #Make sure first test date is the first time bill is due (which is assumed to be at least the start date)
-        test_billdate = start_date
-        dayaddr = wx.DateSpan(days=1)
-        due_date = Date.parse_date(self, bill.get_due_date(), dateFormat)
-        due_date = wx.DateTime.FromDMY(due_date['day'], due_date['month']-1, due_date['year'])
-        while test_billdate < due_date:
-            test_billdate += dayaddr
-        if test_billdate <= end_date:
-            billdates.append(Date.get_display_date(Date,test_billdate))
-        pmt_frequencies = Bill.get_payment_frequencies()
-        incr = wx.DateSpan(months=pmt_frequencies.index(bill.get_pmt_frequency()))
-        if incr != None:
-            while test_billdate <= end_date:
-                if not Date.get_display_date(Date, test_billdate) in billdates:
-                    billdates.append(Date.get_display_date(Date,test_billdate))
-                test_billdate.Add(incr)
-            paymentAccount = self.assets.get_asset_by_name(bill.get_pmt_acct())
-            paymentAccountTransactions = paymentAccount.get_transactions()
-            for billdate in billdates:
+        for bill in self.bills:
+            due_date_parsed = Date.parse_date(self, bill.get_due_date(), dateFormat)
+            if bill.get_amount() == 0.0 or due_date_parsed['dt'] > end_date:
+                continue
+            #Make sure first test date is the first time bill is due (which is assumed to be at least the start date)
+            test_billdate = start_date
+            dayaddr = wx.DateSpan(days=1)
+            due_date = Date.parse_date(self, bill.get_due_date(), dateFormat)
+            due_date = wx.DateTime.FromDMY(due_date['day'], due_date['month']-1, due_date['year'])
+            while test_billdate < due_date:
+                test_billdate += dayaddr
+            if test_billdate <= end_date:
+                billdates.append(Date.get_display_date(Date,test_billdate))
+            pmt_frequencies = Bill.get_payment_frequencies()
+            incr = wx.DateSpan(months=pmt_frequencies.index(bill.get_pmt_frequency()))
+            if incr != None:
+                while test_billdate <= end_date:
+                    if not Date.get_display_date(Date, test_billdate) in billdates:
+                        billdates.append(Date.get_display_date(Date,test_billdate))
+                    test_billdate.Add(incr)
+                print("Processing bill ",bill)
+                paymentAccount = self.assets.get_asset_by_name(bill.get_pmt_acct())
+                if paymentAccount == None:
+                    continue
                 payeeAccount = self.assets.get_asset_by_name(bill.get_payee())
                 if payeeAccount != None:
                     amount = bill.get_amount()
-                    pat = payeeAccount.get_type()
                     pam = paymentAccount.get_name()
                     tpayee = bill.get_payee()
                     payee_asset = self.assets.get_asset_by_name(tpayee)
@@ -260,14 +265,16 @@ class AssetFrame(wx.Frame):
                             tpayee = "Deposit from " + pam
                         elif pat == "Oth L":
                             tpayee = "Payment from " + pam
-                        elif pat == "CCard" or pat == "Credit Card":
-                            tpayee = "Paydown " + bill.get_payee() + " from " + pam
-                            amount = paymentAccount.get_payment()
-                        if not payeeAccount.transaction_exists(tpayee, billdate):
-#                            print("Inserting a transaction for " + tpayee + " on " + billdate + " in payee account " + payeeAccount.get_name())
-                            new_transaction = Transaction(self.parent, payee=tpayee, action=action, due_date=billdate, sched_date=None, pmt_method=bill.get_pmt_method(), amount=amount, state="budgeted")
-                            payeeAccount.transactions.insert(new_transaction)
-                            payeeAccount.transactions.sort()
+                    elif pat == "CCard" or pat == "Credit Card":
+                        action = "+"
+                        tpayee = "Payment from " + pam
+                        amount = paymentAccount.get_payment()
+                    billdate = due_date_parsed["str"]
+                    if not payeeAccount.transaction_exists(tpayee, billdate):
+                        print("Inserting a transaction for " + tpayee + " on " + billdate + " in payee account " + payeeAccount.get_name())
+                        new_transaction = Transaction(self.parent, payee=tpayee, action=action, due_date=billdate, sched_date=bill.get_sched_date(), pmt_method=bill.get_pmt_method(), amount=amount, state="budgeted")
+                        payeeAccount.transactions.insert(new_transaction)
+                        payeeAccount.transactions.sort()
                 pat = paymentAccount.get_type()
                 action = bill.get_action()
                 tpayee = payee = bill.get_payee()
@@ -277,15 +284,18 @@ class AssetFrame(wx.Frame):
                     tpayee = "Payment from " + pam
                     action = "+"
                 elif pat == "Bank":
-                    if btype == "Loan":
+                    if btype == "Loan" or btype == "Checking and savings":
                         action = "+"
-                    tpayee = "xfer to " + payee
+                        if btype == "Checking and savings":
+                            tpayee = "Deposit from " + pam
+                        else:
+                            tpayee = "Paydown " + bill.get_name() + " from " + pam
                 elif pat == "CCard":
                     if btype != "Expense":
                         tpayee = "Paydown " + payee + " from " + pam
-#                print("Checking if a transaction for " + tpayee + " on " + billdate + " exists in payment account " + paymentAccount.get_name())
+                print("Checking if a transaction for " + tpayee + " on " + billdate + " exists in payment account " + paymentAccount.get_name())
                 if not paymentAccount.transaction_exists(tpayee, billdate):
-#                    print("Inserting a transaction for " + tpayee + " on " + billdate + " in payment account " + paymentAccount.get_name())
+                    print("Inserting a transaction for " + tpayee + " on " + billdate + " in payment account " + paymentAccount.get_name())
                     new_transaction = Transaction(self.parent, payee=tpayee, action=action, due_date=billdate, sched_date=billdate, pmt_method=bill.get_pmt_method(), amount=bill.get_amount(), state="budgeted")
                     paymentAccount.transactions.insert(new_transaction)
                     paymentAccount.transactions.sort()
@@ -381,33 +391,35 @@ class AssetFrame(wx.Frame):
                     amount = bill.get_amount()
                     btype = bill.get_type()
                     payee = bill.get_payee()
-                    payee_asset = self.assets.get_asset_by_name(payee)
                     due_date = bill.get_due_date()
                     if due_date == None or due_date == '':
                         continue
-#                    print("Processing bill: %s, Due date: %s, Frequency: %s" % (bill.get_payee(), bill.get_due_date(), bill.get_pmt_frequency()))
+    #                    print("Processing bill: %s, Due date: %s, Frequency: %s" % (bill.get_payee(), bill.get_due_date(), bill.get_pmt_frequency()))
                     pmt_acct = self.assets.get_asset_by_name(bill.get_pmt_acct())
-                    if pmt_acct != None:
+                    payee_asset = self.assets.get_asset_by_name(payee)
+                    if payee_asset != None:
+                        payee_type = payee_asset.get_type()
+                        if btype == "Loan":
+                            if pmt_acct.transaction_exists(payee, due_date):                # If a Loan Payment exists with only the name, delete the transaction since a new_transaction will be created!   JJG 5/12/25
+                                trans_list_index = pmt_acct.transactions.index(payee, due_date)
+                                del pmt_acct.transactions[trans_list_index]
+                    if payee_type == "CCard" or payee_type == "Oth L":
+                        new_payee = "Payment from " + pmt_acct.get_name()
                         if payee_asset != None:
-                            payee_type = payee_asset.get_type()
-                            if btype == "Loan":
-                                if pmt_acct.transaction_exists(payee, due_date):                # If a Loan Payment exists with only the name, delete the transaction since a new_transaction will be created!   JJG 5/12/25
-                                    trans_list_index = pmt_acct.transactions.index(payee, due_date)
-                                    del pmt_acct.transactions[trans_list_index]
-                        if payee_type == "CCard" or payee_type == "Oth L":
-                            if payee_type == "CCard":
-                                new_payee = "Paydown " + payee + " from " + pmt_acct.get_name()
-                            else:
-                               new_payee = "Payment from " + pmt_acct.get_name()
-                            if payee_asset != None:
-                                if payee_asset.transaction_exists(new_payee, due_date) == False:
-                                    new_transaction = Transaction(self.parent, payee=new_payee, action="+", due_date=due_date, sched_date=due_date, pmt_method=bill.get_pmt_method(), amount=amount, state="budgeted")
-                                    payee_asset.transactions.insert(new_transaction)
-                        elif btype == "Checking and savings":
-                            payee = "xfer to " + payee 
-                        if not pmt_acct.transaction_exists(payee, due_date):
-                           new_transaction = Transaction(self.parent, payee=payee, action=bill.get_action(), due_date=due_date, sched_date=due_date, pmt_method=bill.get_pmt_method(), amount=amount, state="budgeted")
-                           pmt_acct.transactions.insert(new_transaction)
+                            if payee_asset.transaction_exists(new_payee, due_date) == False:
+                                new_transaction = Transaction(self.parent, payee=new_payee, action="+", due_date=due_date, sched_date=bill.get_sched_date(), pmt_method=bill.get_pmt_method(), amount=amount, state="budgeted")
+                                payee_asset.transactions.insert(new_transaction)
+                    if pmt_acct != None:
+                        pat = pmt_acct.get_type()
+                        if pat == "Oth L" and btype == "Checking and savings":
+                            new_payee = "Paydown " + payee + " from " + pmt_acct.get_name()
+    #                    elif :
+    #                        new_payee = "Deposit from " + pmt_acct.get_name()
+                        else:
+                            new_payee = payee
+                        if not pmt_acct.transaction_exists(new_payee, due_date):
+                            new_transaction = Transaction(self.parent, payee=new_payee, action=bill.get_action(), due_date=due_date, sched_date=due_date, pmt_method=bill.get_pmt_method(), amount=amount, state="budgeted")
+                            pmt_acct.transactions.insert(new_transaction)
         return bills_due
 
     def updatePayDates(self):
@@ -659,11 +671,6 @@ class AssetFrame(wx.Frame):
                 print("Projected date %s, parse: Month: %02d, Day: %02d, Year: %04d" %
                       (self.proj_date.Format(date_format), self.proj_month, self.proj_day, self.proj_year))
                 Date.set_proj_date(self, in_date)
-                paydates = self.process_paydates_in_range(Date.get_global_curr_date(self), parsed_proj_date)
-    #            print("Pay dates in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, paydates))
-                billsdue = self.process_bills_due_in_range(Date.get_global_curr_date(self), parsed_proj_date)
-    #            print("Bills due in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, BillList(billsdue)))
-                self.assets.update_proj_values(self.get_proj_date())
                 self.redraw_all()
         else:
             self.proj_date = None
@@ -710,7 +717,17 @@ class AssetFrame(wx.Frame):
     def redraw_all(self, index=-1):
         if self.assets == None:
             return
+        #update all the paydates and transactions
+        paydates = self.process_paydates_in_range(Date.get_global_curr_date(self), self.get_proj_date())
+    #    print("Pay dates in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, paydates))
+        billsdue = self.process_bills_due_in_range(Date.get_global_curr_date(self), self.get_proj_date())
+    #    print("Bills due in range %s-%s: %s" % (Date.get_global_curr_date(self)["str"], in_date, BillList(billsdue)))
+        self.assets.update_proj_values(self.get_proj_date())
+
+        #update the grid to reflect the current asset list (if none just return)
         nassets = len(self.assets.assets)
+        if nassets == 0:
+            return
         if index == -1:
             start_range = 0
             end_range = nassets
@@ -1118,12 +1135,11 @@ class AssetFrame(wx.Frame):
 
             if error == "":
                 latest_assets = self.process_XLSX_file(total_name_in)
-                if latest_assets != None:
-                    bills = self.bills.getBills()
-                    if bills != None:
-                        for bill in self.bills.getBills():
-                            if bill.get_amount() != 0.0 and bill.get_due_date() >= Date.get_today_date(Date)["str"]:
-                                billdates = self.process_bill_dates_in_range(bill, Date.get_curr_date(Date), Date.get_proj_date(Date))
+#                if latest_assets != None:
+#                    bills = self.bills.getBills()
+#                    if bills != None:
+#                        billdates = self.process_bill_dates_in_range(Date.get_global_curr_date(Date), Date.get_proj_date(Date))
+#                        print("in import_XLSX_file processed bills on these dates: ", billdates)
                 self.redraw_all()
                 self.filename = total_name_in
             else:
@@ -1306,7 +1322,7 @@ class AssetFrame(wx.Frame):
         self.assets[index] = new_asset
         self.assetGrid.SetGridCursor(nassets - 1, 0)
         self.assetGrid.MakeCellVisible(nassets - 1, 1)
-        self.redraw_all()
+        self.redraw_all()       # TODO: Can we make a self.redraw(index-1)  so that only the assets[index-1:] get updated?  JJG 09/18/2025
 
     def sort(self, *args):
         self.edited = True
