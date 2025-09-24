@@ -29,7 +29,7 @@ import wx
 import copy
 
 from Date import Date
-from Asset import SAVINGS, Asset
+from Asset import Asset
 from AssetList import AssetList
 from Date import Date
 from Transaction import Transaction

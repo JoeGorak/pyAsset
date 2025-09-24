@@ -32,27 +32,31 @@ from Date import Date
 from Transaction import Transaction
 
 # Asset Types
-CASH = 0
-CHECKING = 1
-SAVINGS = 2
-MONEY_MARKET = 3
-OVERDRAFT = 4
-CREDIT_CARD = 5
-STORE_CARD = 6
-RETIREMENT = 7
-LOAN = 8
-EMERGENCY_FUND = 9
-MORTGAGE = 10
-CD = 11
-HOUSE = 12
-CAR = 13
-OTHER = 14
+#CASH = 0
+#CHECKING = 1
+#SAVINGS = 2
+#MONEY_MARKET = 3
+#OVERDRAFT = 4
+#CREDIT_CARD = 5
+#STORE_CARD = 6
+#RETIREMENT = 7
+#LOAN = 8
+#EMERGENCY_FUND = 9
+#MORTGAGE = 10
+#CD = 11
+#HOUSE = 12
+#CAR = 13
+#OTHER = 14
 
 from TransactionList import TransactionList
 from Transaction import Transaction
 
 class Asset(object):
-    def __init__(self,name = "", type = "OTHER", last_pull_date = 0, value = 0.0, value_proj = 0.0, est_method = "", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
+
+    asset_types = ["cash", "checking and savings", "money market", "overdraft", "credit card", "store card", "retirement", "loan",
+                   "emergency fund", "mortgage", "certificate", "house", "car", "other", "unknown"]
+
+    def __init__(self, name = "", type = "other", last_pull_date = 0, value = 0.0, value_proj = 0.0, est_method = "", limit = 0.0, avail = 0.0, avail_proj = 0.0, rate = 0.0,
                 payment = 0.0, due_date = None, sched_date = None, min_pay = 0.0, stmt_bal = 0.0, amt_over = 0.0, cash_limit = 0.0, cash_used = 0.0, cash_avail = 0.0):
         self.dateFormat = Date.get_global_date_format(Date)
         self.dateSep = Date.get_global_date_sep(Date)
@@ -80,6 +84,10 @@ class Asset(object):
         self.cash_avail = cash_avail
         self.transactions = TransactionList(self, limit=limit)
 
+
+    def get_asset_types(self):
+        return Asset.asset_types
+
     def get_assetList(self):
         try:
             assetList = self.assetList
@@ -98,8 +106,8 @@ class Asset(object):
     def __setitem__(self, i, val):
         self.transactions[i] = val
 
-    def __str__(self):
-        return " %-10s $%8.2f\n" % (self.name, self.value)
+    def __str__(self):                      # TODO: Add other fields            JJG 9/23/2025
+        return " %-10s $%8.2f" % (self.get_name(), self.get_value())
 
     def __gt__(self, other):
         if self.due_date != None and other.due_date != None:
@@ -223,8 +231,9 @@ class Asset(object):
     def get_name(self):
         return self.name
 
-    def set_name(self,name):
-        self.name = name
+    def set_name(self, name):
+        self.name = name.lower()
+        return self.name
 
     def get_value(self):
         return self.value
@@ -360,33 +369,23 @@ class Asset(object):
             self.min_pay = 0.0
 
     def get_type(self):                 # JJG 2/11/24 Modified to retun qif codes for assets
-        st = self.type
-        if st == CASH: return "Cash"
-        elif st == CHECKING or st == SAVINGS or st == MONEY_MARKET: return "Bank"
-        elif st == CREDIT_CARD or st == STORE_CARD: return "CCard"
-        elif st == CD or st == RETIREMENT: return "Invst"
-        elif st == HOUSE or st == CAR: return "Oth A"
-        elif st == OVERDRAFT or st == LOAN or st == MORTGAGE or st == EMERGENCY_FUND: return "Oth L"
-        elif st == OTHER: return "OTH U"                                          # JJG 2/11/24 Addition to qif codes
-        else: return "UNK"                                                        # JJG 2/11/24 Also addition to qif codes (should not occur if code is working properly!!)
+        st = self.asset_types[self.type]
+#        if st == CASH: return "Cash"
+        if st == "checking" or st == "savings" or st == "money market": return "Bank"
+        elif st == "credit card" or st == "store card": return "CCard"
+        elif st == "certificate" or st == "retirement": return "Invst"
+        elif st == "house" or st == "car": return "Oth A"
+        elif st == "overdraft" or st == "loan" or st == "mortgage" or st == "emergency fund": return "Oth L"
+        elif st == "other": return "OTH U"                                          # JJG 2/11/24 Addition to qif codes
+        else: return "unkown"                                                        # JJG 2/11/24 Also addition to qif codes (should not occur if code is working properly!!)
 
-    def set_type(self, type):
-        tu = type.upper()
-        if "CASH" in tu: self.type = CASH
-        elif "CHECKING" in tu: self.type = CHECKING
-        elif "SAVINGS" in tu: self.type = SAVINGS
-        elif "MONEY MARKET" in tu: self.type = MONEY_MARKET
-        elif "OVERDRAFT" in tu: self.type = OVERDRAFT
-        elif "STORE CARD" in tu: self.type = STORE_CARD
-        elif "CREDIT CARD" in tu: self.type = CREDIT_CARD
-        elif "RETIREMENT" in tu: self.type = RETIREMENT
-        elif "MORTGAGE" in tu: self.type = MORTGAGE
-        elif "LOAN" in tu: self.type = LOAN
-        elif "EMERGENCY" in tu: self.type = EMERGENCY_FUND
-        elif "CD" in tu: self.type = CD
-        elif "HOUSE" in tu: self.type = HOUSE
-        elif "CAR" in tu: self.type = CAR
-        else: self.type = OTHER
+    def set_type(self, in_type):
+        tl = in_type.lower().strip()
+        self.type = self.get_asset_types().index(tl)
+        if self.type == -1:
+            print("Unknown asset type - " + in_type + "! Defaulting to unknown")
+            self.type = self.asset_types.index("unknown")
+        return self.type
 
     def get_stmt_bal(self):
         return self.stmt_bal

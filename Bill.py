@@ -27,41 +27,23 @@ from Date import Date
 from wx.core import DateTime
 from datetime import date, datetime
 
-# Bill types
-CHECKINGANDSAVINGS = 0
-CREDITCARD = 1
-LOAN = 2
-OVERDRAFT = 3
-EXPENSE = 4
-UNKNOWN = 5
-
-# Payment Methods
-DIRECT_DEPOSIT = 1
-SCHED_ONLINE = 2
-CHECK = 3
-AUTOPAY = 4
-CASH = 5
-TBD = 6
-MANUAL = 7
-OTHER = 8
-
-# Payment_Frequency
-BIWEEKLY = 0
-MONTHLY = 1
-QUARTERLY = 3
-SEMI_YEARLY = 6
-YEARLY = 12
-MANUAL = -1
-
 class Bill:
-    bill_types = [ "Checking and Savings", "Credit Card", "Loan", "Expense", "Unknown" ]
-    payment_methods = [ "Direct deposit", "sched online", "Check", "AutoPay", "Cash", "TBD", "Manual", "Other" ]
-    payment_frequencies = [ "Bi-weekly", "monthly", "quarterly", "semi-yearly", "yearly", "manual" ]
 
-    inc_values = ["2 weeks", "1 month", "3 months", "6 months", "1 year", ""]
+    # Define static class variables - There are no enums in python
+    # We use get_bill_types() etc to access these lists
 
-    def __init__(self, parent, payee=None, type="Unknown", action="-", amount=0.0, min_due=0.0, due_date=None, sched_date=None,
-                 pmt_acct="Unknown", pmt_method="TBD", check_number=0, pmt_frequency="Manual" ):
+    bill_types = [ "checking and savings", "credit card", "loan", "emergency fund", "expense", "unknown" ]
+    payment_methods = [ "direct deposit", "sched online", "check", "autopay", "cash", "TBD", "Zelle", "manual", "other", "unknown" ]
+    payment_frequencies = [ "bi-weekly", "2 weeks", "4 weeks", "monthly", "quarterly", "semi-yearly", "yearly", "manual", "unknown" ]
+
+    inc_values = ["2 weeks", "2 weeks", "4 weeks", "1 month", "3 months", "6 months", "1 year", "manual"]
+
+    bill_fields = [ "Payee", "Type", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Pmt Freq", "Check Number" ]
+
+    # Instance variables
+
+    def __init__(self, parent, payee=" "*50, type="unknown", action="-", amount=0.00, min_due=0.00, due_date=None, sched_date=None,
+                 pmt_acct="unknown", pmt_method="TBD", check_number=0, pmt_frequency="manual" ):
         self.parent = parent
         self.set_payee(payee)
         self.set_type(type)
@@ -80,8 +62,10 @@ class Bill:
         which = Bill.payment_frequencies.index(payment_freq)
         if which != -1:
             inc_value = Bill.inc_values[which]
-            if inc_value == "2 weeks":
+            if inc_value == "2 weeks" or inc_value == "bi-weekly":
                 ret_value = wx.DateSpan(weeks=2)
+            elif inc_value == "4 weeks":
+                ret_vaue = wx.DateSpan(weeks=4)
             elif inc_value == "1 month":
                 ret_value = wx.DateSpan(months=1)
             elif inc_value == "3 months":
@@ -100,8 +84,6 @@ class Bill:
 
     def get_payment_frequencies():
         return Bill.payment_frequencies
-
-    bill_fields = [ "Payee", "Type", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Pmt Freq", "Check Number" ]
 
     def get_bill_fields():
         return Bill.bill_fields
@@ -140,35 +122,25 @@ class Bill:
         return self.payee
 
     def get_type(self):
-        st = self.type
-        if st == CHECKINGANDSAVINGS:
-            return "Checking and savings"
-        elif st == CREDITCARD:
-            return "Credit Card"
-        elif st == LOAN:
-            return "Loan"
-        elif st == EXPENSE:
-            return "Expense"
-        elif st == UNKNOWN:
-            return "Unknown"
+        ret_type = Bill.bill_types[self.type]
+        if ret_type == "unknown":
+            ret_type = ""
+        return ret_type
+ 
+    def set_type(self, in_type):
+        if type(in_type) is str:
+            type_lower = in_type.lower().strip()
+            try:
+             self.type = Bill.bill_types.index(type_lower)
+            except:
+                self.type = -1
+        elif type(in_type) is int:
+            self.type = in_type
         else:
-            return ""
-
-    def set_type(self,type):
-        tu = type.upper().strip()
-        if "CHECKING AND SAVINGS" in tu:
-            self.type = CHECKINGANDSAVINGS
-        elif "CREDIT CARD" in tu:
-            self.type = CREDITCARD
-        elif "LOAN" in tu:
-            self.type = LOAN
-        elif "EXPENSE" in tu:
-            self.type = EXPENSE
-        elif "UNKNOWN" in tu:
-            self.type = UNKNOWN
-        else:
-            print("Unknown type", type, "ignored")
-            self.type = UNKNOWN
+            self.type = -1
+        if self.type == -1:
+            print("Unknown type", in_type, "ignored - default to unknown")
+            self.type = Bill.bill_types.index("unknown")
         return self.type
 
     def set_payee(self,payee):
@@ -245,101 +217,44 @@ class Bill:
         return pmt_acct
 
     def set_pmt_acct(self, pmt_acct):
-        if pmt_acct == "Unknown":
-            self.pmt_acct = "Unknown"
+        if pmt_acct == "unknown":
+            self.pmt_acct = "unknown"
         else:
             try:
                 assets = self.parent.assets
             except:
-                self.pmt_acct = "Unknown"
+                self.pmt_acct = "unknown"
                 assets = None
             if assets != None:
-                if assets.index(pmt_acct) == -1 and pmt_acct != "Other" and pmt_acct != "":
+                if assets.index(pmt_acct) == -1 and pmt_acct != "other" and pmt_acct != "unknown" and pmt_acct != "":
                     self.MsgBox("Payment account " + pmt_acct + " not found in asset list! Ignoring update")
-                    self.pmt_acct = "Unknown"
+                    self.pmt_acct = "unknown"
                 else:
                     self.pmt_acct = pmt_acct
         return self.pmt_acct
 
     def get_pmt_method(self):
-        spm = self.pmt_method
-        if spm == DIRECT_DEPOSIT:
-            return "Direct deposit"
-        elif spm == SCHED_ONLINE:
-            return "sched online"
-        elif spm == CHECK:
-            return "Check"
-        elif spm == AUTOPAY:
-            return "AutoPay"
-        elif spm == CASH:
-            return "Cash"
-        elif spm == TBD:
-            return "TBD"
-        elif spm == MANUAL:
-            return "Manual"
-        elif spm == OTHER:
-            return "Other"
-        else:
-            return "Unknown pmt method"
-
+        return Bill.payment_methods[self.pmt_method]
+ 
     def set_pmt_method(self, pmt_method):
-        pmu = pmt_method.upper()
-        if pmu == "DIRECT DEPOSIT":
-            self.pmt_method = DIRECT_DEPOSIT
-        elif pmu == "SCHED ONLINE":
-            self.pmt_method = SCHED_ONLINE
-        elif pmu == "CHECK":
-            self.pmt_method = CHECK
-        elif pmu == "AUTOPAY":
-            self.pmt_method = AUTOPAY
-        elif pmu == "CASH":
-            self.pmt_method = CASH
-        elif pmu == "TBD":
-            self.pmt_method = TBD
-        elif pmu == "MANUAL" or pmu == "":
-            self.pmt_method = MANUAL
-        elif pmu == "OTHER":
-            self.pmt_method = OTHER
-        else:
-            print("Unknown payment method - " + pmt_method + "! Defaulting to TBD")
-            self.pmt_method = TBD
+        pml = pmt_method.lower().strip()
+        if pml == "tbd": pml = "TBD"                        # Handle TBD special case
+        self.pmt_method = Bill.payment_methods.index(pml)
+        if self.pmt_method == -1:
+            print("Unknown payment method - " + pmt_method + "! Defaulting to unknown")
+            self.pmt_method = Bill.payment_methods.index("unknown")
         return self.pmt_method
 
     def get_pmt_frequency(self):
-        spf = self.payment_frequency
-        if spf == BIWEEKLY:
-            return "Bi-weekly"
-        elif spf == MONTHLY:
-            return "monthly"
-        elif spf == QUARTERLY:
-            return "quarterly"
-        elif spf == SEMI_YEARLY:
-            return "semi-yearly"
-        elif spf == YEARLY:
-            return "yearly"
-        elif spf == MANUAL:
-            return "manual"
-        else:
-            return "unknown payment freq"
+        return Bill.payment_frequencies[self.payment_frequency]
 
     def set_pmt_frequency(self, payment_freq):
-        pfu = payment_freq.upper()
-        if pfu == "BI-WEEKLY":
-            self.payment_frequency = BIWEEKLY
-        elif pfu == "MONTHLY":
-            self.payment_frequency = MONTHLY
-        elif pfu == "QUARTERLY":
-            self.payment_frequency = QUARTERLY
-        elif pfu == "SEMI-YEARLY":
-            self.payment_frequency = SEMI_YEARLY
-        elif pfu == "YEARLY":
-            self.payment_frequency = YEARLY
-        elif pfu == "MANUAL":
-            self.payment_frequency = MANUAL
-        else:
-            print("Unknown payment frequency " + payment_freq + "! Defaulting to MANUAL")
-            self.payment_frequency = MANUAL
-        return self.payment_frequency
+       pfl = payment_freq.lower().strip().replace("every ","")
+       self.payment_frequency = Bill.payment_frequencies.index(pfl)
+       if self.payment_frequency == -1:
+           print("Unknown payment frequency " + payment_freq + "! Defaulting to unknown")
+           self.payment_frequency = Bill.payment_frequencies.index("unknown")
+       return self.payment_frequency
 
     def MsgBox(self, message):
         d = wx.MessageDialog(self.parent, message, "error", wx.OK | wx.ICON_INFORMATION)

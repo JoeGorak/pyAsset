@@ -78,19 +78,20 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # Search functions
 # goto date
 
-import sys
-import wx
-from AssetFrame import AssetFrame
+if __name__ == '__main__':
+    import sys
+    import wx
+    from AssetFrame import AssetFrame
 
-version = 0.2
+    version = 0.2
 
-cfgFile = ""
-if len(sys.argv) > 1:
-    cfgFile = sys.argv[1]
-assetFile = ""
-if len(sys.argv) > 2: 
-    assetFile = sys.argv[2]
-app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
-app.frame = AssetFrame(None, 'PyAsset', cfgFile, assetFile)
-app.frame.Show()
-app.MainLoop()
+    cfgFile = ""
+    if len(sys.argv) > 1:
+        cfgFile = sys.argv[1]
+    assetFile = ""
+    if len(sys.argv) > 2: 
+        assetFile = sys.argv[2]
+    app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
+    app.frame = AssetFrame(None, 'PyAsset', cfgFile, assetFile)
+    app.frame.Show()
+    app.MainLoop()

@@ -105,7 +105,7 @@ class AssetFrame(wx.Frame):
                 if latest_assets != None:
                     self.process_asset_list(latest_assets, 'add')
                     self.redraw = True
-            elif ext == ".xlsx":
+            elif ext == ".xlsx" or ext == ".xlsxm":
                 latest_assets = self.process_XLSX_file(self.assetFile)
                 if latest_assets != None:
                     self.redraw = True
@@ -530,10 +530,10 @@ class AssetFrame(wx.Frame):
                              "Archive assets older than a specified date",
                              wx.ITEM_NORMAL)
         self.filemenu.AppendSeparator()
-        self.fileMenuItem["ImportCSV"] = self.filemenu.Append(ID_IMPORT_CSV, "Import CSV\tCtrl-c",
+        self.fileMenuItem["ImportCSV"] = self.filemenu.Append(ID_IMPORT_CSV, "Import CSV file\tCtrl-c",
                              "Import assets and transactions from a CSV file",
                              wx.ITEM_NORMAL)
-        self.fileMenuItem["ImportXLSX"] = self.filemenu.Append(ID_IMPORT_XLSX, "Import XLSX file\tCtrl-i",
+        self.fileMenuItem["ImportXLSX"] = self.filemenu.Append(ID_IMPORT_XLSX, "Import EXCEL file\tCtrl-i",
                              "Import assets and transactions from an EXCEL file",
                              wx.ITEM_NORMAL)
 # JJG 6/28/2025 Need to determine new way to update asset from net since no more iMacros support
@@ -1017,7 +1017,7 @@ class AssetFrame(wx.Frame):
 
     def import_CSV_file(self, *args):
         # Appends the records from a .csv file to the current Asset
-        d = wx.FileDialog(self, "Import", "", "", "*.csv", wx.FD_OPEN)
+        d = wx.FileDialog(self, "Import", "", "", "CSV Files (*.csv)|*.csv", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
             self.edited = True
             fname = d.GetFilename()
@@ -1113,14 +1113,15 @@ class AssetFrame(wx.Frame):
                     self.assets[sheet_index].set_assetList(self.assets)
             else:
                 print(sheet + " not found in asset list")
-        self.bills = xlsm.ProcessBillsSheet()
+# DEBUGGING : ONLY LOOK AT ASSETS  AND TRANSACTIONS FOR NOW!   JJG 9/23/2025
+#        self.bills = xlsm.ProcessBillsSheet()
         for asset in latest_assets.assets:
             asset.transactions.update_current_and_projected_values()                
         return latest_assets
 
     def import_XLSX_file(self, *args):
-        # Appends or Merges as appropriate the records from a .xlsx file to the current Asset
-        d = wx.FileDialog(self, "Import", "", "", "*.xlsx", wx.FD_OPEN)
+        # Appends or Merges as appropriate the records from a .xlsx (no macros) or .xlsm (with macros) file to the current Asset
+        d = wx.FileDialog(self, "Import", "", "", "Excel Files (*.xlsx;*.xlsm)|*.xlsx;*.xlsm", wx.FD_OPEN)
         if d.ShowModal() == wx.ID_OK:
             self.edited = True
             fname = d.GetFilename()

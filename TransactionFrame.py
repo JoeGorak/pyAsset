@@ -391,9 +391,9 @@ class TransactionFrame(wx.Frame):
         return
 
     def quit(self, event):
-        self.close(event)
         self.Close()
-
+        self.close(event)
+ 
     def write_file(self, date_, amount_, memo_, payee_, filelocation_):
     #
     #     @brief Receives data to be written to and its location

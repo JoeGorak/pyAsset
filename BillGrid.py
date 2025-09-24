@@ -137,80 +137,56 @@ class BillGrid(wx.Frame):
         ]
 
         self.make_widgets()
-        self.redraw_all() 
-
-    def redraw_all(self, index=None):
-        if index == None:
-            index = -1
-        nRows = self.getNumRowsNeeded()
-        start_range = 0
-        end_range = nRows
-        if index == -1:
-            nrows = self.bill_grid.GetNumberRows()
-            if nrows > 0 and (index == None or index == -1):
-                self.bill_grid.DeleteRows(0, nrows)
-                nrows = 0
-            if nrows < nRows:
-                rows_needed = nRows - nrows
-                self.bill_grid.AppendRows(rows_needed)
+        self.redraw_all(0, self.maxRows)
+    
+    def getNumRowsNeeded(self):
+        numBills = len(self.bills)
+        if numBills == 0:                       # If no bills yet, allocate 2 blank rows for new bill entry
+            rowsNeeded = 2
+            for row in range(rowsNeeded):
+                self.bills.append(Bill(self))
         else:
-            start_range = index
-            end_range = start_range + 1
+            rowsNeeded = numBills                       
+        return rowsNeeded
 
-        haveBills = True
-        if self.bills.getBills() == None:
-            haveBills = False
+    def getNumColumns(self):
+        return(len(self.columnNames))
+
+    def redraw_all(self, start_range=0, end_range=-1):
+        if end_range == -1:
+            end_range = self.maxRows
+
+        # recalculate the grid sizer stuff and redo the Layout in case any of the column sizes have changed
+        self.set_properties()
+        self.Layout()
 
         # Display the bills in the grid
-        if haveBills:
+        if self.bills.getBills() != None:
             for row in range(start_range, end_range):
                 for col in range(self.getNumColumns()):
                     ret_val = wx.OK
-                    if row < 0 or row >= nRows:
+                    if row < 0 or row >= self.getNumRowsNeeded():
                         str = "Warning: skipping redraw on bad cell %d %d!" % (row, col)
                         ret_val = self.DisplayMsg(str)
                     if ret_val != wx.OK:
                         continue
 
                     cellType = self.getColType(col)
-                    if cellType == self.DOLLAR_TYPE and haveBills:
+                    if cellType == self.DOLLAR_TYPE:
                         self.GridCellDollarRenderer(row, col)
-                    elif cellType == self.RATE_TYPE and haveBills:
+                    elif cellType == self.RATE_TYPE:
                         self.GridCellPercentRenderer(row, col)
-                    elif cellType == self.DATE_TYPE and haveBills:
+                    elif cellType == self.DATE_TYPE:
                         self.GridCellDateRenderer(row, col)
-                    elif cellType == self.DATE_TIME_TYPE and haveBills:
+                    elif cellType == self.DATE_TIME_TYPE:
                         self.GridCellDateTimeRenderer(row, col)
-                    elif cellType == self.STRING_TYPE and haveBills:
+                    elif cellType == self.STRING_TYPE:
                         self.GridCellStringRenderer(row, col)
-                    elif haveBills:
+                    else:
                         self.GridCellErrorRenderer(row, col)
 
-        cursorCell = index
-        if index == -1:
-            cursorCell = 0
-        else:
-            cursorCell = index
-        self.bill_grid.AutoSize()
+        cursorCell = start_range    
         self.bill_grid.SetGridCursor(cursorCell, 0)
-        self.bill_grid.MakeCellVisible(cursorCell, True)
-        self.Show()
-
-    def getNumRowsNeeded(self):
-        numBills = len(self.bills)
-        if numBills == 0:                       # If no bills yet, allocate 2 blank rows for new bill entry
-            rowsNeeded = 2
-            for i in range(rowsNeeded):
-                self.bills.append(Bill(self))
-        else:
-            rowsNeeded = numBills                       
-        return rowsNeeded
-
-    def getMinNumRows(self):
-        return(self.minNumRows)
-
-    def getNumColumns(self):
-        return(len(self.columnNames))
 
     def getColName(self, col):
         return self.bill_grid.GetColLabelValue(col)
@@ -226,17 +202,36 @@ class BillGrid(wx.Frame):
 
     def setColZeroSuppress(self, row, i, zero_suppress):
         if zero_suppress != self.ZERO_SUPPRESS and zero_suppress != self.NO_ZERO_SUPPRESS:
-            print(
-                "Bad value for zero_suppress:" + zero_suppress + " Ignored! Should be either " + self.ZERO_SUPPRESS + " or " + self.NO_ZERO_SUPPRESS_)
+            print("Bad value for zero_suppress:" + zero_suppress + " Ignored! Should be either " + self.ZERO_SUPPRESS + " or " + self.NO_ZERO_SUPPRESS_)
         else:
             self.col_info[i][self.ZERO_SUPPRESS_COL] = zero_suppress
 
     def do_layout(self):
-        mainsizer = wx.BoxSizer(wx.VERTICAL)
-        mainsizer.Add(self.bill_grid, proportion=1, flag=wx.EXPAND | wx.ALL)
-        self.panel.SetSizerAndFit(mainsizer)        
-        self.Fit()
+        # Create a sizer and grab the panel and grid that got created by make_widgets
+        sizer = self.mainsizer=wx.BoxSizer(wx.VERTICAL)
+        panel = self.panel
+        grid = self.bill_grid
+
+        # Add the grid to the sizer. Note that the proportion and wx.EXPAND are what maked the grid resize with the sizer
+        sizer.Add(self.bill_grid, proportion=1, flag=wx.EXPAND | wx.ALL)
+
+        # Add the sizer to the panel
+        panel.SetSizer(sizer)
+
+        # Now set the size hints on the frame using the sizer's minimum size. This makes the frame shrnink to the smallest size requred by the grid.
+        sizer.Fit(self)
+        self.SetSizeHints(sizer.GetMinSize().x, sizer.GetMinSize().y)
+
+        # Finally, show the frame
+        self.Center()
         self.Show()
+ 
+    def OnGridSize(self, event):
+        new_size = event.GetSize()
+        print(f"Bill Grid resized to: {new_size.width}x{new_size.height}")
+        self.set_properties()
+        self.redraw_all()
+        event.Skip()                                                      # Allow default processing
 
     def getColMethod(self, row, i):
         currBill = self.bills[row]
@@ -355,9 +350,14 @@ class BillGrid(wx.Frame):
     def make_widgets(self):
         self.panel = wx.Panel(self)
         self.bill_grid = wx.grid.Grid(self.panel)
-        self.set_properties()
+
+        # Bind the close event
+        self.bill_grid.Bind(wx.EVT_CLOSE, self.OnBillGridClose)
+
+        self.set_properties(createGrid=True)
         self.make_menus()
         self.do_layout()
+        self.bill_grid.Bind(wx.EVT_SIZE, self.OnGridSize)
 
     # TODO Investigate making GridCell Renderers be true cell renderers vice functions!
 
@@ -414,7 +414,7 @@ class BillGrid(wx.Frame):
                 next_digits = digit + next_digits
             groups.append(next_digits)
             groups.append(",")
-            amount = round(amount / 1000, 2)
+            amount = round(amount // 1000, 2)
         str_out = ""
         for j in range(len(groups) - 2, -1, -1):
             str_out += str(groups[j])
@@ -536,10 +536,18 @@ class BillGrid(wx.Frame):
         if row < 0 or row >= self.getNumRowsNeeded():
             str = "Warning: cellchanging on bad cell %d %d!" % (row, col)
             ret_val = self.DisplayMsg(str)
-        elif self.col_info[col][self.EDIT_COL] == self.NOT_EDITABLE:
+        info_index = -1
+        for test_info_index in range(len(self.col_info)):
+            if self.col_info[test_info_index][self.NAME_COL] == col:
+                info_index = test_info_index
+                break
+        if info_index == -1:
+            str = "Warning: cellchaging on unknown column for cell %d %d!" % (row, col)
+            ret_val = self.DisplayMsg(str)
+        if self.col_info[info_index][self.EDIT_COL] == self.NOT_EDITABLE:
             str = "Warning: Changes not allowed for column %s!" % (self.getColName(col))
             ret_val = self.DisplayMsg(str)
-        if ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.DOLLAR_TYPE:
+        if ret_val == wx.OK and self.col_info[info_index][self.TYPE_COL] == self.DOLLAR_TYPE:
             # TODO  move regular expression for dollar format to new object
             m = re.match("^-?\$?\d{1,3}(\,?\d{3})*(\.\d{2})?$", new_value)
             if m:
@@ -553,7 +561,7 @@ class BillGrid(wx.Frame):
             else:
                 str = "%s is not a valid dollar string" % (new_value)
                 ret_val = self.DisplayMsg(str)
-        elif ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.RATE_TYPE:
+        elif ret_val == wx.OK and self.col_info[info_index][self.TYPE_COL] == self.RATE_TYPE:
             # TODO  move regular expression for rate format to new object
             m = re.match("^\d{1,3}(\.\d{1,3})?\%?$", new_value)
             if m:
@@ -622,33 +630,61 @@ class BillGrid(wx.Frame):
                 else:
                     str = "%s is not a valid datetime string" % (new_value)
                     ret_val = self.DisplayMsg(str)
-        elif ret_val == wx.OK and self.col_info[col][self.TYPE_COL] == self.STRING_TYPE:
+        elif ret_val == wx.OK and self.col_info[info_index][self.TYPE_COL] == self.STRING_TYPE:
             pass
         else:
             pass
         if ret_val == wx.OK:
-            self.billchange(row,col,new_value)
-            self.redraw_all(row)  # only redraw current row
-        else:
-            evt.Veto()
+            self.set_properties()
+            self.billchange(row, col, new_value)
+#            self.redraw_all()
+            self.redraw_all(start_range=row, end_range=row)  # only redraw current row
+        evt.Veto()
 
-    def set_properties(self):
-        colNames = self.columnNames
+    def OnBillGridClose(self, event):
+        print("Bill Grid is closing!")
+        event.Skip() # Allow the default close behavior
+
+    def set_properties(self, createGrid=False):
         grid = self.bill_grid
-        grid.CreateGrid(self.maxRows, self.maxCols)
-        grid.SetSize((self.maxRows, self.maxCols))
+        if createGrid:
+            grid.CreateGrid(self.maxRows, self.maxCols)
+        else:
+            pass
 
         haveBills = True
         if self.bills.getBills() == None:
             haveBills = False
-        for j in range(self.getNumRowsNeeded()):
-            for i in range(len(self.columnNames)):
-                grid.SetColLabelValue(i, colNames[i])
- #               cur_width = self.getColWidth(i)
- #               total_width += cur_width
- #               grid.SetColSize(i, cur_width)
-                if haveBills:
-                    grid.SetCellValue(j, i, str(self.getColMethod(j, i)))
+
+        # Dynamically resize each column of the grid to be the size needed by the maximum value for that column
+
+        if haveBills:
+#            col_sizes = []
+#            row_sizes = []
+            colNames = self.columnNames
+            for col in range(self.maxCols):
+#                max_width = 0
+                for row in range(self.maxRows):
+                    grid.SetColLabelValue(col, colNames[col])
+                    grid.SetCellValue(row, col, str(self.getColMethod(row, col)))
+#                    # Get the size of the current cell
+#                    cell_rect = self.bill_grid.CellToRect(row, col)
+#                    cur_width = cell_rect.width
+#                    if cur_width > max_width:
+#                        max_width = cur_width
+#                col_sizes.append(max_width)
+#                grid.SetColSize(col, max_width)
+#            for row in range(self.maxRows):
+#                max_height = 0
+#                for col in range(self.maxCols):
+#                    # Get the size of the current cell
+#                    cell_rect = self.bill_grid.CellToRect(row, col)
+#                    cur_height = cell_rect.height
+#                    if cur_height > max_height:
+#                        max_height = cur_height
+#                row_sizes.append(max_height)
+#                grid.SetRowSize(row, max_height)
+            grid.AutoSize()                             #Set all the rows and columns to their optimal size
 
     def update_bill_grid_dates(self, oldDateFormat, newDateFormat):
         self.edited = True
@@ -688,7 +724,6 @@ class BillGrid(wx.Frame):
             self.edited = True
             bill = self.cur_bill[row]
             val = self.cbgrid.GetCellValue(row, col)
-#        self.columnNames = ["Type", "Payee", "Amount", "Min Due", "Due Date", "Sched Date", "Pmt Acct", "Pmt Method", "Frequency"]
             colIndex = self.columnNames.index(self.getColName(col))
             colString = self.columnNames[colIndex]
             if colString == "Type":
@@ -713,7 +748,7 @@ class BillGrid(wx.Frame):
                 print("Warning: modifying incorrect cell!")
                 doredraw = False
         if doredraw:
-            self.redraw_all(row)  # only redraw [row:]
+            self.redraw_all(start_range=row)  # only redraw [row:]
 
     def load_file(self, *args):
         self.close()
@@ -864,6 +899,8 @@ class BillGrid(wx.Frame):
         self.Unbind(grd.EVT_GRID_EDITOR_SHOWN)
         self.Unbind(grd.EVT_GRID_EDITOR_HIDDEN)
         self.Unbind(grd.EVT_GRID_EDITOR_CREATED)
+
+        self.Unbind(wx.EVT_SIZE)
 
         self.Destroy()
 
@@ -1047,12 +1084,13 @@ class BillGrid(wx.Frame):
         return
 
     def newentry(self, *args):
+        grid = self.bill_grid
         self.edited = True
-        self.bills.append(Bill(self.parent))
-        self.AppendRows()
-        nRows = self.GetNumberRows()
-        self.SetGridCursor(nRows - 1, 0)
-        self.MakeCellVisible(nRows - 1, 1)
+        self.bills.append(Bill(self.Parent))
+        grid.AppendRows(1)
+        nRows = grid.GetNumberRows()
+        grid.SetGridCursor(nRows - 1, 0)
+        grid.MakeCellVisible(nRows - 1, 1)
 
     def sort(self, *args):
         self.edited = True
@@ -1376,42 +1414,47 @@ class BillGrid(wx.Frame):
         col = evt.GetCol()
         pos = evt.GetPosition()
 
-        print("OnSelectCell: %s (%d,%d) %s\n" % (msg, row, col, pos))
+        # This test gets rids of spurious events that may get generated as they occur at point (-1, -1)
+        if pos != (-1, -1):
 
-        # Another way to stay in a cell that has a bad value...
+            print("BillGrid: OnSelectCell: %s (%d,%d) %s\n" % (msg, row, col, pos))
 
-        if self.bill_grid.IsCellEditControlEnabled():
-            self.bill_grid.HideCellEditControl()
-            self.bill_grid.DisableCellEditControl()
+            # Another way to stay in a cell that has a bad value...
 
-        try:
+            if self.bill_grid.IsCellEditControlEnabled():
+                self.bill_grid.HideCellEditControl()
+                self.bill_grid.DisableCellEditControl()
+
+            try:
+                value = self.bill_grid.GetCellValue(row, col)
+            except:
+                value = 'no good'
+
+            if value == 'no good':
+                return  # cancels the cell selection
+
             value = self.bill_grid.GetCellValue(row, col)
-        except:
-            value = 'no good'
-
-        if value == 'no good':
-            return  # cancels the cell selection
-
-        value = self.bill_grid.GetCellValue(row, col)
-        if row < self.getNumRowsNeeded():
-            if col == self.BILL_PMT_ACCT_COL:
-                asset_name = value
-                if asset_name != "Other" and asset_name != "Unknown" and asset_name != "TBD":
-                    asset_frame = self.Parent
-                    pmt_asset_index = asset_frame.assets.index(asset_name)
-                    if pmt_asset_index != -1:
-                        self.billchange(row, col, asset_name)
-        evt.Skip()
+            if row < self.getNumRowsNeeded():
+                if col == self.BILL_PMT_ACCT_COL:
+                    asset_name = value
+                    if asset_name != "Other" and asset_name != "Unknown" and asset_name != "TBD":
+                        asset_frame = self.Parent
+                        pmt_asset_index = asset_frame.assets.index(asset_name)
+                        if pmt_asset_index != -1:
+                            self.billchange(row, col, asset_name)
+            evt.Skip()
+        else:
+            evt.Veto()
 
     def OnEditorShown(self, evt):
         if evt.GetRow() == 6 and evt.GetCol() == 3 and \
                 wx.MessageBox("Are you sure you wish to edit this cell?",
-                              "Checking", wx.YES_NO) == wx.NO:
+                                "Checking", wx.YES_NO) == wx.NO:
             evt.Veto()
             return
 
         print("OnEditorShown: (%d,%d) %s\n" % (evt.GetRow(), evt.GetCol(),
-                                               evt.GetPosition()))
+                                            evt.GetPosition()))
         evt.Skip()
 
     def OnEditorHidden(self, evt):
