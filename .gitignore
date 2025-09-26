@@ -5,3 +5,6 @@ __pycache__
 /venv/
 .idea
 pyAsset.cfg
+/iMacrosToAsset.py
+/ExcelToAsset.py
+/pyAsset.pyproj
