@@ -106,8 +106,15 @@ class Asset(object):
     def __setitem__(self, i, val):
         self.transactions[i] = val
 
-    def __str__(self):                      # TODO: Add other fields            JJG 9/23/2025
-        return " %-10s $%8.2f" % (self.get_name(), self.get_value())
+    def __str__(self):
+        return ("name:%-10s type:%1s last_pull_date:%1s value:$%8.2f value_proj:$%8.2f est_method:%1s limit:$%8.2f avail:$%8.2f avail_proj:$%8.2f rate:%5.2f"
+               " payment:$%8.2f due_date:%1s sched_date:%1s min_pay:$%8.2f stmt_bal:$%8.2f amt_over:$%8.2f cash_limit:$%8.2f cash_used:$%8.2f cash_avail:$%8.2f" %
+                        (self.get_name(), self.get_type(), self.get_last_pull_date(), self.get_value(), self.get_value_proj(),
+                         self.get_est_method(), self.get_limit(), self.get_avail(), self.get_avail_proj(), self.get_rate(),
+                         self.get_payment(), self.get_due_date(), self.get_sched_date(), self.get_min_pay(), self.get_stmt_bal(),
+                         self.get_amt_over(), self.get_cash_limit(), self.get_cash_used(), self.get_cash_avail()
+                        )
+        )
 
     def __gt__(self, other):
         if self.due_date != None and other.due_date != None:

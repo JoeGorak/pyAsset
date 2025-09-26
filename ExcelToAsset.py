@@ -65,7 +65,7 @@ class ExcelToAsset(wx.Frame):
         AssetsFound = AssetList(parent)
         if self.wb == None:
             return AssetsFound
-        ws = self.wb.get_sheet_by_name("Assets")
+        ws = self.wb["Assets"]
         for row in ws.rows:
             cv = row[0].value
             if cv == None or "Bills" in cv or "Total" in cv or "Cash Flow" in cv:
