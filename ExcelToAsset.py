@@ -31,6 +31,7 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 # TO-DOs
 #
 
+from ast import Continue
 from math import e
 from os import error
 from openpyxl.reader.excel import load_workbook
@@ -301,9 +302,11 @@ class ExcelToAsset(wx.Frame):
             new_bill = Bill(None)
         wb = None
 
+        # Implement a state machine to process the Bill sheet!           JJG 9/25/2025
+
         ExcelReadStates = ["SectionHeader", "HeaderRow", "DataRow"]             # These are the states we can be in reading the excel file
         ExcelReadState = "SectionHeader"                                        # Start out expecting a section header
-
+        possible_section_header = True
         Finished = False
 
         for row in list(ws.rows):
@@ -312,96 +315,128 @@ class ExcelToAsset(wx.Frame):
             row_num += 1
             if row_num == 1:                                                   # Ignore the first row which is just the title
                 continue
-            col_num = 0
-            for cell in row:
-                # Read the next column in the current row and update our internal column counter
-                cv = cell.value
-                col_num += 1
+            NextRow = False
+            for col_num in range(0, MAX_COLS_TO_PROCESS):
+                # If we set the flag while processing the current row, break out to go get the next row
+                if NextRow:
+                    break
+                cv = row[col_num].value
+                cv_orig = cv                                                   # Save the original value for later
 
-                # If we are beyond the number of columns we want in the current row, go get the next row
-                if col_num > MAX_COLS_TO_PROCESS:
+                NextRow = False
 
-                    # DEBUG TO TEST ERROR HANDLING
-                    #ExcelReadState = "BadState"
-                    # END DEBUG
+                # If we are in the first column and not proessing field header rows, we might have a section header
+                if col_num == 0 and ExcelReadState != "HeaderRow":
+                    possible_section_header = True
+                    check_col = 0
+                    # It this row might be a section header, check the rest of the columns
+                    # If we find anything but nothing in any column but this first, this isn't a section header so reset the flag
+                    while possible_section_header and check_col != MAX_COLS_TO_PROCESS:
+                        check_col += 1
+                        test_cv = row[check_col].value
+                        if test_cv != None:
+                            possible_section_header = False
 
-                    # If we are reading data rows, Insert the bill that got constructed from the last row
-
-                    if ExcelReadState == "DataRow":
-                        BillsFound.insert(new_bill)
-                        if self.parent != None:
-                            new_bill = Bill(self.parent)
-                        else:
-                            new_bill = Bill(None)
-                    elif ExcelReadState == "HeaderRow":
-                        ExcelReadState = "DataRow"
+                    # Set ExcelReadState correctly based on what we found
+                    if possible_section_header:
+                        ExcelReadState = "SectionHeader"
                     else:
-                        if ExcelReadState == "SectionHeader":
-                            ExcelReadState = "HeaderRow"
-                        else:
-                            error = "Internal error in ExcelToAsset.ProcessBillsSheet: Unexpected ExcelReadState "
-                            error += ExcelReadState + "\nValid ExecReadStates are " + str(ExcelReadStates)
-                            self.MsgBox(error)
-                            return None
-                    break                                    # Since we have read all the data we need on the current row, go get the next row
+                        ExcelReadState = "DataRow"
 
-                # If the column we just read has no data, go get the next column
-                if cv == None: continue
-
-                # If the column we just read is has a string value, convert it to all lower case to simply the rest of our processing
+                # If the column we just read in has a string value, convert it to all lower case to simply the rest of our processing
                 if type(cv) is str:
                     cv = cv.lower()
 
                 # if this is a section header line, record the type and go get the next row (which should be the header row)
                 if ExcelReadState == "SectionHeader":
-                    # Sections headers in EXCEL files are a superset of the bill types so extract the appropriate part and use that as the bill type  JJG 9/22/2025
-                    bill_types = ["checking and savings", "credit card", "loan", "expense"]
-                    for cur_type in bill_types:
-                        bill_type = cv[:len(cur_type)]
-                        try:
-                            bill_type_index = bill_types.index(bill_type)
-                        except:
-                            bill_type_index = -1
-                        if col_num == 1 and bill_type_index != -1:
-                            cur_type = new_bill.set_type(bill_types[bill_type_index])
-                            break                                   # Found the type, no need to keep looking
-                        # If we didn't find a valid section header (bill_type) check if this is the "TOTALS" line in which case we don't want to process anymore
-                        if bill_type_index == -1:
-                            error = "ProcessBillsSheet: Unknown section header " + cv + " on row " + str(row_num) + " ignored!"
-                            self.MsgBox(error)
-                    ExcelReadState = "HeaderRow"                    # After a section header, we expect a header row next
-                    break                                               # Go get the next row, which should be the header row   
-                else:
-                    # If we are expecting a header row, make a record of where the columns we want are
-                    if ExcelReadState == "HeaderRow":
+                    # For now, we won't process the TOTALS section                   TODO: See if we can create something useful later!   JJG 9/27/2025
+                    if cv == "totals":
+                        Finished = True
+                        break
+
+                    # Bill types in this code are "checking and savings", "credit card", "emergency fund" "loan", "expense" and "unknown
+                    # But the section headers in the EXCEL file are "checking and savings accounts", "credit cards", "emergeny fund", "loans", and "expenses"
+                    # so we extract the appropriate number of characters from the start of the string and see if we recognize it
+                    # If we don't recognize it, set the type to "unknown" and use that as the bill type
+
+                    bill_type_index = -1
+                    if cv != None and col_num == 0:
+                        bill_types = ["checking and savings", "credit card", "emergency fund", "loan", "expense", "unknown"]
+                        for test_type in bill_types:
+                            bill_type = cv[:len(test_type)]
+                            try:
+                                bill_type_index = bill_types.index(bill_type)
+                                break
+                            except:
+                                bill_type_index = bill_types.index("unknown")
+
+                        if bill_type_index != -1:
+                            self.cur_type = bill_types[bill_type_index]
+                        else:
+                            self.cur_type = "unknown"
+
+                    # Now that we have processed the section header, the next row should be the header row
+                    new_bill.set_type(self.cur_type)
+                    ExcelReadState = "HeaderRow"
+                    NextRow = True
+                    continue
+
+                elif ExcelReadState == "HeaderRow":
                         BillPlaces[col_num] = cv
-                    else:                                           
-                        if cv == "totals":
-                            Finished = True
-                            break                                   # A "SectionHeader" of Totals means we are done since we don't want the TOTALS (yet!)
-                        heading = BillPlaces.get(col_num, "None").lower()
+                        # if we just processed the last column that we need on this row, set NextRow flag and break out of col loop
+                        # and the next row should be the start of the bill data so change the ReadState
+                        if col_num == MAX_COLS_TO_PROCESS-1:
+                            NextRow = True
+                            ExcelReadState = "DataRow"
+                            break
 
-                        # if we just processed the header column, go get the next column!       JJG 9/22/2025
-                        if heading == cv:
-                            continue
-                        if heading != None and cv != None:
-                            if heading == "payee":
-                                new_bill.set_payee(cv)
-                            elif heading == "amount":
-                                new_bill.set_amount(cv)
-                            elif heading == "min due":
-                                new_bill.set_min_due(cv)
-                            elif heading == "due date":
-                                new_bill.set_due_date(cv)
-                            elif heading == "sched date":
-                                new_bill.set_sched_date(cv)
-                            elif heading == "pmt acct":
-                                new_bill.set_pmt_acct(cv)
-                            elif heading == "pmt method":
-                                new_bill.set_pmt_method(cv)
-                            elif heading == "frequency":
-                                new_bill.set_pmt_frequency(cv)
+                elif ExcelReadState == "DataRow":
 
+                    heading = BillPlaces.get(col_num, "None")   # Don't think we should ever get "None" here but just in case...
+
+                    if heading != None:
+                        if heading == "payee":
+                            new_bill.set_payee(cv_orig)
+                        elif heading == "amount":
+                            new_bill.set_amount(cv_orig)
+                        elif heading == "min due":
+                            new_bill.set_min_due(cv_orig)
+                        elif heading == "due date":
+                            new_bill.set_due_date(cv_orig)
+                        elif heading == "sched date":
+                            new_bill.set_sched_date(cv_orig)
+                        elif heading == "pmt acct":
+                            new_bill.set_pmt_acct(cv_orig)
+                        elif heading == "pmt method":
+                            new_bill.set_pmt_method(cv_orig)
+                        elif heading == "frequency":
+                            new_bill.set_pmt_frequency(cv_orig)
+                    else:
+                        error = "ProcessBillsSheet: Unknown field " + str(heading) + " on row " + str(row_num) + " ignored!"
+                        self.MsgBox(error)
+                else:
+                    error = "Internal error in ExcelToAsset.ProcessBillsSheet: Unexpected ExcelReadState "
+                    error += ExcelReadState + "\nValid ExecReadStates are " + str(ExcelReadStates)
+                    self.MsgBox(error)
+                    return None
+            
+            # At this point we found a section we don't want to process yet ==> set Finish
+            # or we finished processing all the rows in a HeaderRow ==> set NextRow to go get the next row
+            # If we set the NextRow flag, break out of the column processing loop and go get the next row                       
+
+            if Finished:
+                break
+            if NextRow:
+               continue
+
+#            print("Inserting bill ", new_bill)         # Uncomment this to see the bills as they are inserted (it also helped debug the code!))
+            BillsFound.insert(new_bill)
+            if self.parent != None:                     # Get a new new_bill structure for the next row and if we are the test code, don't set the parent
+                new_bill = Bill(self.parent)
+            else:
+                new_bill = Bill(None)
+            new_bill.set_type(self.cur_type)
+ 
         # At this point bills were inserted in the order they were found in the Bill sheet.
         # Now do a multi-level sort on the list of bills.  JJG 1/25/2025
         BillsFound.sort_by_fields(BillList.getSortOrder(self))
@@ -484,8 +519,9 @@ if __name__ == '__main__':
             BillsFound = etoa.ProcessBillsSheet(False)
             if BillsFound != None:
                 print("Found " + str(len(BillsFound)) + " bills!")
-                for bill in BillsFound:
-                    print(bill)
+                if BillsFound.getBills() != None:
+                    for bill in BillsFound:
+                        print(bill)
 
         def doTests(self, event):
             print("Testing loading assets\n\n")
@@ -501,6 +537,13 @@ if __name__ == '__main__':
             self.Destroy()
 
     app = wx.App(False)  # Create a new app, don't redirect stdout/stderr to a window.
+    methods = [method for method in dir(ExcelToAsset) if callable(getattr(ExcelToAsset, method)) and not method.startswith("__")]
+    parent_methods = [method for method in dir(wx.Frame) if callable(getattr(wx.Frame, method)) and not method.startswith("__")]
+    new_methods = []
+    for m in methods:
+        if not m in parent_methods:
+            new_methods.append(m)
+    print("Methods added by ExcelToAsset:"+str(new_methods))
     app.frame = testFrame()
     app.frame.Show()
     app.MainLoop()

@@ -29,6 +29,9 @@ from datetime import date, datetime
 
 class Bill:
 
+    def get_float_None_representation():
+        return 9999999.99
+
     # Define static class variables - There are no enums in python
     # We use get_bill_types() etc to access these lists
 
@@ -42,7 +45,7 @@ class Bill:
 
     # Instance variables
 
-    def __init__(self, parent, payee=" "*50, type="unknown", action="-", amount=0.00, min_due=0.00, due_date=None, sched_date=None,
+    def __init__(self, parent, payee=" "*50, type="unknown", action="-", amount=None, min_due=None, due_date=None, sched_date=None,
                  pmt_acct="unknown", pmt_method="TBD", check_number=0, pmt_frequency="manual" ):
         self.parent = parent
         self.set_payee(payee)
@@ -89,8 +92,18 @@ class Bill:
         return Bill.bill_fields
 
     def __str__(self):
-        return '\"%-10s","%-30s","$%8.2f","$%8.2f","%10s","%10s","%s","%s","%s"' %\
-               (self.get_payee(), self.get_type(), self.get_amount(), self.get_min_due(), self.get_due_date(), self.get_sched_date(), self.get_pmt_acct(), self.get_pmt_method(), self.get_pmt_frequency())
+        line = []
+        line.append("Payee: %-10s " % self.get_payee())
+        line.append("Type: %-30s " % self.get_type())
+        line.append("Amount: %1s " % self.get_amount())
+        line.append("Min due: %1s " % self.get_min_due())
+        line.append("Due Date: %10s " % self.get_due_date())
+        line.append("Sched Date: %10s " % self.get_sched_date())
+        line.append("Pmt Acct: %1s " % self.get_pmt_acct())
+        line.append("Pmt Method: %1s" % self.get_pmt_method())
+        line.append("Pmt Frequency: %1s" % self.get_pmt_frequency())
+
+        return " ".join(line)
 
     def write_qif(self, qif_file):
         with open(qif_file, 'a') as f:
@@ -131,7 +144,7 @@ class Bill:
         if type(in_type) is str:
             type_lower = in_type.lower().strip()
             try:
-             self.type = Bill.bill_types.index(type_lower)
+                self.type = Bill.bill_types.index(type_lower)
             except:
                 self.type = -1
         elif type(in_type) is int:
@@ -148,35 +161,55 @@ class Bill:
         return self.payee
 
     def get_amount(self):
-        return self.amount
+        ret_value = self.amount
+        if ret_value == Bill.get_float_None_representation():
+            ret_value = "None"
+        else:
+            ret_value = "$%8.2f" % ret_value
+        return ret_value
 
     def set_amount(self, amount):
-        if type(amount) is str:
-            amount = float(amount.replace("$","").replace(" ",""))
+        if amount == None:
+            amount = Bill.get_float_None_representation()
+        elif type(amount) is str:
+            try:
+                amount = float(amount.replace("$","").replace(" ",""))
+            except:
+                amount = 0.0
         self.amount = round(amount,2)
         return self.amount
 
     def get_min_due(self):
-        return self.min_due
+        ret_value = self.min_due
+        if ret_value == Bill.get_float_None_representation():
+            ret_value = "None"
+        else:
+            ret_value = "$%8.2f" % ret_value
+        return ret_value
 
     def set_min_due(self, min_due):
-        if type(min_due) is str:
-            min_due = float(min_due.replace("$","").replace(" ",""))
-        self.min_due = min_due
+        if min_due == None:
+            min_due = Bill.get_float_None_representation()
+        elif type(min_due) is str:
+            try:
+                min_due = float(min_due.replace("$","").replace(" ",""))
+            except:
+                min_due = 0.0
+        self.min_due = round(min_due,2)
         return self.min_due
 
     def get_due_date(self):
-       if self.due_date == None:
-           return ""
-       else:
-           return self.due_date
+       return self.due_date
 
     def get_date_representation(self, in_date):
         out_date_str = ''
         if type(in_date) == str:
             if in_date.strip() != '':
                 temp_out_date = Date.parse_date(self, in_date, Date.get_global_date_format(Date))
-                out_date_str = temp_out_date["str"]
+                if temp_out_date == None:
+                    out_date_str = ''
+                else:
+                    out_date_str = temp_out_date["str"]
         elif type(in_date) is dict:
             out_date_str = in_date["str"]
         elif type(in_date) is DateTime or type(in_date) is datetime:
@@ -197,10 +230,7 @@ class Bill:
         return self.due_date
 
     def get_sched_date(self):
-        if self.sched_date == None:
-            return ""
-        else:
-            return self.sched_date
+        return self.sched_date
 
     def set_sched_date(self, sched_date):
         if sched_date == None or sched_date == "":
@@ -217,7 +247,7 @@ class Bill:
         return pmt_acct
 
     def set_pmt_acct(self, pmt_acct):
-        if pmt_acct == "unknown":
+        if pmt_acct == "unknown" or pmt_acct == None or pmt_acct == "" or pmt_acct == '':
             self.pmt_acct = "unknown"
         else:
             try:
@@ -237,24 +267,37 @@ class Bill:
         return Bill.payment_methods[self.pmt_method]
  
     def set_pmt_method(self, pmt_method):
-        pml = pmt_method.lower().strip()
-        if pml == "tbd": pml = "TBD"                        # Handle TBD special case
-        self.pmt_method = Bill.payment_methods.index(pml)
-        if self.pmt_method == -1:
-            print("Unknown payment method - " + pmt_method + "! Defaulting to unknown")
+        if pmt_method == None:
             self.pmt_method = Bill.payment_methods.index("unknown")
+        else:
+            pml = pmt_method.lower().strip()
+            if pml == "tbd": pml = "TBD"                        # Handle TBD special case
+            try:
+                self.pmt_method = Bill.payment_methods.index(pml)
+            except:
+                self.pmt_method = -1
+            if self.pmt_method == -1:
+                print("Unknown payment method - " + pmt_method + "! Defaulting to unknown")
+                self.pmt_method = Bill.payment_methods.index("unknown")
         return self.pmt_method
 
     def get_pmt_frequency(self):
         return Bill.payment_frequencies[self.payment_frequency]
 
     def set_pmt_frequency(self, payment_freq):
-       pfl = payment_freq.lower().strip().replace("every ","")
-       self.payment_frequency = Bill.payment_frequencies.index(pfl)
-       if self.payment_frequency == -1:
-           print("Unknown payment frequency " + payment_freq + "! Defaulting to unknown")
+        if payment_freq == None:
            self.payment_frequency = Bill.payment_frequencies.index("unknown")
-       return self.payment_frequency
+        else:
+            pfl = payment_freq.lower().strip().replace("every ","")
+            self.payment_frequency = -1
+            try:
+                self.payment_frequency = Bill.payment_frequencies.index(pfl)
+            except:
+                self.payment_frequency = -1
+            if self.payment_frequency == -1:
+                print("Unknown payment frequency " + payment_freq + "! Defaulting to unknown")
+                self.payment_frequency = Bill.payment_frequencies.index("unknown")
+        return self.payment_frequency
 
     def MsgBox(self, message):
         d = wx.MessageDialog(self.parent, message, "error", wx.OK | wx.ICON_INFORMATION)

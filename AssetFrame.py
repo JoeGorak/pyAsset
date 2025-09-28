@@ -226,7 +226,7 @@ class AssetFrame(wx.Frame):
             start_date, end_date = end_date, start_date
         for bill in self.bills:
             due_date_parsed = Date.parse_date(self, bill.get_due_date(), dateFormat)
-            if bill.get_amount() == 0.0 or due_date_parsed['dt'] > end_date:
+            if due_date_parsed == None or bill.get_amount() == 0.0 or due_date_parsed['dt'] > end_date:
                 continue
             #Make sure first test date is the first time bill is due (which is assumed to be at least the start date)
             test_billdate = start_date
@@ -1113,8 +1113,7 @@ class AssetFrame(wx.Frame):
                     self.assets[sheet_index].set_assetList(self.assets)
             else:
                 print(sheet + " not found in asset list")
-# DEBUGGING : ONLY LOOK AT ASSETS  AND TRANSACTIONS FOR NOW!   JJG 9/23/2025
-#        self.bills = xlsm.ProcessBillsSheet()
+        self.bills = xlsm.ProcessBillsSheet()
         for asset in latest_assets.assets:
             asset.transactions.update_current_and_projected_values()                
         return latest_assets
@@ -1136,11 +1135,11 @@ class AssetFrame(wx.Frame):
 
             if error == "":
                 latest_assets = self.process_XLSX_file(total_name_in)
-#                if latest_assets != None:
-#                    bills = self.bills.getBills()
-#                    if bills != None:
-#                        billdates = self.process_bill_dates_in_range(Date.get_global_curr_date(Date), Date.get_proj_date(Date))
-#                        print("in import_XLSX_file processed bills on these dates: ", billdates)
+                if latest_assets != None:
+                    bills = self.bills.getBills()
+                    if bills != None:
+                        billdates = self.process_bill_dates_in_range(Date.get_global_curr_date(Date), Date.get_proj_date(Date))
+                        print("in import_XLSX_file processed bills on these dates: ", billdates)
                 self.redraw_all()
                 self.filename = total_name_in
             else:
